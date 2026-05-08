@@ -49,12 +49,21 @@ make logs
 make ps
 make health
 make db-shell
+make reset-db
 make backup
 make down
 make fclean
 ```
 
 The first run copies `.env.example` to `.env`. Local secrets and generated certificates are ignored by Git.
+
+If PostgreSQL authentication fails after pulling new Docker or environment changes, run:
+
+```sh
+make reset-db
+```
+
+This deletes only the local PostgreSQL Docker volume and recreates it from `.env`.
 
 # Resources
 
