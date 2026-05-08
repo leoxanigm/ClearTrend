@@ -1,1 +1,30 @@
+# Secrets and local environment
 .env
+.env.*
+!.env.example
+
+# Docker/runtime generated files
+nginx/certs/
+backups/*.sql
+backups/*.dump
+!backups/.gitkeep
+
+# Node / Next.js
+node_modules/
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+web/src/generated/prisma/
+*.tsbuildinfo
+npm-debug.log*
+
+# Python
+analysis/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
