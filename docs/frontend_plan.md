@@ -246,3 +246,27 @@ Only after the static layout is stable:
 - Footer: visible everywhere.
 - Style: modern, approachable, smooth, not too dense.
 - Theme: dark/light prepared early.
+
+## Implementation status
+
+### Done - Static routes
+
+Created files:
+
+- `web/src/app/page.tsx` redirects `/` to `/login`;
+- `web/src/app/login/page.tsx` contains a first static login/register screen;
+- `web/src/app/dashboard/page.tsx` contains a first static dashboard shell;
+- `web/src/app/privacy/page.tsx` contains the Privacy Policy route;
+- `web/src/app/terms/page.tsx` contains the Terms of Service route.
+
+Current limitations:
+
+- no authentication logic yet;
+- login/register tabs are static;
+- dashboard data is hardcoded;
+- footer and logo are still duplicated instead of being shared components;
+- dark/light theme variables are not implemented yet.
+
+Next recommended step:
+
+- create the first small shared components: `AppLogo`, `Footer`, `Button`, and `Input`.

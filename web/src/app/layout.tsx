@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Transcendence",
-  description: "Minimal project base",
+  title: "ClearTrend",
+  description: "Market trend dashboard",
 };
 
 export default function RootLayout({
