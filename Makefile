@@ -8,7 +8,7 @@ COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
 # dev starts the coding environment: hot reload, exposed ports, plain HTTP.
 dev: .env
-	$(COMPOSE_DEV) up -d --build --remove-orphans db analysis web
+	$(COMPOSE_DEV) up -d --build --remove-orphans --renew-anon-volumes db analysis web
 	-$(COMPOSE_DEV) stop proxy
 	$(COMPOSE_DEV) exec web npm run db:push
 	$(MAKE) dev-info
