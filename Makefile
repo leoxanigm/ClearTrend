@@ -1,4 +1,4 @@
-.PHONY: dev up down logs ps health db-push db-shell db-studio backup restore clean fclean certs dev-info up-info
+.PHONY: dev up down logs ps health db-push db-shell db-studio reset-db backup restore clean fclean certs dev-info up-info
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
@@ -42,6 +42,11 @@ db-shell:
 
 db-studio:
 	$(COMPOSE_DEV) exec web npm run db:studio
+
+# reset-db deletes the local PostgreSQL Docker volume and recreates it from .env.
+reset-db:
+	$(COMPOSE_DEV) down --remove-orphans --volumes
+	$(MAKE) dev
 
 backup:
 	mkdir -p backups
