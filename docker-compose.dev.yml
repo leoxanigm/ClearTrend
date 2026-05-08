@@ -12,7 +12,7 @@ services:
       - /app/.next
     ports:
       - "3000:3000"
-    command: npm run dev -- --hostname 0.0.0.0
+    command: sh -c "npm run prisma:generate && npm run dev -- --hostname 0.0.0.0"
 
   analysis:
     volumes:
