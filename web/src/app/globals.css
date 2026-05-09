@@ -43,31 +43,30 @@ input {
   font: inherit;
 }
 
-@layer components {
-  .app-shell {
+.app-shell {
     display: flex;
     min-height: 100vh;
     background: var(--app-background);
     color: var(--app-text);
-  }
+}
 
-  .app-sidebar {
+.app-sidebar {
     display: flex;
     width: 16rem;
     flex-direction: column;
     border-right: 1px solid var(--app-border);
     padding: 1.5rem 1.25rem;
-  }
+}
 
-  .app-content {
+.app-content {
     display: flex;
     min-width: 0;
     flex: 1;
     flex-direction: column;
     padding: 1.5rem 2rem;
-  }
+}
 
-  .auth-page {
+.auth-page {
     display: flex;
     min-height: 100vh;
     max-width: 28rem;
@@ -75,59 +74,60 @@ input {
     justify-content: center;
     margin: 0 auto;
     padding: 2.5rem 1.5rem;
-  }
+}
 
-  .legal-page {
+.legal-page {
     display: flex;
     min-height: 100vh;
     max-width: 48rem;
     flex-direction: column;
     margin: 0 auto;
     padding: 2.5rem 1.5rem;
-  }
+}
 
-  .app-card {
+.app-card {
     border: 1px solid var(--app-border);
     border-radius: 0.5rem;
     background: var(--app-surface);
-  }
+}
 
-  .app-link {
+.app-link {
     color: var(--app-muted);
     text-decoration: none;
-  }
+}
 
-  .app-link:hover {
+.app-link:hover {
     color: var(--app-text);
-  }
+}
 
-  .app-eyebrow {
+.app-eyebrow {
     font-size: 0.875rem;
     color: var(--app-muted);
-  }
+}
 
-  .brand-logo-large {
+.brand-logo-large {
     display: block;
     width: min(100%, 20rem);
     height: auto;
     border-radius: 0.375rem;
     object-fit: contain;
-  }
-  /* logo mobile size */
-  @media (max-width: 480px) {
-    .brand-logo-large {
-      width: min(100%, 13rem);
-    }
-  }
+}
 
-  .brand-logo-small {
+/* logo mobile size */
+@media (max-width: 480px) {
+  .brand-logo-large {
+    width: min(100%, 13rem);
+  }
+}
+
+.brand-logo-small {
     height: 2.5rem;
     width: auto;
     border-radius: 0.25rem;
     object-fit: contain;
-  }
+}
 
-  .tab-list {
+.tab-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
@@ -137,32 +137,32 @@ input {
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--app-muted);
-  }
+}
 
-  .tab-button {
+.tab-button {
     border-radius: 0.25rem;
     padding: 0.5rem 0.75rem;
-  }
+}
 
-  .tab-button-active {
+.tab-button-active {
     background: var(--app-surface);
     color: var(--app-text);
     box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
-  }
+}
 
-  .form-field {
+.form-field {
     display: block;
-  }
+}
 
-  .form-label {
+.form-label {
     display: block;
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--app-text);
-  }
+}
 
-  .form-input {
+.form-input {
     width: 100%;
     border: 1px solid var(--app-border);
     border-radius: 0.375rem;
@@ -170,47 +170,47 @@ input {
     color: var(--app-text);
     padding: 0.5rem 0.75rem;
     outline: none;
-  }
+}
 
-  .form-input:focus {
+.form-input:focus {
     border-color: var(--app-accent);
-  }
+}
 
-  .form-message {
+.form-message {
     font-size: 0.875rem;
-  }
+}
 
-  .form-message-error {
+.form-message-error {
     color: #ef4444;
-  }
+}
 
-  .form-message-success {
+.form-message-success {
     color: var(--app-accent);
-  }
+}
 
-  .primary-button {
+.primary-button {
     width: 100%;
     border-radius: 0.375rem;
     background: var(--app-accent);
     color: var(--app-accent-contrast);
     padding: 0.5rem 1rem;
     font-weight: 500;
-  }
+}
 
-  .primary-button:disabled {
+.primary-button:disabled {
     cursor: wait;
     opacity: 0.7;
-  }
+}
 
-  .outline-button {
+.outline-button {
     border: 1px solid var(--app-border);
     border-radius: 0.375rem;
     color: var(--app-text);
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
-  }
+}
 
-  .sidebar-item {
+.sidebar-item {
     display: block;
     width: 100%;
     border-radius: 0.375rem;
@@ -218,14 +218,14 @@ input {
     padding: 0.5rem 0.75rem;
     text-align: left;
     font-size: 0.875rem;
-  }
+}
 
-  .sidebar-item:hover {
+.sidebar-item:hover {
     background: var(--app-panel);
     color: var(--app-text);
-  }
+}
 
-  .chart-placeholder {
+.chart-placeholder {
     display: flex;
     min-height: 24rem;
     height: 100%;
@@ -234,17 +234,16 @@ input {
     border: 1px dashed var(--app-border);
     border-radius: 0.375rem;
     color: var(--app-muted);
-  }
+}
 
-  .footer-links {
+.footer-links {
     display: flex;
     justify-content: center;
     gap: 1rem;
     font-size: 0.875rem;
-  }
+}
 
-  .legal-copy {
+.legal-copy {
     color: var(--app-muted);
     line-height: 1.75;
-  }
 }
