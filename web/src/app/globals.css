@@ -176,6 +176,18 @@ input {
     border-color: var(--app-accent);
   }
 
+  .form-message {
+    font-size: 0.875rem;
+  }
+
+  .form-message-error {
+    color: #ef4444;
+  }
+
+  .form-message-success {
+    color: var(--app-accent);
+  }
+
   .primary-button {
     width: 100%;
     border-radius: 0.375rem;
@@ -183,6 +195,11 @@ input {
     color: var(--app-accent-contrast);
     padding: 0.5rem 1rem;
     font-weight: 500;
+  }
+
+  .primary-button:disabled {
+    cursor: wait;
+    opacity: 0.7;
   }
 
   .outline-button {
