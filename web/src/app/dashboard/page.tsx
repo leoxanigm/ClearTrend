@@ -1,7 +1,8 @@
+import { AppLogo } from "@/components/AppLogo";
+import { FooterLinks } from "@/components/FooterLinks";
+import { Button } from "@/components/ui/Button";
 import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
-import Link from "next/link";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 
 const watchlist = ["AAPL", "MSFT", "NVDA"];
@@ -19,43 +20,33 @@ export default async function DashboardPage() {
   return (
     <main className="app-shell">
       <aside className="app-sidebar">
-        <Link
-          aria-label="ClearTrend dashboard"
-          className="block"
+        <AppLogo
+          ariaLabel="ClearTrend dashboard"
           href="/dashboard"
-        >
-          <picture>
-            <source
-              media="(prefers-color-scheme: light)"
-              srcSet="/logo-draft67.png"
-            />
-            <Image
-              alt="ClearTrend"
-              className="brand-logo-small"
-              height={90}
-              priority
-              src="/logo-draft10.png"
-              width={120}
-            />
-          </picture>
-        </Link>
+          size="small"
+        />
 
         <nav className="mt-10 space-y-2">
           {watchlist.map((symbol) => (
-            <button className="sidebar-item" key={symbol}>
+            <Button key={symbol} variant="sidebar">
               {symbol}
-            </button>
+            </Button>
           ))}
         </nav>
 
-        <footer className="mt-auto flex gap-3 text-xs">
-          <Link className="app-link" href="/privacy">
-            Privacy
-          </Link>
-          <Link className="app-link" href="/terms">
-            Terms
-          </Link>
-        </footer>
+        <FooterLinks
+          className="mt-auto flex gap-3 text-xs"
+          items={[
+            {
+              href: "/privacy",
+              label: "Privacy",
+            },
+            {
+              href: "/terms",
+              label: "Terms",
+            },
+          ]}
+        />
       </aside>
 
       <section className="app-content">
@@ -68,9 +59,9 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3">
             <span className="app-eyebrow">{session.email}</span>
             <form action="/api/auth/logout" method="post">
-              <button className="outline-button" type="submit">
+              <Button type="submit" variant="outline">
                 Logout
-              </button>
+              </Button>
             </form>
           </div>
         </header>
