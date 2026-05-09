@@ -1,88 +1,23 @@
 "use client";
 
-import { FormEvent, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
-type FormMode = "login" | "register";
-type MessageType = "error" | "success";
+import { useLoginPage } from "./login";
 
 export default function LoginPage() {
-  // Form state
-  const [mode, setMode] = useState<FormMode>("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState<{
-    type: MessageType;
-    text: string;
-  } | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Register is connected, login is still waiting for its backend route
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage(null);
-
-    if (mode === "login") {
-      setMessage({
-        type: "error",
-        text: "Login is not connected yet.",
-      });
-      return;
-    }
-
-    // Keep password confirmation on the client for now
-    if (password !== confirmPassword) {
-      setMessage({
-        type: "error",
-        text: "Passwords do not match.",
-      });
-      return;
-    }
-
-    // Call the register API
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      // The current backend returns a generic error for duplicate emails
-      if (!response.ok) {
-        const body = await response.json().catch(() => null);
-
-        setMessage({
-          type: "error",
-          text: body?.error ?? "Registration failed.",
-        });
-        return;
-      }
-
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-      setMessage({
-        type: "success",
-        text: "Account created.",
-      });
-    } catch {
-      setMessage({
-        type: "error",
-        text: "Registration failed.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const {
+    confirmPassword,
+    email,
+    handleSubmit,
+    isSubmitting,
+    message,
+    mode,
+    password,
+    selectMode,
+    setConfirmPassword,
+    setEmail,
+    setPassword,
+  } = useLoginPage();
 
   return (
     <main className="auth-page">
@@ -95,7 +30,7 @@ export default function LoginPage() {
               srcSet="/logo-draft67.png"
             />
             <Image
-              alt="ClearTrend logo"
+              alt="ClearTrend"
               className="brand-logo-large mx-auto"
               height={280}
               priority
@@ -115,10 +50,7 @@ export default function LoginPage() {
                   ? "tab-button tab-button-active"
                   : "tab-button"
               }
-              onClick={() => {
-                setMode("login");
-                setMessage(null);
-              }}
+              onClick={() => selectMode("login")}
               type="button"
             >
               Login
@@ -129,10 +61,7 @@ export default function LoginPage() {
                   ? "tab-button tab-button-active"
                   : "tab-button"
               }
-              onClick={() => {
-                setMode("register");
-                setMessage(null);
-              }}
+              onClick={() => selectMode("register")}
               type="button"
             >
               Register
@@ -159,6 +88,7 @@ export default function LoginPage() {
                 className="form-input"
                 name="password"
                 onChange={(event) => setPassword(event.target.value)}
+                minLength={mode === "register" ? 8 : undefined}
                 required
                 type="password"
                 value={password}
@@ -173,6 +103,7 @@ export default function LoginPage() {
                   className="form-input"
                   name="confirmPassword"
                   onChange={(event) => setConfirmPassword(event.target.value)}
+                  minLength={8}
                   required
                   type="password"
                   value={confirmPassword}
@@ -192,7 +123,13 @@ export default function LoginPage() {
               disabled={isSubmitting}
               type="submit"
             >
-              {mode === "register" ? "Create account" : "Continue"}
+              {isSubmitting
+                ? mode === "register"
+                  ? "Creating account..."
+                  : "Signing in..."
+                : mode === "register"
+                  ? "Create account"
+                  : "Continue"}
             </button>
           </form>
         </div>

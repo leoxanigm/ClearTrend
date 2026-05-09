@@ -247,26 +247,115 @@ Only after the static layout is stable:
 - Style: modern, approachable, smooth, not too dense.
 - Theme: dark/light prepared early.
 
-## Implementation status
+## Implementation checklist
 
-### Done - Static routes
+Status legend:
 
-Created files:
+- `[x]` done in the current repo;
+- `[ ]` not done yet.
 
-- `web/src/app/page.tsx` redirects `/` to `/login`;
-- `web/src/app/login/page.tsx` contains a first static login/register screen;
-- `web/src/app/dashboard/page.tsx` contains a first static dashboard shell;
-- `web/src/app/privacy/page.tsx` contains the Privacy Policy route;
-- `web/src/app/terms/page.tsx` contains the Terms of Service route.
+### Routes and pages
 
-Current limitations:
+- [x] `/` redirects to `/login`.
+- [x] `/login` exists.
+- [x] `/dashboard` exists.
+- [x] `/privacy` exists.
+- [x] `/terms` exists.
+- [x] Privacy Policy has non-empty content.
+- [x] Terms of Service has non-empty content.
 
-- no authentication logic yet;
-- login/register tabs are static;
-- dashboard data is hardcoded;
-- footer and logo are still duplicated instead of being shared components;
-- dark/light theme variables are not implemented yet.
+### Login and register UI
 
-Next recommended step:
+- [x] Centered login/register page.
+- [x] Logo visible on the login page.
+- [x] ClearTrend has fallback text through logo `alt` text.
+- [x] Login/register tabs.
+- [x] Email input.
+- [x] Password input.
+- [x] Confirm password input in register mode.
+- [x] Footer links to Privacy Policy and Terms of Service.
+- [x] Register loading/error/success feedback.
+- [x] Login loading/error/success feedback connected to a real backend route.
 
-- create the first small shared components: `AppLogo`, `Footer`, `Button`, and `Input`.
+### Auth backend and session
+
+- [x] Prisma client helper exists in `web/src/lib/prisma.ts`.
+- [x] `User` model exists with `email`, `passwordHash`, `createdAt`, and `updatedAt`.
+- [x] User email is unique in the Prisma schema.
+- [x] Register API route exists at `/api/auth/register`.
+- [x] Passwords are hashed server-side with `bcryptjs`.
+- [x] Register input validation is complete server-side.
+- [ ] Shared validation schema exists for front/back, for example with Zod.
+- [x] Duplicate email returns a specific `409 Conflict` instead of generic `500`.
+- [x] Login API route exists.
+- [x] Login compares passwords with `bcrypt.compare`.
+- [x] Session storage or signed session cookie exists.
+- [x] Auth cookie is `HttpOnly`, `Secure` in production, and `SameSite`.
+- [x] Logout route/action exists.
+- [x] `/dashboard` is protected from unauthenticated users.
+
+### Dashboard shell
+
+- [x] Left sidebar exists.
+- [x] Hardcoded watchlist placeholder exists.
+- [x] Main chart placeholder exists.
+- [x] Basic metric cards exist.
+- [x] User menu placeholder exists.
+- [x] Footer links exist inside the dashboard shell.
+- [x] Dashboard uses real authenticated user data.
+- [ ] Watchlist is loaded from the database/API.
+- [ ] Chart placeholder is replaced by a real chart component.
+- [ ] Dashboard is validated on mobile/tablet layouts.
+
+### Theme and styling
+
+- [x] CSS variables exist for the light theme.
+- [x] CSS variables exist for the dark theme.
+- [x] Theme follows `prefers-color-scheme`.
+- [ ] Manual theme toggle exists.
+- [ ] Theme preference is persisted per user or browser.
+
+### Shared components / design system
+
+- [x] First CSS classes exist for buttons, inputs, cards, links, tabs, and shell.
+- [ ] `AppLogo` component extracted.
+- [ ] `Footer` component extracted.
+- [ ] `Button` component extracted.
+- [ ] `Input` component extracted.
+- [ ] `SegmentedControl` component extracted.
+- [ ] Design system reaches the 10 component target from the feature breakdown.
+
+### Feature breakdown alignment
+
+- [x] Next.js App Router is used for frontend pages.
+- [x] Next.js Route Handlers are used for backend routes.
+- [x] Prisma ORM is started.
+- [x] PostgreSQL health check route exists at `/api/health`.
+- [x] Auth email/password is complete enough for the mandatory base.
+- [ ] Validation front/back is complete enough for the mandatory base.
+- [ ] Docker one-command flow is verified after the current frontend changes.
+- [ ] HTTPS/proxy flow is verified after the current frontend changes.
+- [ ] Dashboard has advanced analytics/charts.
+- [ ] Public API endpoints are implemented.
+- [ ] Advanced search is implemented.
+- [ ] Notifications CRUD or SSE are implemented.
+- [ ] i18n with three languages is implemented.
+- [ ] Playwright/manual evaluation checklist exists for login, dashboard, API, and console warnings.
+
+## Next recommended work
+
+The basic email/password auth path is now connected. The next priority should be
+validation quality and cleanup before the dashboard grows.
+
+Recommended order:
+
+1. Replace the ad hoc auth validation with a shared schema, ideally Zod, reused by
+   register and login.
+2. Add a small manual/Playwright test checklist for register, duplicate email,
+   login, protected dashboard redirect, logout, legal pages, health route, and
+   console warnings.
+3. Extract the repeated UI into small shared components: `AppLogo`, `Footer`,
+   `Button`, `Input`, and `SegmentedControl`.
+4. Connect the dashboard to real data: watchlist API, persisted user watchlist,
+   then a real chart component.
+5. Verify Docker one-command and HTTPS/proxy flows after the auth changes.

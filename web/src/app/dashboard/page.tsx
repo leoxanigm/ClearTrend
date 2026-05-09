@@ -1,20 +1,36 @@
+import { sessionCookieName, verifySessionToken } from "@/lib/auth";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 
 const watchlist = ["AAPL", "MSFT", "NVDA"];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const cookieStore = await cookies();
+  const session = verifySessionToken(
+    cookieStore.get(sessionCookieName)?.value
+  );
+
+  if (!session) {
+    redirect("/login");
+  }
+
   return (
     <main className="app-shell">
       <aside className="app-sidebar">
-        <Link className="text-xl font-semibold" href="/dashboard">
+        <Link
+          aria-label="ClearTrend dashboard"
+          className="block"
+          href="/dashboard"
+        >
           <picture>
             <source
               media="(prefers-color-scheme: light)"
               srcSet="/logo-draft67.png"
             />
             <Image
-              alt="ClearTrend logo"
+              alt="ClearTrend"
               className="brand-logo-small"
               height={90}
               priority
@@ -49,7 +65,14 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-semibold">Market overview</h1>
           </div>
 
-          <button className="outline-button">User menu</button>
+          <div className="flex items-center gap-3">
+            <span className="app-eyebrow">{session.email}</span>
+            <form action="/api/auth/logout" method="post">
+              <button className="outline-button" type="submit">
+                Logout
+              </button>
+            </form>
+          </div>
         </header>
 
         <div className="mt-8 grid flex-1 gap-6 lg:grid-cols-[1fr_280px]">
