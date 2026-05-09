@@ -1,6 +1,7 @@
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
 import { Button } from "@/components/ui/Button";
+import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
 import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -120,11 +121,17 @@ export default async function DashboardPage() {
             </summary>
             <div className="user-menu-panel">
               <p className="user-menu-name">{userName}</p>
-              <p className="app-eyebrow">{session.email}</p>
-              <form action="/api/auth/logout" method="post">
-                <Button type="submit" variant="outline">
+              <p className="user-menu-email">{session.email}</p>
+
+              <div className="user-menu-row">
+                <span>Theme</span>
+                <ThemeSwitch />
+              </div>
+
+              <form action="/api/auth/logout" className="user-menu-form" method="post">
+                <button className="user-menu-action" type="submit">
                   Logout
-                </Button>
+                </button>
               </form>
             </div>
           </details>
