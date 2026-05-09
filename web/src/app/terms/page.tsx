@@ -1,10 +1,19 @@
+import { sessionCookieName, verifySessionToken } from "@/lib/auth";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const cookieStore = await cookies();
+  const session = verifySessionToken(
+    cookieStore.get(sessionCookieName)?.value
+  );
+  const homeHref = session ? "/dashboard" : "/login";
+  const homeLabel = session ? "Dashboard" : "Login";
+
   return (
     <main className="legal-page">
-      <Link className="app-link text-sm font-medium" href="/login">
+      <Link className="app-link text-sm font-medium" href={homeHref}>
         <picture>
           <source
             media="(prefers-color-scheme: light)"
@@ -47,8 +56,8 @@ export default function TermsPage() {
       </article>
 
       <footer className="mt-auto flex gap-4 pt-12 text-sm">
-        <Link className="app-link" href="/login">
-          Login
+        <Link className="app-link" href={homeHref}>
+          {homeLabel}
         </Link>
         <Link className="app-link" href="/privacy">
           Privacy Policy
