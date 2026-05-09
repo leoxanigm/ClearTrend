@@ -1,8 +1,22 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
-import { useLoginPage } from "./login";
+import { AppLogo } from "@/components/AppLogo";
+import { FooterLinks } from "@/components/FooterLinks";
+import { Button } from "@/components/ui/Button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { TextInput } from "@/components/ui/TextInput";
+import { FormMode, useLoginPage } from "./login";
+
+const authModes: Array<{ label: string; value: FormMode }> = [
+  {
+    label: "Login",
+    value: "login",
+  },
+  {
+    label: "Register",
+    value: "register",
+  },
+];
 
 export default function LoginPage() {
   const {
@@ -24,91 +38,49 @@ export default function LoginPage() {
       <section className="space-y-8">
         <div className="space-y-3 text-center">
           {/* Logo */}
-          <picture>
-            <source
-              media="(prefers-color-scheme: light)"
-              srcSet="/logo-draft67.png"
-            />
-            <Image
-              alt="ClearTrend"
-              className="brand-logo-large mx-auto"
-              height={280}
-              priority
-              src="/logo-draft10.png"
-              width={500}
-            />
-          </picture>
+          <AppLogo size="large" />
         </div>
 
         {/* Login */}
         <div className="app-card p-6 shadow-sm">
-          <div className="tab-list">
-            {/* Mode selector. */}
-            <button
-              className={
-                mode === "login"
-                  ? "tab-button tab-button-active"
-                  : "tab-button"
-              }
-              onClick={() => selectMode("login")}
-              type="button"
-            >
-              Login
-            </button>
-            <button
-              className={
-                mode === "register"
-                  ? "tab-button tab-button-active"
-                  : "tab-button"
-              }
-              onClick={() => selectMode("register")}
-              type="button"
-            >
-              Register
-            </button>
-          </div>
+          <SegmentedControl
+            onChange={selectMode}
+            options={authModes}
+            value={mode}
+          />
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             {/* User credentials. */}
-            <label className="form-field">
-              <span className="form-label">Email</span>
-              <input
-                className="form-input"
-                name="email"
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                type="email"
-                value={email}
-              />
-            </label>
+            <TextInput
+              label="Email"
+              name="email"
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              type="email"
+              value={email}
+            />
 
-            <label className="form-field">
-              <span className="form-label">Password</span>
-              <input
-                className="form-input"
-                name="password"
-                onChange={(event) => setPassword(event.target.value)}
-                minLength={mode === "register" ? 8 : undefined}
-                required
-                type="password"
-                value={password}
-              />
-            </label>
+            <TextInput
+              label="Password"
+              name="password"
+              onChange={(event) => setPassword(event.target.value)}
+              minLength={mode === "register" ? 8 : undefined}
+              required
+              type="password"
+              value={password}
+            />
 
             {/* If register => password confirmation */}
             {mode === "register" && (
-              <label className="form-field">
-                <span className="form-label">Confirm password</span>
-                <input
-                  className="form-input"
-                  name="confirmPassword"
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  minLength={8}
-                  required
-                  type="password"
-                  value={confirmPassword}
-                />
-              </label>
+              <TextInput
+                label="Confirm password"
+                name="confirmPassword"
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                minLength={8}
+                required
+                type="password"
+                value={confirmPassword}
+              />
             )}
 
             {message && (
@@ -118,11 +90,7 @@ export default function LoginPage() {
               </p>
             )}
 
-            <button
-              className="primary-button"
-              disabled={isSubmitting}
-              type="submit"
-            >
+            <Button disabled={isSubmitting} type="submit">
               {isSubmitting
                 ? mode === "register"
                   ? "Creating account..."
@@ -130,19 +98,12 @@ export default function LoginPage() {
                 : mode === "register"
                   ? "Create account"
                   : "Continue"}
-            </button>
+            </Button>
           </form>
         </div>
 
         {/* Footer */}
-        <footer className="footer-links">
-          <Link className="app-link" href="/privacy">
-            Privacy Policy
-          </Link>
-          <Link className="app-link" href="/terms">
-            Terms of Service
-          </Link>
-        </footer>
+        <FooterLinks />
       </section>
     </main>
   );

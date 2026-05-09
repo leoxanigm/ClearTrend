@@ -1,7 +1,7 @@
+import { AppLogo } from "@/components/AppLogo";
+import { FooterLinks } from "@/components/FooterLinks";
 import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
-import Link from "next/link";
-import Image from "next/image";
 
 export default async function TermsPage() {
   const cookieStore = await cookies();
@@ -13,22 +13,11 @@ export default async function TermsPage() {
 
   return (
     <main className="legal-page">
-      <Link className="app-link text-sm font-medium" href={homeHref}>
-        <picture>
-          <source
-            media="(prefers-color-scheme: light)"
-            srcSet="/logo-draft67.png"
-          />
-          <Image
-            alt="ClearTrend logo"
-            className="brand-logo-small"
-            height={90}
-            priority
-            src="/logo-draft10.png"
-            width={120}
-          />
-        </picture>
-      </Link>
+      <AppLogo
+        href={homeHref}
+        linkClassName="app-link text-sm font-medium"
+        size="small"
+      />
 
       <article className="mt-16 space-y-6">
         <div className="space-y-3">
@@ -55,14 +44,19 @@ export default async function TermsPage() {
         </p>
       </article>
 
-      <footer className="mt-auto flex gap-4 pt-12 text-sm">
-        <Link className="app-link" href={homeHref}>
-          {homeLabel}
-        </Link>
-        <Link className="app-link" href="/privacy">
-          Privacy Policy
-        </Link>
-      </footer>
+      <FooterLinks
+        className="mt-auto flex gap-4 pt-12 text-sm"
+        items={[
+          {
+            href: homeHref,
+            label: homeLabel,
+          },
+          {
+            href: "/privacy",
+            label: "Privacy Policy",
+          },
+        ]}
+      />
     </main>
   );
 }

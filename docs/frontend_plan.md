@@ -318,11 +318,11 @@ Status legend:
 ### Shared components / design system
 
 - [x] First CSS classes exist for buttons, inputs, cards, links, tabs, and shell.
-- [ ] `AppLogo` component extracted.
-- [ ] `Footer` component extracted.
-- [ ] `Button` component extracted.
-- [ ] `Input` component extracted.
-- [ ] `SegmentedControl` component extracted.
+- [x] `AppLogo` component extracted.
+- [x] Footer links component extracted.
+- [x] `Button` component extracted.
+- [x] `Input` component extracted as `TextInput`.
+- [x] `SegmentedControl` component extracted.
 - [ ] Design system reaches the 10 component target from the feature breakdown.
 
 ### Feature breakdown alignment
@@ -354,8 +354,8 @@ Recommended order:
 2. Add a small manual/Playwright test checklist for register, duplicate email,
    login, protected dashboard redirect, logout, legal pages, health route, and
    console warnings.
-3. Extract the repeated UI into small shared components: `AppLogo`, `Footer`,
-   `Button`, `Input`, and `SegmentedControl`.
+3. Continue the design system toward the 10 component target from the feature
+   breakdown.
 4. Connect the dashboard to real data: watchlist API, persisted user watchlist,
    then a real chart component.
 5. Verify Docker one-command and HTTPS/proxy flows after the auth changes.
