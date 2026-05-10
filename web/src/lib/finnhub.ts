@@ -1,5 +1,11 @@
 type FinnhubProfile = Record<string, unknown>;
 type FinnhubQuote = Record<string, unknown>;
+type FinnhubSearchResult = {
+  description?: unknown;
+  displaySymbol?: unknown;
+  symbol?: unknown;
+  type?: unknown;
+};
 
 const finnhubBaseUrl = "https://finnhub.io/api/v1";
 
@@ -67,6 +73,31 @@ export async function fetchFinnhubQuote(symbol: string) {
   })) as FinnhubQuote;
 
   return normalizeFinnhubQuote(normalizedSymbol, quote);
+}
+
+export async function searchFinnhubAssets(query: string) {
+  const normalizedQuery = query.trim();
+
+  if (normalizedQuery.length < 2) {
+    return [];
+  }
+
+  const body = await fetchFinnhubJson("/search", {
+    q: normalizedQuery,
+  });
+  const results = Array.isArray(body.result)
+    ? (body.result as FinnhubSearchResult[])
+    : [];
+
+  return results
+    .map((result) => ({
+      description: readString(result.description),
+      displaySymbol: readString(result.displaySymbol),
+      symbol: readString(result.symbol),
+      type: readString(result.type),
+    }))
+    .filter((result) => result.symbol && result.description)
+    .slice(0, 8);
 }
 
 export async function fetchFinnhubAsset(symbol: string) {
