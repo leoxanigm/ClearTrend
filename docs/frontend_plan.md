@@ -359,10 +359,3 @@ Recommended order:
 4. Connect the dashboard to real data: watchlist API, persisted user watchlist,
    then a real chart component.
 5. Verify Docker one-command and HTTPS/proxy flows after the auth changes.
-
-
-
-theme.css : light tokens, dark override, fallback navigateur
-base.css : document colors, baseline, form typography
-components.css : wrappers, primitives, text, logo, tabs, forms, buttons, theme switch, footer/legal
-dashboard.css : primitives dashboard, layout, user menu, sidebar/chart, mobile drawer
