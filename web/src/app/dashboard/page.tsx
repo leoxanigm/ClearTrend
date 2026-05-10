@@ -1,6 +1,7 @@
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
 import { Button } from "@/components/ui/Button";
+import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
 import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -17,9 +18,18 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const userName = session.email.split("@")[0] || session.email;
+  const userInitial = session.email.slice(0, 1).toUpperCase();
+
   return (
     <main className="app-shell">
-      <aside className="app-sidebar">
+      <input
+        className="mobile-drawer-toggle"
+        id="dashboard-drawer"
+        type="checkbox"
+      />
+
+      <aside className="app-sidebar app-sidebar-desktop">
         <AppLogo
           ariaLabel="ClearTrend dashboard"
           href="/dashboard"
@@ -49,24 +59,85 @@ export default async function DashboardPage() {
         />
       </aside>
 
+      <label
+        aria-hidden="true"
+        className="mobile-drawer-backdrop"
+        htmlFor="dashboard-drawer"
+      />
+
+      <aside className="mobile-drawer">
+        <AppLogo
+          ariaLabel="ClearTrend dashboard"
+          href="/dashboard"
+          size="small"
+        />
+
+        <nav className="mt-10 space-y-2">
+          {watchlist.map((symbol) => (
+            <label
+              className="sidebar-item"
+              htmlFor="dashboard-drawer"
+              key={symbol}
+            >
+              {symbol}
+            </label>
+          ))}
+        </nav>
+
+        <FooterLinks
+          className="mt-auto flex gap-3 text-xs"
+          items={[
+            {
+              href: "/privacy",
+              label: "Privacy",
+            },
+            {
+              href: "/terms",
+              label: "Terms",
+            },
+          ]}
+        />
+      </aside>
+
       <section className="app-content">
-        <header className="flex items-center justify-between">
-          <div>
-            <p className="app-eyebrow">Dashboard</p>
-            <h1 className="text-3xl font-semibold">Market overview</h1>
+        <header className="dashboard-header">
+          <div className="dashboard-title">
+            <label
+              aria-label="Open watchlist"
+              className="mobile-menu-button"
+              htmlFor="dashboard-drawer"
+            >
+              <span aria-hidden="true" className="mobile-menu-icon" />
+            </label>
+
+            <div>
+              <h1 className="text-3xl font-semibold">Overview</h1>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="app-eyebrow">{session.email}</span>
-            <form action="/api/auth/logout" method="post">
-              <Button type="submit" variant="outline">
-                Logout
-              </Button>
-            </form>
-          </div>
+          <details className="user-menu">
+            <summary aria-label="Open user menu" className="user-menu-trigger">
+              {userInitial}
+            </summary>
+            <div className="user-menu-panel">
+              <p className="user-menu-name">{userName}</p>
+              <p className="user-menu-email">{session.email}</p>
+
+              <div className="user-menu-row">
+                <span>Theme</span>
+                <ThemeSwitch />
+              </div>
+
+              <form action="/api/auth/logout" className="user-menu-form" method="post">
+                <button className="user-menu-action" type="submit">
+                  Logout
+                </button>
+              </form>
+            </div>
+          </details>
         </header>
 
-        <div className="mt-8 grid flex-1 gap-6 lg:grid-cols-[1fr_280px]">
+        <div className="dashboard-grid mt-8 grid flex-1 gap-6 lg:grid-cols-[1fr_280px]">
           <section className="app-card p-6">
             <div className="chart-placeholder">Chart area</div>
           </section>

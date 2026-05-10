@@ -21,14 +21,24 @@ export function AppLogo({
   size,
 }: AppLogoProps) {
   const logo = (
-    <picture>
-      <source
-        media="(prefers-color-scheme: light)"
-        srcSet="/logo-draft67.png"
+    <span aria-label="ClearTrend" className="app-logo" role="img">
+      <Image
+        alt="ClearTrend"
+        aria-hidden="true"
+        className={cx(
+          "app-logo-image-light",
+          size === "large" ? "brand-logo-large mx-auto" : "brand-logo-small"
+        )}
+        height={size === "large" ? 280 : 90}
+        priority={priority}
+        src="/logo-draft67.png"
+        width={size === "large" ? 500 : 120}
       />
       <Image
         alt="ClearTrend"
+        aria-hidden="true"
         className={cx(
+          "app-logo-image-dark",
           size === "large" ? "brand-logo-large mx-auto" : "brand-logo-small"
         )}
         height={size === "large" ? 280 : 90}
@@ -36,7 +46,7 @@ export function AppLogo({
         src="/logo-draft10.png"
         width={size === "large" ? 500 : 120}
       />
-    </picture>
+    </span>
   );
 
   if (!href) {
