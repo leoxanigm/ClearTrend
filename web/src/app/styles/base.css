@@ -1,0 +1,17 @@
+/* Document colors */
+html,
+body {
+  background: var(--app-background);
+  color: var(--app-text);
+}
+
+/* Page baseline */
+body {
+  min-height: 100vh;
+}
+
+/* Form control typography */
+button,
+input {
+  font: inherit;
+}
