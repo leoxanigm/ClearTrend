@@ -1,12 +1,11 @@
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
-import { Button } from "@/components/ui/Button";
+import { WatchlistNav } from "@/components/WatchlistNav";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
+import { getWatchlistAssets } from "@/lib/assets";
 import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-const watchlist = ["AAPL", "MSFT", "NVDA"];
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -20,6 +19,7 @@ export default async function DashboardPage() {
 
   const userName = session.email.split("@")[0] || session.email;
   const userInitial = session.email.slice(0, 1).toUpperCase();
+  const watchlistAssets = await getWatchlistAssets();
 
   return (
     <main className="app-shell">
@@ -36,13 +36,7 @@ export default async function DashboardPage() {
           size="small"
         />
 
-        <nav className="mt-10 space-y-2">
-          {watchlist.map((symbol) => (
-            <Button key={symbol} variant="sidebar">
-              {symbol}
-            </Button>
-          ))}
-        </nav>
+        <WatchlistNav assets={watchlistAssets} />
 
         <FooterLinks
           className="mt-auto flex gap-3 text-xs"
@@ -72,17 +66,7 @@ export default async function DashboardPage() {
           size="small"
         />
 
-        <nav className="mt-10 space-y-2">
-          {watchlist.map((symbol) => (
-            <label
-              className="sidebar-item"
-              htmlFor="dashboard-drawer"
-              key={symbol}
-            >
-              {symbol}
-            </label>
-          ))}
-        </nav>
+        <WatchlistNav assets={watchlistAssets} mobile />
 
         <FooterLinks
           className="mt-auto flex gap-3 text-xs"

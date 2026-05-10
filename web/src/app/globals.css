@@ -65,10 +65,14 @@ input {
 
 .app-sidebar {
     display: flex;
-    width: 13rem;
+    width: 18rem;
+    height: 100vh;
     flex-direction: column;
     border-right: 1px solid var(--app-border);
+    overflow: hidden;
     padding: 1.5rem 1.25rem;
+    position: sticky;
+    top: 0;
 }
 
 .app-content {
@@ -423,6 +427,106 @@ input {
 .sidebar-item:hover {
     background: var(--app-panel);
     color: var(--app-text);
+}
+
+.watchlist-panel {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+}
+
+.watchlist-sort {
+    display: grid;
+    gap: 0.375rem;
+    margin-bottom: 0.75rem;
+}
+
+.watchlist-sort-label {
+    color: var(--app-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.watchlist-sort-select {
+    width: 100%;
+    border: 1px solid var(--app-border);
+    border-radius: 0.375rem;
+    background: var(--app-surface);
+    color: var(--app-text);
+    padding: 0.5rem 0.625rem;
+    font-size: 0.875rem;
+    outline: none;
+}
+
+.watchlist-sort-select:focus {
+    border-color: var(--app-accent);
+}
+
+.watchlist-nav {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 0.25rem;
+}
+
+.watchlist-nav::-webkit-scrollbar {
+    width: 0.375rem;
+}
+
+.watchlist-nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: var(--app-border);
+}
+
+.sidebar-asset {
+    display: flex;
+    min-height: 3.25rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.sidebar-asset-main {
+    display: grid;
+    min-width: 0;
+    gap: 0.125rem;
+}
+
+.sidebar-asset-name,
+.sidebar-asset-symbol {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-asset-name {
+    color: var(--app-text);
+    font-weight: 600;
+}
+
+.sidebar-asset-symbol {
+    color: var(--app-muted);
+    font-size: 0.75rem;
+}
+
+.sidebar-performance {
+    flex: 0 0 auto;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.asset-performance-positive {
+    color: #16a34a;
+}
+
+.asset-performance-negative {
+    color: #dc2626;
+}
+
+.asset-performance-muted {
+    color: var(--app-muted);
 }
 
 .chart-placeholder {
