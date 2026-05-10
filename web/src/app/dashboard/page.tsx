@@ -2,11 +2,28 @@ import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
 import { Button } from "@/components/ui/Button";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
+import { getWatchlistAssets } from "@/lib/assets";
 import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const watchlist = ["AAPL", "MSFT", "NVDA"];
+function formatDayChangePercent(value: number | null) {
+  if (value === null) {
+    return "N/A";
+  }
+
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
+function getDayChangeClass(value: number | null) {
+  if (value === null || value === 0) {
+    return "asset-performance-muted";
+  }
+
+  return value > 0
+    ? "asset-performance-positive"
+    : "asset-performance-negative";
+}
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -20,6 +37,7 @@ export default async function DashboardPage() {
 
   const userName = session.email.split("@")[0] || session.email;
   const userInitial = session.email.slice(0, 1).toUpperCase();
+  const watchlistAssets = await getWatchlistAssets();
 
   return (
     <main className="app-shell">
@@ -36,10 +54,27 @@ export default async function DashboardPage() {
           size="small"
         />
 
-        <nav className="mt-10 space-y-2">
-          {watchlist.map((symbol) => (
-            <Button key={symbol} variant="sidebar">
-              {symbol}
+        <nav className="watchlist-nav mt-10 space-y-2">
+          {watchlistAssets.map((asset) => (
+            <Button
+              aria-label={`${asset.name} ${formatDayChangePercent(
+                asset.dayChangePercent
+              )}`}
+              className="sidebar-asset"
+              key={asset.symbol}
+              variant="sidebar"
+            >
+              <span className="sidebar-asset-main">
+                <span className="sidebar-asset-name">{asset.name}</span>
+                <span className="sidebar-asset-symbol">{asset.symbol}</span>
+              </span>
+              <span
+                className={`sidebar-performance ${getDayChangeClass(
+                  asset.dayChangePercent
+                )}`}
+              >
+                {formatDayChangePercent(asset.dayChangePercent)}
+              </span>
             </Button>
           ))}
         </nav>
@@ -72,14 +107,24 @@ export default async function DashboardPage() {
           size="small"
         />
 
-        <nav className="mt-10 space-y-2">
-          {watchlist.map((symbol) => (
+        <nav className="watchlist-nav mt-10 space-y-2">
+          {watchlistAssets.map((asset) => (
             <label
-              className="sidebar-item"
+              className="sidebar-item sidebar-asset"
               htmlFor="dashboard-drawer"
-              key={symbol}
+              key={asset.symbol}
             >
-              {symbol}
+              <span className="sidebar-asset-main">
+                <span className="sidebar-asset-name">{asset.name}</span>
+                <span className="sidebar-asset-symbol">{asset.symbol}</span>
+              </span>
+              <span
+                className={`sidebar-performance ${getDayChangeClass(
+                  asset.dayChangePercent
+                )}`}
+              >
+                {formatDayChangePercent(asset.dayChangePercent)}
+              </span>
             </label>
           ))}
         </nav>
