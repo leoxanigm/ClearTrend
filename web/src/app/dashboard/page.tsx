@@ -1,7 +1,4 @@
-import { AppLogo } from "@/components/AppLogo";
-import { FooterLinks } from "@/components/FooterLinks";
-import { WatchlistNav } from "@/components/WatchlistNav";
-import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
+import { DashboardClient } from "@/components/DashboardClient";
 import { getWatchlistAssets } from "@/lib/assets";
 import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
@@ -22,127 +19,11 @@ export default async function DashboardPage() {
   const watchlistAssets = await getWatchlistAssets();
 
   return (
-    <main className="app-shell">
-      <input
-        className="mobile-drawer-toggle"
-        id="dashboard-drawer"
-        type="checkbox"
-      />
-
-      <aside className="app-sidebar app-sidebar-desktop">
-        <AppLogo
-          ariaLabel="ClearTrend dashboard"
-          href="/dashboard"
-          size="small"
-        />
-
-        <WatchlistNav assets={watchlistAssets} />
-
-        <FooterLinks
-          className="mt-auto flex gap-3 text-xs"
-          items={[
-            {
-              href: "/privacy",
-              label: "Privacy",
-            },
-            {
-              href: "/terms",
-              label: "Terms",
-            },
-          ]}
-        />
-      </aside>
-
-      <label
-        aria-hidden="true"
-        className="mobile-drawer-backdrop"
-        htmlFor="dashboard-drawer"
-      />
-
-      <aside className="mobile-drawer">
-        <AppLogo
-          ariaLabel="ClearTrend dashboard"
-          href="/dashboard"
-          size="small"
-        />
-
-        <WatchlistNav assets={watchlistAssets} mobile />
-
-        <FooterLinks
-          className="mt-auto flex gap-3 text-xs"
-          items={[
-            {
-              href: "/privacy",
-              label: "Privacy",
-            },
-            {
-              href: "/terms",
-              label: "Terms",
-            },
-          ]}
-        />
-      </aside>
-
-      <section className="app-content">
-        <header className="dashboard-header">
-          <div className="dashboard-title">
-            <label
-              aria-label="Open watchlist"
-              className="mobile-menu-button"
-              htmlFor="dashboard-drawer"
-            >
-              <span aria-hidden="true" className="mobile-menu-icon" />
-            </label>
-
-            <div>
-              <h1 className="text-3xl font-semibold">Overview</h1>
-            </div>
-          </div>
-
-          <details className="user-menu">
-            <summary aria-label="Open user menu" className="user-menu-trigger">
-              {userInitial}
-            </summary>
-            <div className="user-menu-panel">
-              <p className="user-menu-name">{userName}</p>
-              <p className="user-menu-email">{session.email}</p>
-
-              <div className="user-menu-row">
-                <span>Theme</span>
-                <ThemeSwitch />
-              </div>
-
-              <form action="/api/auth/logout" className="user-menu-form" method="post">
-                <button className="user-menu-action" type="submit">
-                  Logout
-                </button>
-              </form>
-            </div>
-          </details>
-        </header>
-
-        <div className="dashboard-grid mt-8 grid flex-1 gap-6 lg:grid-cols-[1fr_280px]">
-          <section className="app-card p-6">
-            <div className="chart-placeholder">Chart area</div>
-          </section>
-
-          <aside className="space-y-4">
-            <div className="app-card p-4">
-              <p className="app-eyebrow">Trend</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--app-accent)]">
-                Neutral
-              </p>
-            </div>
-
-            <div className="app-card p-4">
-              <p className="app-eyebrow">Sentiment</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--app-secondary)]">
-                Pending
-              </p>
-            </div>
-          </aside>
-        </div>
-      </section>
-    </main>
+    <DashboardClient
+      userEmail={session.email}
+      userInitial={userInitial}
+      userName={userName}
+      watchlistAssets={watchlistAssets}
+    />
   );
 }
