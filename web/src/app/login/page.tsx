@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { TextInput } from "@/components/ui/TextInput";
 import { FormMode, useLoginPage } from "./login";
+import { signIn } from "next-auth/react";
 
 const authModes: Array<{ label: string; value: FormMode }> = [
   {
@@ -101,6 +102,14 @@ export default function LoginPage() {
             </Button>
           </form>
         </div>
+
+        <Button
+          type="button"
+          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+          className="w-full"
+        >
+          Continue with Google
+        </Button>
 
         {/* Footer */}
         <FooterLinks />

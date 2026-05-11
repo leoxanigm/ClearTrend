@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { AppLogo } from "@/components/AppLogo";
 import { AssetChart } from "@/components/AssetChart";
 import { FooterLinks } from "@/components/FooterLinks";
 import { WatchlistNav } from "@/components/WatchlistNav";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
 import type { WatchlistAsset } from "@/lib/assets";
+import { signOut } from "next-auth/react";
 
 type DashboardClientProps = {
   userEmail: string;
@@ -36,6 +37,7 @@ export function DashboardClient({
   const [selectedSymbol, setSelectedSymbol] = useState(
     initialWatchlistAssets[0]?.symbol ?? null
   );
+  const [isLoggingOut, startLogoutTransition] = useTransition();
   const selectedAsset = useMemo(
     () =>
       watchlistAssets.find((asset) => asset.symbol === selectedSymbol) ??
@@ -51,6 +53,19 @@ export function DashboardClient({
       }
 
       return [...currentAssets, asset];
+    });
+  }
+
+  function handleLogout() {
+    startLogoutTransition(async () => {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      }).catch(() => null);
+
+      await signOut({
+        callbackUrl: "/login",
+        redirect: true,
+      });
     });
   }
 
@@ -132,11 +147,16 @@ export function DashboardClient({
                 <ThemeSwitch />
               </div>
 
-              <form action="/api/auth/logout" className="user-menu-form" method="post">
-                <button className="user-menu-action" type="submit">
-                  Logout
+              <div className="user-menu-form">
+                <button
+                  className="user-menu-action"
+                  disabled={isLoggingOut}
+                  onClick={handleLogout}
+                  type="button"
+                >
+                  {isLoggingOut ? "Logging out..." : "Logout"}
                 </button>
-              </form>
+              </div>
             </div>
           </details>
         </header>
