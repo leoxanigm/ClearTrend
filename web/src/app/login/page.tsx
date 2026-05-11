@@ -103,29 +103,49 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <Button
-          type="button"
-          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-          className="w-full"
-        >
-          Continue with Google
-        </Button>
+<div className="mt-0 flex justify-center gap-10">
+  <button
+    type="button"
+    onClick={() =>
+      signIn("google", { callbackUrl: "/dashboard" })
+    }
+    className="flex h-14 w-14 items-center justify-center rounded-full border border-grey-300 bg-[var(--app-accent)] shadow-sm transition hover:scale-115 hover:shadow-md"
+  >
+    <img
+      src="/google.svg"
+      alt="Google"
+      className="h-10 w-10"
+    />
+  </button>
 
-        <Button
-          type="button"
-          onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
-          className="w-full"
-        >
-          Continue with github
-        </Button>
+  <button
+    type="button"
+    onClick={() =>
+      signIn("github", { callbackUrl: "/dashboard" })
+    }
+    className="flex h-14 w-14 items-center justify-center rounded-full border border-grey-300 bg-[var(--app-accent)] shadow-sm transition hover:scale-115 hover:shadow-md"
+  >
+    <img
+      src="/github.svg"
+      alt="GitHub"
+      className="h-10 w-10"
+    />
+  </button>
 
-        <Button
-          type="button"
-          onClick={() => signIn("42-school", { callbackUrl: "/dashboard" })}
-          className="w-full"
-        >
-          Continue with 42
-        </Button>
+  <button
+    type="button"
+    onClick={() =>
+      signIn("42-school", { callbackUrl: "/dashboard" })
+    }
+    className="flex h-14 w-14 items-center justify-center rounded-full border border-grey-300 bg-[var(--app-accent)] shadow-sm transition hover:scale-115 hover:shadow-md"
+  >
+    <img
+      src="/42.svg"
+      alt="42"
+      className="h-10 w-10"
+    />
+  </button>
+</div>
 
         {/* Footer */}
         <FooterLinks />
