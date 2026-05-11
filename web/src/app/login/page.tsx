@@ -119,6 +119,14 @@ export default function LoginPage() {
           Continue with github
         </Button>
 
+        <Button
+          type="button"
+          onClick={() => signIn("42-school", { callbackUrl: "/dashboard" })}
+          className="w-full"
+        >
+          Continue with 42
+        </Button>
+
         {/* Footer */}
         <FooterLinks />
       </section>
