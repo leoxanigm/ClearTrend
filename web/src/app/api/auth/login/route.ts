@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       },
     });
 
-    if (!user) {
+    if (!user?.passwordHash) {
       return invalidCredentialsResponse();
     }
 

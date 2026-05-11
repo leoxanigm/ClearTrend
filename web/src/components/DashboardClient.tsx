@@ -1,18 +1,19 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { AppLogo } from "@/components/AppLogo";
 import { AssetChart } from "@/components/AssetChart";
 import { FooterLinks } from "@/components/FooterLinks";
+import { ProfileSettingsDialog } from "@/components/ProfileSettingsDialog";
+import { UserAvatar } from "@/components/UserAvatar";
 import { WatchlistNav } from "@/components/WatchlistNav";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
 import type { WatchlistAsset } from "@/lib/assets";
+import type { UserProfile } from "@/lib/profile-types";
 import { signOut } from "next-auth/react";
 
 type DashboardClientProps = {
-  userEmail: string;
-  userInitial: string;
-  userName: string;
+  userProfile: UserProfile;
   watchlistAssets: WatchlistAsset[];
 };
 
@@ -28,11 +29,12 @@ const footerItems = [
 ];
 
 export function DashboardClient({
-  userEmail,
-  userInitial,
-  userName,
+  userProfile,
   watchlistAssets: initialWatchlistAssets,
 }: DashboardClientProps) {
+  const userMenuRef = useRef<HTMLDetailsElement>(null);
+  const [profile, setProfile] = useState(userProfile);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [watchlistAssets, setWatchlistAssets] = useState(initialWatchlistAssets);
   const [selectedSymbol, setSelectedSymbol] = useState(
     initialWatchlistAssets[0]?.symbol ?? null
@@ -48,7 +50,9 @@ export function DashboardClient({
 
   function addWatchlistAsset(asset: WatchlistAsset) {
     setWatchlistAssets((currentAssets) => {
-      if (currentAssets.some((currentAsset) => currentAsset.symbol === asset.symbol)) {
+      if (
+        currentAssets.some((currentAsset) => currentAsset.symbol === asset.symbol)
+      ) {
         return currentAssets;
       }
 
@@ -67,6 +71,11 @@ export function DashboardClient({
         redirect: true,
       });
     });
+  }
+
+  function handleOpenProfileDialog() {
+    userMenuRef.current?.removeAttribute("open");
+    setIsProfileDialogOpen(true);
   }
 
   return (
@@ -134,13 +143,24 @@ export function DashboardClient({
             </div>
           </div>
 
-          <details className="user-menu">
-            <summary aria-label="Open user menu" className="user-menu-trigger">
-              {userInitial}
+          <details className="user-menu" ref={userMenuRef}>
+            <summary
+              aria-label={`Open user menu for ${profile.displayName}`}
+              className="user-menu-trigger"
+            >
+              <UserAvatar className="user-menu-avatar" profile={profile} />
             </summary>
             <div className="user-menu-panel">
-              <p className="user-menu-name">{userName}</p>
-              <p className="user-menu-email">{userEmail}</p>
+              <p className="user-menu-name">{profile.displayName}</p>
+              <p className="user-menu-email">{profile.email}</p>
+
+              <button
+                className="user-menu-action"
+                onClick={handleOpenProfileDialog}
+                type="button"
+              >
+                Profile settings
+              </button>
 
               <div className="user-menu-row">
                 <span>Theme</span>
@@ -181,6 +201,14 @@ export function DashboardClient({
           </aside>
         </div>
       </section>
+
+      {isProfileDialogOpen ? (
+        <ProfileSettingsDialog
+          onClose={() => setIsProfileDialogOpen(false)}
+          onProfileSave={setProfile}
+          profile={profile}
+        />
+      ) : null}
     </main>
   );
 }
