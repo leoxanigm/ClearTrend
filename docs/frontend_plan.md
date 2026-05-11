@@ -1,260 +1,348 @@
 # ClearTrend frontend plan
 
-This document keeps the frontend decisions in one place before implementation.
+This document is the frontend reference for the current ClearTrend dashboard.
+It reflects what has already been implemented and what should come next.
+
+## Product direction
+
+ClearTrend is a finance dashboard for reading market trends in a simple way.
+The app should feel calm, focused, and approachable. It is not meant to look
+like a dense trading terminal.
+
+Core principles:
+
+- one dominant chart area;
+- readable watchlist;
+- simple sorting and search;
+- clear selected asset state;
+- progressive details around the selected asset;
+- dark/light theme support;
+- responsive layout from desktop to small mobile;
+- educational/demo framing, not financial advice.
 
 ## Product name
 
-Chosen name: **ClearTrend**
+Chosen name: **ClearTrend**.
 
 Reason:
 
 - short and easy to remember;
-- directly communicates the goal of the app: making financial trends easier to read;
-- English name fits the README and evaluation context;
-- neutral enough to work for a serious finance dashboard without sounding too technical.
+- clearly linked to market trend reading;
+- fits an English evaluation/demo context;
+- serious enough for finance without sounding too technical.
 
-## Frontend direction
+## Current frontend status
 
-The UI should feel modern, smooth, and approachable for beginners.
+The frontend is no longer a static shell. The current dashboard has:
 
-It should not look like Excel, Bloomberg, or a dense trading terminal. The goal is to make financial analysis easier to understand, not to overwhelm users with raw data.
-
-Main principles:
-
-- calm interface;
-- limited information on the first screen;
-- one dominant chart area;
-- clear watchlist;
-- readable metrics;
-- progressive details when the user selects an asset;
-- English text first;
-- dark/light theme prepared from the beginning.
+- authenticated dashboard route;
+- left watchlist sidebar;
+- asset search input;
+- watchlist sorting;
+- selected asset state shared with the chart;
+- real quote/profile data from Finnhub;
+- real chart candles from Twelve Data;
+- responsive SVG chart;
+- X/Y axes;
+- desktop hover crosshair with date/value tooltip;
+- compact mobile chart layout;
+- Trend and Sentiment cards below the chart;
+- dark/light theme toggle persisted in browser storage.
 
 ## Routes
 
-We will use separate routes instead of putting everything inside one page.
+Current app routes:
 
-Planned routes:
-
+- `/` - redirects to `/login`;
 - `/login` - public login/register page;
-- `/dashboard` - main authenticated dashboard;
-- `/privacy` - Privacy Policy page;
-- `/terms` - Terms of Service page.
+- `/dashboard` - protected dashboard;
+- `/privacy` - Privacy Policy;
+- `/terms` - Terms of Service.
 
-Why not everything on one page:
+Current dashboard API routes:
 
-- separate URLs are easier to explain and test;
-- auth protection is cleaner later;
-- Privacy Policy and Terms of Service are easier to validate during evaluation;
-- dashboard code stays simpler;
-- refresh/navigation behavior is more predictable.
+- `GET /api/assets/watchlist` - returns normalized watchlist assets;
+- `GET /api/assets/search?q=...` - searches assets through Finnhub;
+- `GET /api/assets/candles?symbol=AAPL&range=1M` - returns chart candles through Twelve Data;
+- auth routes under `/api/auth/*`;
+- `GET /api/health`.
 
-The dashboard itself can still behave like a single-page app: selecting a stock changes the visible data without leaving `/dashboard`.
+## Frontend architecture
 
-## Login page
+### Dashboard page
 
-Layout:
+`web/src/app/dashboard/page.tsx`
 
-- centered login/register block;
-- temporary SVG logo;
-- project name: ClearTrend;
-- login and register on the same page;
-- footer visible with links to Privacy Policy and Terms of Service.
+- Server component.
+- Reads and verifies the session cookie.
+- Redirects unauthenticated users to `/login`.
+- Loads initial watchlist assets through `getWatchlistAssets()`.
+- Passes authenticated user info and watchlist assets to `DashboardClient`.
 
-Login/register interaction:
+### Dashboard client shell
 
-- use tabs or a segmented control;
-- first implementation can be static;
-- auth wiring comes later.
+`web/src/components/DashboardClient.tsx`
 
-## Dashboard page
+- Client component that owns the active dashboard state.
+- Stores `watchlistAssets`.
+- Stores `selectedSymbol`.
+- Computes `selectedAsset`.
+- Renders:
+  - desktop sidebar;
+  - mobile drawer sidebar;
+  - header/user menu;
+  - `AssetChart`;
+  - Trend and Sentiment cards.
 
-Initial layout:
+Important decision: selected asset state lives here, not inside the chart or
+inside the sidebar. This allows the watchlist and chart to stay synchronized.
 
-- left sidebar always visible;
-- main chart area in the center;
-- simple performance indicators below or near the chart;
-- user menu in the top-right area;
-- footer visible in the app shell.
+### Watchlist navigation
 
-Sidebar:
+`web/src/components/WatchlistNav.tsx`
 
-- contains watched assets / watchlist;
-- always visible for now;
-- animations/collapse can be added later to make the interface smoother.
+Implemented:
 
-User menu:
+- displays asset name, symbol, and day performance;
+- positive performance in green;
+- negative performance in red;
+- `N/A` muted when data is missing;
+- sorting by:
+  - A-Z;
+  - Z-A;
+  - best day;
+  - worst day;
+- `N/A` assets stay at the end when sorting by performance;
+- search input calls `/api/assets/search`;
+- selecting a search result adds/hydrates the asset through `/api/assets/watchlist`;
+- selected asset remains highlighted;
+- selecting from search scrolls the watchlist to the selected item;
+- desktop sidebar scrolls when the list is taller than the page;
+- mobile drawer reuses the same component.
 
-- theme toggle;
-- edit profile;
-- logout;
-- future settings entries.
+Current limitation:
 
-Dashboard information hierarchy:
+- adding an asset from search updates the client-side watchlist and stores/updates
+  the asset data in the `assets` table, but there is not yet a user-specific
+  persisted `watchlists` / `watchlist_items` model.
 
-1. selected asset name and symbol;
-2. main trend/chart;
-3. few key indicators;
-4. watchlist;
-5. optional details.
+## Market data architecture
 
-Do not show too many widgets in the first version.
+### Finnhub
 
-## Footer
+Files:
 
-The footer should be visible everywhere, not only on the login page.
+- `web/src/lib/finnhub.ts`;
+- `web/src/lib/assets.ts`;
+- `web/src/app/api/assets/search/route.ts`;
+- `web/src/app/api/assets/watchlist/route.ts`.
 
-It should contain:
+Finnhub is used for:
 
-- Privacy Policy;
-- Terms of Service.
+- asset search;
+- asset profile data;
+- current quote data;
+- watchlist day performance (`dp`).
 
-On dashboard, the footer should be discreet so it does not compete with the main UI.
+Stored asset fields include:
 
-## Theme and colors
+- symbol;
+- display symbol;
+- name;
+- exchange/country/currency/industry when available;
+- last price;
+- day change;
+- day change percent;
+- day high/low/open;
+- previous close;
+- quote timestamp;
+- raw Finnhub profile and quote JSON.
 
-We prepare both dark and light themes early with CSS variables.
+Current cache:
 
-The palette has more than five values because each value has a different UI role. They are not all meant to be equally visible.
+- `assetCacheTtlMs = 5 * 60 * 1000`;
+- an asset is considered fresh for 5 minutes.
 
-### Dark theme
+Current improvement to do:
+
+- split profile and quote refresh:
+  - profile should be fetched once when an asset is first added;
+  - quote should refresh every 5 minutes;
+  - this avoids paying two Finnhub calls on every stale refresh.
+
+### Twelve Data
+
+Files:
+
+- `web/src/lib/twelvedata.ts`;
+- `web/src/app/api/assets/candles/route.ts`;
+- `web/src/components/AssetChart.tsx`.
+
+Twelve Data is used for chart candles through `/time_series`.
+
+Supported chart ranges:
+
+| Range | Interval | Output size | Cache |
+|---|---:|---:|---:|
+| `1D` | `5min` | 78 | 5 min |
+| `1M` | `1day` | 30 | 30 min |
+| `3M` | `1day` | 90 | 1 hour |
+| `1Y` | `1day` | 252 | 6 hours |
+
+Returned candle data:
+
+- datetime;
+- open;
+- high;
+- low;
+- close;
+- volume;
+- timestamp.
+
+Current limitation:
+
+- candles are cached in memory only;
+- they are not persisted in the database yet.
+
+Recommended future step:
+
+- add a `price_candles` table only when we need historical storage,
+  backtesting, offline demos, or technical indicators.
+
+## Chart implementation
+
+`web/src/components/AssetChart.tsx`
+
+Implemented:
+
+- custom SVG line/area chart;
+- ranges: `1D`, `1M`, `3M`, `1Y`;
+- X axis with time/date labels;
+- Y axis with price labels;
+- range performance percent;
+- current/last price display;
+- loading state;
+- unavailable state;
+- footer metadata:
+  - number of points;
+  - interval;
+  - exchange;
+  - last volume;
+- responsive sizing:
+  - desktop chart size: `720 x 400`;
+  - compact chart size: `360 x 230`;
+  - compact mode activates under `600px`;
+- desktop hover interaction:
+  - vertical dashed guide;
+  - horizontal dashed guide;
+  - point marker;
+  - tooltip with value and date.
+
+Current chart choice:
+
+- no external chart library yet;
+- custom SVG is enough for the current simple line chart;
+- adding ECharts/Recharts can be reconsidered later if we need candles,
+  volume bars, indicators, zoom, or advanced interactions.
+
+## Responsive behavior
+
+Desktop:
+
+- fixed left sidebar;
+- dashboard content takes the remaining width;
+- chart spans full dashboard width;
+- Trend and Sentiment cards sit below the chart in a two-column grid;
+- watchlist scrolls inside the sidebar.
+
+Mobile/tablet:
+
+- desktop sidebar is hidden;
+- mobile drawer opens from the left;
+- chart header stacks;
+- long asset names wrap;
+- compact chart mode reduces the SVG viewBox and removes excess frame height;
+- hover tooltip is desktop-only.
+
+Important CSS areas:
+
+- app shell and sidebar: `web/src/app/globals.css`;
+- watchlist styles: `web/src/app/globals.css`;
+- chart styles: `web/src/app/globals.css`;
+- compact chart breakpoint: `@media (max-width: 600px)`.
+
+Operational note:
+
+- in Docker dev, `/app/.next` is mounted as an anonymous volume;
+- if CSS looks stale after pull/push/restart, recreate the web container with
+  renewed anonymous volumes:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-deps --force-recreate --renew-anon-volumes web
+```
+
+## Theme and styling
+
+Theme foundations are implemented with CSS variables.
+
+Dark theme tokens:
 
 | Token | Value | Role |
 |---|---:|---|
 | `background` | `#0B1116` | Main app background |
 | `surface` | `#111A22` | Cards, panels, app shell |
-| `panel` | `#16232D` | Nested or highlighted sections |
+| `panel` | `#16232D` | Nested/highlight sections |
 | `border` | `#263642` | Dividers and borders |
 | `text` | `#EAF2F5` | Primary text |
 | `muted` | `#8FA4AE` | Secondary text |
-| `accent` | `#2DD4BF` | Main action, selected state, positive highlight |
-| `secondary` | `#2563EB` | Secondary action or informational highlight |
+| `accent` | `#2DD4BF` | Selected state, chart highlights |
+| `secondary` | `#2563EB` | Secondary highlight |
 
-### Light theme
+Light theme tokens:
 
 | Token | Value | Role |
 |---|---:|---|
 | `background` | `#F6F8FA` | Main app background |
 | `surface` | `#FFFFFF` | Cards, panels, app shell |
-| `panel` | `#EEF4F6` | Nested or highlighted sections |
+| `panel` | `#EEF4F6` | Nested/highlight sections |
 | `border` | `#DCE5EA` | Dividers and borders |
 | `text` | `#102027` | Primary text |
 | `muted` | `#647985` | Secondary text |
-| `accent` | `#0F766E` | Main action, selected state, positive highlight |
-| `secondary` | `#1D4ED8` | Secondary action or informational highlight |
+| `accent` | `#0F766E` | Selected state, chart highlights |
+| `secondary` | `#1D4ED8` | Secondary highlight |
 
-### About accent and secondary colors
+Implemented:
 
-Accent and secondary are intentionally more saturated than the base palette, but they must be used sparingly.
+- theme follows system preference by default;
+- manual `ThemeSwitch`;
+- selected theme persists in `localStorage` under `cleartrend-theme`.
 
-Use accent for:
+## Components
 
-- primary button;
-- active tab;
-- selected asset;
-- positive or confirmed state;
-- small chart highlights.
+Implemented reusable components:
 
-Use secondary for:
-
-- links;
-- secondary actions;
-- informational badges;
-- focus states if accent is already used.
-
-Avoid large full-screen blocks in accent or secondary colors. The global UI should remain neutral and calm.
-
-## First design system components
-
-Do not build the full design system at once.
-
-First useful components:
-
-- `Button`;
-- `Input`;
-- `SegmentedControl`;
-- `Footer`;
 - `AppLogo`;
+- `FooterLinks`;
+- `Button`;
+- `TextInput`;
+- `SegmentedControl`;
+- `ThemeSwitch`;
+- `WatchlistNav`;
+- `AssetChart`;
+- `DashboardClient`.
 
-Next components:
+Near-term candidates for the 10-component design system target:
 
-- `Sidebar`;
-- `UserMenu`;
+- `Card`;
 - `MetricTile`;
-- `ChartPanel`;
-- `ThemeToggle`.
+- `Select`;
+- `Tooltip`;
+- `Drawer`;
+- `UserMenu`.
 
-This path keeps the code simple while preparing the future "custom design system" module.
+## Current checklist
 
-## Implementation steps
-
-### Step 1 - Static routes
-
-Create:
-
-- `/login`;
-- `/dashboard`;
-- `/privacy`;
-- `/terms`.
-
-No auth logic yet.
-
-### Step 2 - Login/register UI
-
-Implement:
-
-- centered login page;
-- logo placeholder;
-- ClearTrend title;
-- login/register tabs;
-- email/password inputs;
-- footer links.
-
-### Step 3 - Dashboard static shell
-
-Implement:
-
-- left sidebar;
-- main chart placeholder;
-- watchlist placeholder;
-- user menu placeholder;
-- footer links.
-
-### Step 4 - Theme foundations
-
-Implement CSS variables for dark and light themes.
-
-Do not overbuild the toggle yet. The theme system should be ready before the UI grows.
-
-### Step 5 - Connect auth and data
-
-Only after the static layout is stable:
-
-- wire login/register;
-- protect `/dashboard`;
-- connect real watchlist data;
-- replace chart placeholder.
-
-## Current decisions
-
-- Project name: ClearTrend.
-- UI language first: English.
-- Routes: separate pages.
-- Login/register: same page.
-- Login layout: centered.
-- Dashboard: left sidebar always visible for now.
-- Footer: visible everywhere.
-- Style: modern, approachable, smooth, not too dense.
-- Theme: dark/light prepared early.
-
-## Implementation checklist
-
-Status legend:
-
-- `[x]` done in the current repo;
-- `[ ]` not done yet.
-
-### Routes and pages
+### Routes and auth
 
 - [x] `/` redirects to `/login`.
 - [x] `/login` exists.
@@ -263,99 +351,91 @@ Status legend:
 - [x] `/terms` exists.
 - [x] Privacy Policy has non-empty content.
 - [x] Terms of Service has non-empty content.
+- [x] Email/password register route exists.
+- [x] Email/password login route exists.
+- [x] Passwords are hashed server-side.
+- [x] Session cookie exists.
+- [x] Logout route exists.
+- [x] `/dashboard` is protected.
+- [ ] Shared front/back validation schema exists.
 
-### Login and register UI
-
-- [x] Centered login/register page.
-- [x] Logo visible on the login page.
-- [x] ClearTrend has fallback text through logo `alt` text.
-- [x] Login/register tabs.
-- [x] Email input.
-- [x] Password input.
-- [x] Confirm password input in register mode.
-- [x] Footer links to Privacy Policy and Terms of Service.
-- [x] Register loading/error/success feedback.
-- [x] Login loading/error/success feedback connected to a real backend route.
-
-### Auth backend and session
-
-- [x] Prisma client helper exists in `web/src/lib/prisma.ts`.
-- [x] `User` model exists with `email`, `passwordHash`, `createdAt`, and `updatedAt`.
-- [x] User email is unique in the Prisma schema.
-- [x] Register API route exists at `/api/auth/register`.
-- [x] Passwords are hashed server-side with `bcryptjs`.
-- [x] Register input validation is complete server-side.
-- [ ] Shared validation schema exists for front/back, for example with Zod.
-- [x] Duplicate email returns a specific `409 Conflict` instead of generic `500`.
-- [x] Login API route exists.
-- [x] Login compares passwords with `bcrypt.compare`.
-- [x] Session storage or signed session cookie exists.
-- [x] Auth cookie is `HttpOnly`, `Secure` in production, and `SameSite`.
-- [x] Logout route/action exists.
-- [x] `/dashboard` is protected from unauthenticated users.
-
-### Dashboard shell
+### Dashboard
 
 - [x] Left sidebar exists.
-- [x] Hardcoded watchlist placeholder exists.
-- [x] Main chart placeholder exists.
-- [x] Basic metric cards exist.
-- [x] User menu placeholder exists.
-- [x] Footer links exist inside the dashboard shell.
-- [x] Dashboard uses real authenticated user data.
-- [ ] Watchlist is loaded from the database/API.
-- [ ] Chart placeholder is replaced by a real chart component.
-- [ ] Dashboard is validated on mobile/tablet layouts.
+- [x] Mobile drawer exists.
+- [x] Watchlist displays real asset data.
+- [x] Watchlist sorting exists.
+- [x] Watchlist search exists.
+- [x] Search results can add/select an asset.
+- [x] Selected asset remains highlighted.
+- [x] Chart placeholder is replaced by `AssetChart`.
+- [x] Chart consumes real Twelve Data candles.
+- [x] Chart has ranges.
+- [x] Chart has axes.
+- [x] Chart has desktop hover crosshair and tooltip.
+- [x] Trend and Sentiment cards are below the chart.
+- [x] Mobile chart layout is compact under 600px.
+- [ ] Trend and Sentiment cards use real analysis data.
+- [ ] User-specific persisted watchlist exists.
 
-### Theme and styling
+### Data and APIs
 
-- [x] CSS variables exist for the light theme.
-- [x] CSS variables exist for the dark theme.
-- [x] Theme follows `prefers-color-scheme`.
-- [ ] Manual theme toggle exists.
-- [ ] Theme preference is persisted per user or browser.
+- [x] `Asset` model exists.
+- [x] Finnhub key is documented in `.env.example`.
+- [x] Twelve Data key is documented in `.env.example`.
+- [x] `/api/assets/watchlist` exists.
+- [x] `/api/assets/search` exists.
+- [x] `/api/assets/candles` exists.
+- [x] Finnhub quote/profile data is stored in `assets`.
+- [x] Twelve Data candles are cached in memory.
+- [ ] Profile and quote refresh are split.
+- [ ] Candles are persisted if needed.
+- [ ] API rate limiting exists.
 
-### Shared components / design system
+### Styling and quality
 
-- [x] First CSS classes exist for buttons, inputs, cards, links, tabs, and shell.
-- [x] `AppLogo` component extracted.
-- [x] Footer links component extracted.
-- [x] `Button` component extracted.
-- [x] `Input` component extracted as `TextInput`.
-- [x] `SegmentedControl` component extracted.
-- [ ] Design system reaches the 10 component target from the feature breakdown.
-
-### Feature breakdown alignment
-
-- [x] Next.js App Router is used for frontend pages.
-- [x] Next.js Route Handlers are used for backend routes.
-- [x] Prisma ORM is started.
-- [x] PostgreSQL health check route exists at `/api/health`.
-- [x] Auth email/password is complete enough for the mandatory base.
-- [ ] Validation front/back is complete enough for the mandatory base.
-- [ ] Docker one-command flow is verified after the current frontend changes.
-- [ ] HTTPS/proxy flow is verified after the current frontend changes.
-- [ ] Dashboard has advanced analytics/charts.
-- [ ] Public API endpoints are implemented.
-- [ ] Advanced search is implemented.
-- [ ] Notifications CRUD or SSE are implemented.
-- [ ] i18n with three languages is implemented.
-- [ ] Playwright/manual evaluation checklist exists for login, dashboard, API, and console warnings.
+- [x] Light theme variables exist.
+- [x] Dark theme variables exist.
+- [x] Manual theme toggle exists.
+- [x] Theme preference persists in browser storage.
+- [x] Desktop layout is usable.
+- [x] Mobile layout is usable.
+- [x] Chart layout has compact mobile handling.
+- [ ] Playwright/manual visual checklist exists.
+- [ ] Chrome console clean checklist exists.
 
 ## Next recommended work
 
-The basic email/password auth path is now connected. The next priority should be
-validation quality and cleanup before the dashboard grows.
-
 Recommended order:
 
-1. Replace the ad hoc auth validation with a shared schema, ideally Zod, reused by
-   register and login.
-2. Add a small manual/Playwright test checklist for register, duplicate email,
-   login, protected dashboard redirect, logout, legal pages, health route, and
-   console warnings.
-3. Continue the design system toward the 10 component target from the feature
-   breakdown.
-4. Connect the dashboard to real data: watchlist API, persisted user watchlist,
-   then a real chart component.
-5. Verify Docker one-command and HTTPS/proxy flows after the auth changes.
+1. Persist user watchlists.
+   Add `watchlists` and `watchlist_items` models, then make search additions
+   durable per user.
+
+2. Split Finnhub profile and quote refresh.
+   Fetch profile once on asset creation, then refresh only quote every 5 minutes.
+
+3. Connect Trend and Sentiment cards to real analysis data.
+   For now they are UI placeholders.
+
+4. Add shared validation.
+   A Zod schema or equivalent should cover auth inputs, symbols, chart ranges,
+   and asset search query limits.
+
+5. Add a manual/Playwright evaluation checklist.
+   Cover login, register, logout, dashboard, watchlist search, chart ranges,
+   chart hover, mobile drawer, legal pages, health route, and console warnings.
+
+6. Decide whether to keep custom SVG chart or move to a chart library.
+   Stay custom while needs are simple. Consider ECharts/Recharts only when
+   candles, volume bars, zoom, overlays, or indicators become necessary.
+
+## Open decisions
+
+- Should watchlists be single-list per user or multiple named lists?
+- Should candles be stored in Postgres or kept API/cache-only for now?
+- Should crypto symbols be supported in the same UI, given symbol validation and
+  different providers?
+- Should chart interactions be mobile tap-based later, or remain desktop-only?
+- Which real source should power Sentiment and Trend first: FastAPI analysis,
+  news ingestion, or a simple technical indicator baseline?
