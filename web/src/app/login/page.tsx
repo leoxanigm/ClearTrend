@@ -111,6 +111,14 @@ export default function LoginPage() {
           Continue with Google
         </Button>
 
+        <Button
+          type="button"
+          onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+          className="w-full"
+        >
+          Continue with github
+        </Button>
+
         {/* Footer */}
         <FooterLinks />
       </section>
