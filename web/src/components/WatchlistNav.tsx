@@ -8,6 +8,9 @@ type SortMode = "dp-asc" | "dp-desc" | "name-asc" | "name-desc";
 type WatchlistNavProps = {
   assets: WatchlistAsset[];
   mobile?: boolean;
+  onAssetAdd: (asset: WatchlistAsset) => void;
+  onSelectSymbol: (symbol: string) => void;
+  selectedSymbol: string | null;
 };
 
 type AssetSearchResult = {
@@ -92,7 +95,7 @@ function sortAssets(assets: WatchlistAsset[], sortMode: SortMode) {
       return compareAssetNames(b, a);
     }
 
-  if (sortMode === "dp-desc") {
+    if (sortMode === "dp-desc") {
       return compareAssetPerformance(a, b, "desc");
     }
 
@@ -161,11 +164,13 @@ function WatchlistItem({
   );
 }
 
-export function WatchlistNav({ assets, mobile = false }: WatchlistNavProps) {
-  const [watchlistAssets, setWatchlistAssets] = useState(assets);
-  const [selectedSymbol, setSelectedSymbol] = useState(
-    assets[0]?.symbol ?? null
-  );
+export function WatchlistNav({
+  assets,
+  mobile = false,
+  onAssetAdd,
+  onSelectSymbol,
+  selectedSymbol,
+}: WatchlistNavProps) {
   const [sortMode, setSortMode] = useState<SortMode>("name-asc");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AssetSearchResult[]>([]);
@@ -223,8 +228,8 @@ export function WatchlistNav({ assets, mobile = false }: WatchlistNavProps) {
   }, [query]);
 
   const sortedAssets = useMemo(
-    () => sortAssets(watchlistAssets, sortMode),
-    [watchlistAssets, sortMode]
+    () => sortAssets(assets, sortMode),
+    [assets, sortMode]
   );
   const searchInputId = mobile ? "asset-search-mobile" : "asset-search-desktop";
 
@@ -266,9 +271,9 @@ export function WatchlistNav({ assets, mobile = false }: WatchlistNavProps) {
     const normalizedSymbol = symbol.trim().toUpperCase();
 
     if (
-      watchlistAssets.some((asset) => asset.symbol === normalizedSymbol)
+      assets.some((asset) => asset.symbol === normalizedSymbol)
     ) {
-      setSelectedSymbol(normalizedSymbol);
+      onSelectSymbol(normalizedSymbol);
       setQuery("");
       setResults([]);
       return;
@@ -294,8 +299,8 @@ export function WatchlistNav({ assets, mobile = false }: WatchlistNavProps) {
         throw new Error("No asset returned");
       }
 
-      setWatchlistAssets((currentAssets) => [...currentAssets, asset]);
-      setSelectedSymbol(asset.symbol);
+      onAssetAdd(asset);
+      onSelectSymbol(asset.symbol);
       setQuery("");
       setResults([]);
       setSearchMessage(null);
@@ -370,7 +375,7 @@ export function WatchlistNav({ assets, mobile = false }: WatchlistNavProps) {
             asset={asset}
             key={asset.symbol}
             mobile={mobile}
-            onSelect={setSelectedSymbol}
+            onSelect={onSelectSymbol}
             selected={asset.symbol === selectedSymbol}
             setItemRef={setItemRef}
           />
