@@ -770,32 +770,32 @@ input {
 }
 
 .asset-chart-hover-line {
-    stroke: color-mix(in srgb, var(--app-accent) 58%, transparent);
+    stroke: color-mix(in srgb, var(--app-accent) 42%, transparent);
     stroke-dasharray: 4 4;
     stroke-width: 1;
 }
 
 .asset-chart-hover-point {
-    fill: var(--app-surface);
-    stroke: var(--app-accent);
+    fill: var(--app-panel);
+    stroke: color-mix(in srgb, var(--app-accent) 82%, #ffffff);
     stroke-width: 2;
 }
 
 .asset-chart-tooltip-box {
-    fill: #f8fafc;
-    filter: drop-shadow(0 8px 18px rgb(0 0 0 / 0.22));
-    stroke: color-mix(in srgb, var(--app-accent) 50%, #cbd5e1);
+    fill: color-mix(in srgb, var(--app-surface) 94%, #000000);
+    filter: drop-shadow(0 10px 22px rgb(0 0 0 / 0.28));
+    stroke: color-mix(in srgb, var(--app-accent) 34%, var(--app-border));
     stroke-width: 1;
 }
 
 .asset-chart-tooltip-value {
-    fill: #0f172a;
+    fill: var(--app-text);
     font-size: 0.875rem;
     font-weight: 800;
 }
 
 .asset-chart-tooltip-date {
-    fill: #475569;
+    fill: var(--app-muted);
     font-size: 0.75rem;
     font-weight: 700;
 }

@@ -482,7 +482,7 @@ export function AssetChart({ asset }: AssetChartProps) {
                   <rect
                     className="asset-chart-tooltip-box"
                     height={tooltipHeight}
-                    rx="6"
+                    rx="5"
                     width={tooltipWidth}
                   />
                   <text className="asset-chart-tooltip-value" x="10" y="19">
