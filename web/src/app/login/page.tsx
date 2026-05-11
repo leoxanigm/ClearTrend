@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { TextInput } from "@/components/ui/TextInput";
 import { FormMode, useLoginPage } from "./login";
-import { signIn } from "next-auth/react";
+import { OAuthButtons } from "./OAuthButtons";
 
 const authModes: Array<{ label: string; value: FormMode }> = [
   {
@@ -103,49 +103,8 @@ export default function LoginPage() {
           </form>
         </div>
 
-<div className="mt-0 flex justify-center gap-10">
-  <button
-    type="button"
-    onClick={() =>
-      signIn("google", { callbackUrl: "/dashboard" })
-    }
-    className="flex h-14 w-14 items-center justify-center rounded-full border border-grey-300 bg-[var(--app-accent)] shadow-sm transition hover:scale-115 hover:shadow-md"
-  >
-    <img
-      src="/google.svg"
-      alt="Google"
-      className="h-10 w-10"
-    />
-  </button>
-
-  <button
-    type="button"
-    onClick={() =>
-      signIn("github", { callbackUrl: "/dashboard" })
-    }
-    className="flex h-14 w-14 items-center justify-center rounded-full border border-grey-300 bg-[var(--app-accent)] shadow-sm transition hover:scale-115 hover:shadow-md"
-  >
-    <img
-      src="/github.svg"
-      alt="GitHub"
-      className="h-10 w-10"
-    />
-  </button>
-
-  <button
-    type="button"
-    onClick={() =>
-      signIn("42-school", { callbackUrl: "/dashboard" })
-    }
-    className="flex h-14 w-14 items-center justify-center rounded-full border border-grey-300 bg-[var(--app-accent)] shadow-sm transition hover:scale-115 hover:shadow-md"
-  >
-    <img
-      src="/42.svg"
-      alt="42"
-      className="h-10 w-10"
-    />
-  </button>
-</div>
+        {/* OAuth buttons */}
+        <OAuthButtons />
 
         {/* Footer */}
         <FooterLinks />
