@@ -53,6 +53,8 @@ model Asset {
   dayOpen          Float?
   previousClose    Float?
   quoteTimestamp   DateTime?
+  dataFetchedAt    DateTime?
+  fetchAttemptedAt DateTime?
   rawProfile       Json?
   rawQuote         Json?
   createdAt        DateTime  @default(now())

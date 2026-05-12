@@ -1,3 +1,8 @@
+import {
+  ExternalDataCooldownError,
+  wasAttemptedRecently,
+} from "@/lib/external-data";
+
 export const chartRanges = ["1D", "1M", "3M", "1Y"] as const;
 
 export type ChartRange = (typeof chartRanges)[number];
@@ -69,8 +74,9 @@ const chartRangeConfig: Record<
 const candleCache = new Map<
   string,
   {
+    attemptedAt: number;
     expiresAt: number;
-    value: Awaited<ReturnType<typeof fetchFreshTwelveDataCandles>>;
+    value?: Awaited<ReturnType<typeof fetchFreshTwelveDataCandles>>;
   }
 >();
 
@@ -214,15 +220,31 @@ export async function fetchTwelveDataCandles(symbol: string, range: ChartRange) 
   const config = chartRangeConfig[range];
   const cacheKey = `${normalizedSymbol}:${range}`;
   const cachedValue = candleCache.get(cacheKey);
+  const now = Date.now();
 
-  if (cachedValue && cachedValue.expiresAt > Date.now()) {
+  if (cachedValue?.value && cachedValue.expiresAt > now) {
     return cachedValue.value;
   }
+
+  if (cachedValue && wasAttemptedRecently(cachedValue.attemptedAt, now)) {
+    if (cachedValue.value) {
+      return cachedValue.value;
+    }
+
+    throw new ExternalDataCooldownError("Chart data was requested recently.");
+  }
+
+  candleCache.set(cacheKey, {
+    attemptedAt: now,
+    expiresAt: cachedValue?.expiresAt ?? 0,
+    value: cachedValue?.value,
+  });
 
   const freshValue = await fetchFreshTwelveDataCandles(normalizedSymbol, range);
 
   candleCache.set(cacheKey, {
-    expiresAt: Date.now() + config.cacheTtlMs,
+    attemptedAt: now,
+    expiresAt: now + config.cacheTtlMs,
     value: freshValue,
   });
 

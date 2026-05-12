@@ -1,3 +1,5 @@
+import { requireAuthenticatedUser } from "@/lib/api-auth";
+import { ExternalDataCooldownError } from "@/lib/external-data";
 import {
   fetchTwelveDataCandles,
   isChartRange,
@@ -10,6 +12,12 @@ export const dynamic = "force-dynamic";
 const symbolPattern = /^[A-Z0-9.-]{1,15}$/;
 
 export async function GET(req: Request) {
+  const unauthorizedResponse = await requireAuthenticatedUser();
+
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
+  }
+
   const url = new URL(req.url);
   const symbol = url.searchParams.get("symbol")?.trim().toUpperCase() ?? "";
   const rangeParam = url.searchParams.get("range")?.trim().toUpperCase() ?? "1M";
@@ -28,7 +36,16 @@ export async function GET(req: Request) {
     const data = await fetchTwelveDataCandles(symbol, range);
 
     return NextResponse.json(data);
-  } catch {
+  } catch (error) {
+    if (error instanceof ExternalDataCooldownError) {
+      return NextResponse.json(
+        {
+          error: "Chart data was requested recently. Try again shortly.",
+        },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: "Chart data failed.",
