@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 type Theme = "dark" | "light";
 
@@ -31,6 +32,7 @@ function getSystemTheme(): Theme {
 }
 
 export function ThemeSwitch() {
+  const t = useTranslations("theme");
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
@@ -61,7 +63,9 @@ export function ThemeSwitch() {
 
   return (
     <button
-      aria-label={`Switch to ${nextTheme} mode`}
+      aria-label={t("switchTo", {
+        theme: t(nextTheme),
+      })}
       aria-pressed={isDark}
       className="theme-switch"
       onClick={handleToggleTheme}

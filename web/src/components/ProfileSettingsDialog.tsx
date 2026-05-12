@@ -30,6 +30,7 @@ import {
   validateDisplayName,
 } from "@/lib/profile-rules";
 import type { UserProfile } from "@/lib/profile-types";
+import { useTranslations } from "next-intl";
 
 type ProfileSettingsDialogProps = {
   onClose: () => void;
@@ -71,6 +72,8 @@ export function ProfileSettingsDialog({
   onProfileSave,
   profile,
 }: ProfileSettingsDialogProps) {
+  const t = useTranslations("profile");
+  const commonT = useTranslations("common");
   const displayNameId = useId();
   const avatarInputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -226,13 +229,15 @@ export function ProfileSettingsDialog({
     }
 
     if (!allowedAvatarMimeTypes.has(file.type)) {
-      setError("Choose a JPEG, PNG, or WebP image.");
+      setError(t("errors.imageType"));
       return;
     }
 
     if (file.size > avatarUploadRules.maxSize) {
       setError(
-        `Avatar must be ${formatMegabytes(avatarUploadRules.maxSize)} or smaller.`
+        t("errors.tooLarge", {
+          size: formatMegabytes(avatarUploadRules.maxSize),
+        })
       );
       return;
     }
@@ -355,7 +360,7 @@ export function ProfileSettingsDialog({
     const validation = validateDisplayName(displayName);
 
     if (validation.error || !validation.value) {
-      setError(validation.error ?? "Invalid display name.");
+      setError(translateDisplayNameError(validation.error));
       return;
     }
 
@@ -392,17 +397,55 @@ export function ProfileSettingsDialog({
         | null;
 
       if (!response.ok || !body?.profile) {
-        setError(body?.error ?? "Profile could not be saved.");
+        setError(translateProfileError(body?.error));
         return;
       }
 
       onProfileSave(body.profile);
       onClose();
     } catch {
-      setError("Profile could not be saved.");
+      setError(t("errors.profileSave"));
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function translateDisplayNameError(error: string | null | undefined) {
+    const messages: Record<string, string> = {
+      "Display name contains unsupported characters.": t(
+        "errors.displayNameUnsupported"
+      ),
+      "Display name must be 32 characters or fewer.": t(
+        "errors.displayNameMax"
+      ),
+      "Display name must be at least 3 characters.": t("errors.displayNameMin"),
+      "Display name must include at least one letter or number.": t(
+        "errors.displayNameLetters"
+      ),
+    };
+
+    return error
+      ? messages[error] ?? t("errors.displayNameInvalid")
+      : t("errors.displayNameInvalid");
+  }
+
+  function translateProfileError(error: unknown) {
+    if (typeof error !== "string") {
+      return t("errors.profileSave");
+    }
+
+    const messages: Record<string, string> = {
+      "Avatar must be 5 MB or smaller.": t("errors.tooLarge", {
+        size: formatMegabytes(avatarUploadRules.maxSize),
+      }),
+      "Avatar must be a JPEG, PNG, or WebP image.": t("errors.imageType"),
+      "Avatar file content does not match its image type.": t("errors.imageType"),
+      "Avatar file is empty.": t("errors.imageType"),
+      "Invalid display name.": t("errors.displayNameInvalid"),
+      "Profile could not be saved.": t("errors.profileSave"),
+    };
+
+    return messages[error] ?? translateDisplayNameError(error);
   }
 
   return (
@@ -420,13 +463,13 @@ export function ProfileSettingsDialog({
         <header className="profile-dialog-header">
           <div>
             <h2 className="profile-dialog-title" id="profile-dialog-title">
-              Profile settings
+              {t("title")}
             </h2>
             <p className="profile-dialog-email">{profile.email}</p>
           </div>
 
           <button
-            aria-label="Close profile settings"
+            aria-label={t("aria.closeSettings")}
             className="profile-dialog-close"
             disabled={isSaving}
             onClick={onClose}
@@ -441,7 +484,7 @@ export function ProfileSettingsDialog({
             <div className="profile-avatar-summary">
               <div className="profile-avatar-preview-shell">
                 <button
-                  aria-label="Edit profile photo crop"
+                  aria-label={t("aria.editCrop")}
                   className="profile-avatar-preview"
                   disabled={!hasAvatar}
                   onClick={openCropEditor}
@@ -453,7 +496,7 @@ export function ProfileSettingsDialog({
                   />
                 </button>
                 <button
-                  aria-label="Choose profile image"
+                  aria-label={t("aria.chooseImage")}
                   className="profile-avatar-upload-button"
                   onClick={() => fileInputRef.current?.click()}
                   type="button"
@@ -469,7 +512,7 @@ export function ProfileSettingsDialog({
                   onClick={handleRemoveAvatar}
                   type="button"
                 >
-                  Remove
+                  {t("buttons.remove")}
                 </button>
                 <input
                   accept={avatarUploadRules.accept}
@@ -485,7 +528,7 @@ export function ProfileSettingsDialog({
 
           <section className="profile-section">
             <label className="form-field" htmlFor={displayNameId}>
-              <span className="form-label">Display name</span>
+              <span className="form-label">{t("displayName")}</span>
               <input
                 className="form-input"
                 id={displayNameId}
@@ -498,28 +541,28 @@ export function ProfileSettingsDialog({
           </section>
 
           <section className="profile-section">
-            <h3 className="profile-section-title">Watchlist</h3>
+            <h3 className="profile-section-title">{t("watchlist")}</h3>
             <div className="profile-watchlist-actions">
               <button
                 className="outline-button profile-inline-button"
                 disabled
                 type="button"
               >
-                Download CSV/JSON
+                {t("buttons.downloadWatchlist")}
               </button>
               <button
                 className="outline-button profile-inline-button"
                 disabled
                 type="button"
               >
-                Upload CSV/JSON
+                {t("buttons.uploadWatchlist")}
               </button>
               <button
                 className="outline-button profile-inline-button"
                 disabled
                 type="button"
               >
-                Import CSV/JSON
+                {t("buttons.importWatchlist")}
               </button>
             </div>
           </section>
@@ -536,14 +579,14 @@ export function ProfileSettingsDialog({
             onClick={onClose}
             type="button"
           >
-            Cancel
+            {commonT("cancel")}
           </button>
           <button
             className="primary-button profile-footer-button"
             disabled={isSaving}
             type="submit"
           >
-            {isSaving ? "Saving..." : "Save changes"}
+            {isSaving ? commonT("saving") : commonT("saveChanges")}
           </button>
         </footer>
 
@@ -553,15 +596,15 @@ export function ProfileSettingsDialog({
             onPointerDown={handleCropBackdropPointerDown}
           >
             <section
-              aria-label="Edit profile photo crop"
+              aria-label={t("aria.editCrop")}
               aria-modal="true"
               className="profile-crop-dialog"
               role="dialog"
             >
               <header className="profile-crop-header">
-                <h3 className="profile-crop-title">Edit photo</h3>
+                <h3 className="profile-crop-title">{t("editPhoto")}</h3>
                 <button
-                  aria-label="Close photo editor"
+                  aria-label={t("aria.closeCrop")}
                   className="profile-dialog-close"
                   onClick={() => setIsCropEditorOpen(false)}
                   type="button"
@@ -572,7 +615,7 @@ export function ProfileSettingsDialog({
 
               <div className="profile-crop-editor">
                 <div
-                  aria-label="Move profile photo behind the crop circle"
+                  aria-label={t("aria.moveCrop")}
                   className={`profile-crop-stage${
                     isCropMovable ? " profile-crop-stage-movable" : ""
                   }`}
@@ -602,7 +645,7 @@ export function ProfileSettingsDialog({
 
                 <div className="profile-zoom-control">
                   <button
-                    aria-label="Zoom out"
+                    aria-label={t("aria.zoomOut")}
                     className="profile-zoom-button"
                     disabled={cropDraftScale <= 1}
                     onClick={() =>
@@ -613,7 +656,7 @@ export function ProfileSettingsDialog({
                     <span aria-hidden="true" className="profile-minus-icon" />
                   </button>
                   <input
-                    aria-label="Profile photo zoom"
+                    aria-label={t("aria.zoom")}
                     max="2.5"
                     min="1"
                     onChange={(event) =>
@@ -624,7 +667,7 @@ export function ProfileSettingsDialog({
                     value={cropDraftScale}
                   />
                   <button
-                    aria-label="Zoom in"
+                    aria-label={t("aria.zoomIn")}
                     className="profile-zoom-button"
                     disabled={cropDraftScale >= 2.5}
                     onClick={() =>
@@ -642,7 +685,7 @@ export function ProfileSettingsDialog({
                     onClick={saveCropDraft}
                     type="button"
                   >
-                    Save
+                    {commonT("save")}
                   </button>
                 </div>
               </div>

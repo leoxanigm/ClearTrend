@@ -120,11 +120,11 @@ A retenir:
 
 ### P1 - Modules frontend choisis
 
-- [ ] Multi langue EN/FR/ES.
-  - Choisir lib (`next-intl` ou equivalent simple).
-  - Sortir les strings UI dans des dictionnaires.
-  - Ajouter selecteur de langue dans user menu ou settings.
-  - Traduire login, dashboard, profil, erreurs, legal pages.
+- [x] Multi langue EN/FR/ES.
+  - `next-intl` sans prefixe d'URL.
+  - Textes dans `web/langages/en.json`, `fr.json`, `es.json`.
+  - Selecteur de langue sur login et dans le user menu.
+  - Login, dashboard, profil, watchlist, chart, erreurs front et legal pages traduits.
 
 - [ ] Advanced search.
   - Resultats mieux structures: symbol, name, type, exchange.

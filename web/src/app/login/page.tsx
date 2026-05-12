@@ -3,23 +3,15 @@
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
 import { Button } from "@/components/ui/Button";
+import { LanguageSelect } from "@/components/ui/LanguageSelect";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { TextInput } from "@/components/ui/TextInput";
+import { useTranslations } from "next-intl";
 import { FormMode, useLoginPage } from "./login";
 import { OAuthButtons } from "./OAuthButtons";
 
-const authModes: Array<{ label: string; value: FormMode }> = [
-  {
-    label: "Login",
-    value: "login",
-  },
-  {
-    label: "Register",
-    value: "register",
-  },
-];
-
 export default function LoginPage() {
+  const t = useTranslations("login");
   const {
     confirmPassword,
     email,
@@ -33,10 +25,20 @@ export default function LoginPage() {
     setEmail,
     setPassword,
   } = useLoginPage();
+  const authModes: Array<{ label: string; value: FormMode }> = [
+    {
+      label: t("modes.login"),
+      value: "login",
+    },
+    {
+      label: t("modes.register"),
+      value: "register",
+    },
+  ];
 
   return (
     <main className="auth-page">
-      <section className="space-y-8">
+      <section className="auth-main space-y-8">
         <div className="space-y-3 text-center">
           {/* Logo */}
           <AppLogo size="large" />
@@ -53,7 +55,7 @@ export default function LoginPage() {
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             {/* User credentials. */}
             <TextInput
-              label="Email"
+              label={t("fields.email")}
               name="email"
               onChange={(event) => setEmail(event.target.value)}
               required
@@ -62,7 +64,7 @@ export default function LoginPage() {
             />
 
             <TextInput
-              label="Password"
+              label={t("fields.password")}
               name="password"
               onChange={(event) => setPassword(event.target.value)}
               minLength={mode === "register" ? 8 : undefined}
@@ -74,7 +76,7 @@ export default function LoginPage() {
             {/* If register => password confirmation */}
             {mode === "register" && (
               <TextInput
-                label="Confirm password"
+                label={t("fields.confirmPassword")}
                 name="confirmPassword"
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 minLength={8}
@@ -94,21 +96,23 @@ export default function LoginPage() {
             <Button disabled={isSubmitting} type="submit">
               {isSubmitting
                 ? mode === "register"
-                  ? "Creating account..."
-                  : "Signing in..."
+                  ? t("submit.registerLoading")
+                  : t("submit.loginLoading")
                 : mode === "register"
-                  ? "Create account"
-                  : "Continue"}
+                  ? t("submit.register")
+                  : t("submit.login")}
             </Button>
           </form>
         </div>
 
         {/* OAuth buttons */}
         <OAuthButtons />
-
-        {/* Footer */}
-        <FooterLinks />
       </section>
+
+      <div className="auth-footer-stack">
+        <LanguageSelect className="language-select language-select-auth" />
+        <FooterLinks className="footer-links auth-footer-links" />
+      </div>
     </main>
   );
 }

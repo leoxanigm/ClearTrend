@@ -7,9 +7,11 @@ import { FooterLinks } from "@/components/FooterLinks";
 import { ProfileSettingsDialog } from "@/components/ProfileSettingsDialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { WatchlistNav } from "@/components/WatchlistNav";
+import { LanguageSelect } from "@/components/ui/LanguageSelect";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
 import type { WatchlistAsset } from "@/lib/assets";
 import type { UserProfile } from "@/lib/profile-types";
+import { useTranslations } from "next-intl";
 import { signOut } from "next-auth/react";
 
 type DashboardClientProps = {
@@ -17,21 +19,12 @@ type DashboardClientProps = {
   watchlistAssets: WatchlistAsset[];
 };
 
-const footerItems = [
-  {
-    href: "/privacy",
-    label: "Privacy",
-  },
-  {
-    href: "/terms",
-    label: "Terms",
-  },
-];
-
 export function DashboardClient({
   userProfile,
   watchlistAssets: initialWatchlistAssets,
 }: DashboardClientProps) {
+  const t = useTranslations("dashboard");
+  const commonT = useTranslations("common");
   const userMenuRef = useRef<HTMLDetailsElement>(null);
   const [profile, setProfile] = useState(userProfile);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
@@ -78,6 +71,17 @@ export function DashboardClient({
     setIsProfileDialogOpen(true);
   }
 
+  const footerItems = [
+    {
+      href: "/privacy",
+      label: commonT("privacy"),
+    },
+    {
+      href: "/terms",
+      label: commonT("terms"),
+    },
+  ];
+
   return (
     <main className="app-shell">
       <input
@@ -88,7 +92,7 @@ export function DashboardClient({
 
       <aside className="app-sidebar app-sidebar-desktop">
         <AppLogo
-          ariaLabel="ClearTrend dashboard"
+          ariaLabel={t("logoAria")}
           href="/dashboard"
           size="small"
         />
@@ -100,7 +104,7 @@ export function DashboardClient({
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
 
-        <FooterLinks className="mt-auto flex gap-3 text-xs" items={footerItems} />
+        <FooterLinks className="sidebar-footer-links" items={footerItems} />
       </aside>
 
       <label
@@ -111,7 +115,7 @@ export function DashboardClient({
 
       <aside className="mobile-drawer">
         <AppLogo
-          ariaLabel="ClearTrend dashboard"
+          ariaLabel={t("logoAria")}
           href="/dashboard"
           size="small"
         />
@@ -124,14 +128,14 @@ export function DashboardClient({
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
 
-        <FooterLinks className="mt-auto flex gap-3 text-xs" items={footerItems} />
+        <FooterLinks className="sidebar-footer-links" items={footerItems} />
       </aside>
 
       <section className="app-content">
         <header className="dashboard-header">
           <div className="dashboard-title">
             <label
-              aria-label="Open watchlist"
+              aria-label={t("openWatchlist")}
               className="mobile-menu-button"
               htmlFor="dashboard-drawer"
             >
@@ -139,13 +143,15 @@ export function DashboardClient({
             </label>
 
             <div>
-              <h1 className="text-3xl font-semibold">Overview</h1>
+              <h1 className="text-3xl font-semibold">{t("overview")}</h1>
             </div>
           </div>
 
           <details className="user-menu" ref={userMenuRef}>
             <summary
-              aria-label={`Open user menu for ${profile.displayName}`}
+              aria-label={t("openUserMenu", {
+                name: profile.displayName,
+              })}
               className="user-menu-trigger"
             >
               <UserAvatar className="user-menu-avatar" profile={profile} />
@@ -159,12 +165,16 @@ export function DashboardClient({
                 onClick={handleOpenProfileDialog}
                 type="button"
               >
-                Profile settings
+                {t("profileSettings")}
               </button>
 
               <div className="user-menu-row">
-                <span>Theme</span>
+                <span>{t("theme")}</span>
                 <ThemeSwitch />
+              </div>
+
+              <div className="user-menu-row">
+                <LanguageSelect className="language-select language-select-menu" />
               </div>
 
               <div className="user-menu-form">
@@ -174,7 +184,7 @@ export function DashboardClient({
                   onClick={handleLogout}
                   type="button"
                 >
-                  {isLoggingOut ? "Logging out..." : "Logout"}
+                  {isLoggingOut ? t("loggingOut") : t("logout")}
                 </button>
               </div>
             </div>
@@ -186,16 +196,16 @@ export function DashboardClient({
 
           <aside className="dashboard-summary-grid">
             <div className="app-card p-4">
-              <p className="app-eyebrow">Trend</p>
+              <p className="app-eyebrow">{t("trend")}</p>
               <p className="mt-2 text-2xl font-semibold text-[var(--app-accent)]">
-                Neutral
+                {t("trendNeutral")}
               </p>
             </div>
 
             <div className="app-card p-4">
-              <p className="app-eyebrow">Sentiment</p>
+              <p className="app-eyebrow">{t("sentiment")}</p>
               <p className="mt-2 text-2xl font-semibold text-[var(--app-secondary)]">
-                Pending
+                {t("sentimentPending")}
               </p>
             </div>
           </aside>

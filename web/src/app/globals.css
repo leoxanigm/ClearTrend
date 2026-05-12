@@ -730,6 +730,41 @@ input {
     transform: translate(1.25rem, -50%);
 }
 
+.language-select {
+    display: grid;
+    gap: 0.375rem;
+}
+
+.language-select-label {
+    color: var(--app-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.language-select-control {
+    min-width: 8.5rem;
+    border: 1px solid var(--app-border);
+    border-radius: 0.375rem;
+    background: var(--app-surface);
+    color: var(--app-text);
+    cursor: pointer;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.language-select-control:focus {
+    border-color: var(--app-accent);
+    outline: none;
+}
+
+.language-select-auth {
+    justify-items: center;
+}
+
+.language-select-menu {
+    width: 100%;
+}
+
 .mobile-menu-button,
 .mobile-drawer,
 .mobile-drawer-toggle,
@@ -738,13 +773,23 @@ input {
 }
 
 .auth-page {
-    display: flex;
+    display: grid;
     min-height: 100vh;
     max-width: 28rem;
-    flex-direction: column;
-    justify-content: center;
+    grid-template-rows: 1fr auto;
     margin: 0 auto;
     padding: 2.5rem 1.5rem;
+}
+
+.auth-main {
+    align-self: center;
+}
+
+.auth-footer-stack {
+    display: grid;
+    gap: 0.75rem;
+    justify-items: center;
+    padding-top: 2rem;
 }
 
 .legal-page {
@@ -1123,6 +1168,7 @@ input {
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-right: 0.25rem;
+    padding-bottom: 1rem;
 }
 
 .watchlist-nav::-webkit-scrollbar {
@@ -1380,6 +1426,34 @@ input {
     justify-content: center;
     gap: 1rem;
     font-size: 0.875rem;
+}
+
+.sidebar-footer-links {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 0.875rem;
+    padding-top: 0.75rem;
+    text-align: center;
+    font-size: 0.75rem;
+}
+
+.footer-links.auth-footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 24rem);
+    gap: 1rem;
+}
+
+.footer-links.auth-footer-links .app-link:first-child {
+    justify-self: end;
+    text-align: right;
+}
+
+.footer-links.auth-footer-links .app-link:last-child {
+    justify-self: start;
+    text-align: left;
 }
 
 .legal-copy {

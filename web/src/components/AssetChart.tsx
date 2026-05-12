@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { WatchlistAsset } from "@/lib/assets";
 import type { ChartCandle } from "@/lib/twelvedata";
+import { useLocale, useTranslations } from "next-intl";
 
 type AssetChartProps = {
   asset: WatchlistAsset | null;
@@ -52,12 +53,17 @@ const compactChartSize: ChartSize = {
   width: 360,
 };
 
-function formatPrice(value: number | null, currency?: string | null) {
+function formatPrice(
+  value: number | null,
+  currency: string | null | undefined,
+  locale: string,
+  fallback: string
+) {
   if (value === null) {
-    return "N/A";
+    return fallback;
   }
 
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(locale, {
     currency: currency ?? "USD",
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
@@ -65,33 +71,33 @@ function formatPrice(value: number | null, currency?: string | null) {
   }).format(value);
 }
 
-function formatPercent(value: number | null) {
+function formatPercent(value: number | null, fallback: string) {
   if (value === null) {
-    return "N/A";
+    return fallback;
   }
 
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
-function formatVolume(value: number | null) {
+function formatVolume(value: number | null, locale: string, fallback: string) {
   if (value === null) {
-    return "N/A";
+    return fallback;
   }
 
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(locale, {
     maximumFractionDigits: 1,
     notation: "compact",
   }).format(value);
 }
 
-function formatAxisPrice(value: number) {
-  return new Intl.NumberFormat("en-US", {
+function formatAxisPrice(value: number, locale: string) {
+  return new Intl.NumberFormat(locale, {
     maximumFractionDigits: value >= 100 ? 0 : 2,
     notation: value >= 1000 ? "compact" : "standard",
   }).format(value);
 }
 
-function formatAxisDate(datetime: string, range: ChartRange) {
+function formatAxisDate(datetime: string, range: ChartRange, locale: string) {
   const [datePart, timePart] = datetime.split(" ");
 
   if (range === "1D" && timePart) {
@@ -100,13 +106,17 @@ function formatAxisDate(datetime: string, range: ChartRange) {
 
   const date = new Date(`${datePart}T00:00:00`);
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: range === "1Y" ? "short" : "2-digit",
   }).format(date);
 }
 
-function formatTooltipDate(datetime: string, range: ChartRange) {
+function formatTooltipDate(
+  datetime: string,
+  range: ChartRange,
+  locale: string
+) {
   const [datePart, timePart] = datetime.split(" ");
   const date = new Date(`${datePart}T${timePart ?? "00:00:00"}`);
 
@@ -114,7 +124,7 @@ function formatTooltipDate(datetime: string, range: ChartRange) {
     return datetime;
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     hour: timePart ? "2-digit" : undefined,
     minute: timePart ? "2-digit" : undefined,
@@ -136,7 +146,8 @@ function getPerformanceClass(value: number | null) {
 function buildChartData(
   candles: ChartCandle[],
   range: ChartRange,
-  chartSize: ChartSize
+  chartSize: ChartSize,
+  locale: string
 ) {
   if (candles.length === 0) {
     return {
@@ -209,18 +220,21 @@ function buildChartData(
 
       return {
         anchor,
-        label: formatAxisDate(candles[index].datetime, range),
+        label: formatAxisDate(candles[index].datetime, range, locale),
         x: getX(index),
       };
     }),
     yTicks: yTickValues.map((value) => ({
-      label: formatAxisPrice(value),
+      label: formatAxisPrice(value, locale),
       y: getY(value),
     })),
   };
 }
 
 export function AssetChart({ asset }: AssetChartProps) {
+  const locale = useLocale();
+  const t = useTranslations("chart");
+  const commonT = useTranslations("common");
   const [isCompactChart, setIsCompactChart] = useState(false);
   const [range, setRange] = useState<ChartRange>("1M");
   const [candles, setCandles] = useState<ChartCandle[]>([]);
@@ -291,7 +305,7 @@ export function AssetChart({ asset }: AssetChartProps) {
       } catch {
         if (!controller.signal.aborted) {
           setCandles([]);
-          setError("Chart unavailable");
+          setError(t("unavailable"));
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -305,12 +319,12 @@ export function AssetChart({ asset }: AssetChartProps) {
     return () => {
       controller.abort();
     };
-  }, [asset?.symbol, range]);
+  }, [asset?.symbol, range, t]);
 
   const chartSize = isCompactChart ? compactChartSize : desktopChartSize;
   const chartData = useMemo(
-    () => buildChartData(candles, range, chartSize),
-    [candles, chartSize, range]
+    () => buildChartData(candles, range, chartSize, locale),
+    [candles, chartSize, locale, range]
   );
   const firstCandle = candles[0] ?? null;
   const lastCandle = candles[candles.length - 1] ?? null;
@@ -358,19 +372,26 @@ export function AssetChart({ asset }: AssetChartProps) {
     <section className="asset-chart">
       <header className="asset-chart-header">
         <div className="asset-chart-title">
-          <p className="app-eyebrow">{asset?.symbol ?? "Chart"}</p>
-          <h2>{asset?.name ?? "No asset selected"}</h2>
+          <p className="app-eyebrow">{asset?.symbol ?? t("titleFallback")}</p>
+          <h2>{asset?.name ?? t("noAsset")}</h2>
         </div>
 
         <div className="asset-chart-price">
-          <span>{formatPrice(lastCandle?.close ?? asset?.lastPrice ?? null, currency)}</span>
+          <span>
+            {formatPrice(
+              lastCandle?.close ?? asset?.lastPrice ?? null,
+              currency,
+              locale,
+              commonT("na")
+            )}
+          </span>
           <span className={getPerformanceClass(rangeChangePercent)}>
-            {formatPercent(rangeChangePercent)}
+            {formatPercent(rangeChangePercent, commonT("na"))}
           </span>
         </div>
       </header>
 
-      <div className="asset-chart-ranges" aria-label="Chart range">
+      <div className="asset-chart-ranges" aria-label={t("rangeLabel")}>
         {chartRanges.map((option) => (
           <button
             aria-pressed={range === option}
@@ -385,13 +406,15 @@ export function AssetChart({ asset }: AssetChartProps) {
       </div>
 
       <div className="asset-chart-body">
-        {isLoading && <div className="chart-state">Loading chart...</div>}
+        {isLoading && <div className="chart-state">{t("loading")}</div>}
 
         {!isLoading && error && <div className="chart-state">{error}</div>}
 
         {!isLoading && !error && candles.length > 0 && (
           <svg
-            aria-label={`${asset?.symbol ?? "Asset"} price chart`}
+            aria-label={t("priceChart", {
+              symbol: asset?.symbol ?? t("titleFallback"),
+            })}
             className="asset-chart-svg"
             onMouseLeave={() => setHoveredPoint(null)}
             onMouseMove={handleChartMouseMove}
@@ -486,10 +509,19 @@ export function AssetChart({ asset }: AssetChartProps) {
                     width={tooltipWidth}
                   />
                   <text className="asset-chart-tooltip-value" x="10" y="19">
-                    {formatPrice(hoveredPoint.candle.close, currency)}
+                    {formatPrice(
+                      hoveredPoint.candle.close,
+                      currency,
+                      locale,
+                      commonT("na")
+                    )}
                   </text>
                   <text className="asset-chart-tooltip-date" x="10" y="36">
-                    {formatTooltipDate(hoveredPoint.candle.datetime, range)}
+                    {formatTooltipDate(
+                      hoveredPoint.candle.datetime,
+                      range,
+                      locale
+                    )}
                   </text>
                 </g>
               </g>
@@ -499,10 +531,14 @@ export function AssetChart({ asset }: AssetChartProps) {
       </div>
 
       <footer className="asset-chart-footer">
-        <span>{candles.length} points</span>
+        <span>{t("points", { count: candles.length })}</span>
         <span>{interval ?? range}</span>
-        <span>{exchange ?? "Twelve Data"}</span>
-        <span>Volume {formatVolume(lastCandle?.volume ?? null)}</span>
+        <span>{exchange ?? t("providerFallback")}</span>
+        <span>
+          {t("volume", {
+            value: formatVolume(lastCandle?.volume ?? null, locale, commonT("na")),
+          })}
+        </span>
       </footer>
     </section>
   );

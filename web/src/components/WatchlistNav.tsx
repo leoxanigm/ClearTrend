@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { WatchlistAsset } from "@/lib/assets";
+import { useTranslations } from "next-intl";
 
 type SortMode = "dp-asc" | "dp-desc" | "name-asc" | "name-desc";
 
@@ -20,21 +21,21 @@ type AssetSearchResult = {
   type: string | null;
 };
 
-const sortOptions: Array<{ label: string; value: SortMode }> = [
+const sortOptions: Array<{ labelKey: string; value: SortMode }> = [
   {
-    label: "A-Z",
+    labelKey: "nameAsc",
     value: "name-asc",
   },
   {
-    label: "Z-A",
+    labelKey: "nameDesc",
     value: "name-desc",
   },
   {
-    label: "Best day",
+    labelKey: "bestDay",
     value: "dp-desc",
   },
   {
-    label: "Worst day",
+    labelKey: "worstDay",
     value: "dp-asc",
   },
 ];
@@ -171,6 +172,7 @@ export function WatchlistNav({
   onSelectSymbol,
   selectedSymbol,
 }: WatchlistNavProps) {
+  const t = useTranslations("watchlist");
   const [sortMode, setSortMode] = useState<SortMode>("name-asc");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AssetSearchResult[]>([]);
@@ -208,11 +210,11 @@ export function WatchlistNav({
         const nextResults = body.results ?? [];
 
         setResults(nextResults);
-        setSearchMessage(nextResults.length === 0 ? "No result" : null);
+        setSearchMessage(nextResults.length === 0 ? t("noResult") : null);
       } catch {
         if (!controller.signal.aborted) {
           setResults([]);
-          setSearchMessage("Search failed");
+          setSearchMessage(t("searchFailed"));
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -225,7 +227,7 @@ export function WatchlistNav({
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [query]);
+  }, [query, t]);
 
   const sortedAssets = useMemo(
     () => sortAssets(assets, sortMode),
@@ -279,7 +281,7 @@ export function WatchlistNav({
       return;
     }
 
-    setSearchMessage("Adding...");
+    setSearchMessage(t("adding"));
 
     try {
       const response = await fetch(
@@ -305,7 +307,7 @@ export function WatchlistNav({
       setResults([]);
       setSearchMessage(null);
     } catch {
-      setSearchMessage("Could not add asset");
+      setSearchMessage(t("addFailed"));
     }
   }
 
@@ -313,13 +315,13 @@ export function WatchlistNav({
     <div className="watchlist-panel mt-5">
       <div className="asset-search">
         <label className="watchlist-sort-label" htmlFor={searchInputId}>
-          Search asset
+          {t("searchAsset")}
         </label>
         <input
           className="asset-search-input"
           id={searchInputId}
           onChange={(event) => handleQueryChange(event.target.value)}
-          placeholder="Apple, TSLA..."
+          placeholder={t("searchPlaceholder")}
           type="search"
           value={query}
         />
@@ -327,7 +329,7 @@ export function WatchlistNav({
         {(results.length > 0 || isSearching || searchMessage) && (
           <div className="asset-search-results">
             {isSearching && (
-              <p className="asset-search-message">Searching...</p>
+              <p className="asset-search-message">{t("searching")}</p>
             )}
 
             {!isSearching &&
@@ -355,7 +357,7 @@ export function WatchlistNav({
       </div>
 
       <label className="watchlist-sort">
-        <span className="watchlist-sort-label">Sort</span>
+        <span className="watchlist-sort-label">{t("sort")}</span>
         <select
           className="watchlist-sort-select"
           onChange={(event) => setSortMode(event.target.value as SortMode)}
@@ -363,7 +365,7 @@ export function WatchlistNav({
         >
           {sortOptions.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {t(`sortOptions.${option.labelKey}`)}
             </option>
           ))}
         </select>
