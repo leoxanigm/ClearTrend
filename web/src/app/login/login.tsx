@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
 export type FormMode = "login" | "register";
@@ -8,6 +9,7 @@ type MessageType = "error" | "success";
 
 // Hook that owns the login/register form behavior
 export function useLoginPage() {
+  const t = useTranslations("login.feedback");
   // Router is used for client-side redirects after auth checks
   const router = useRouter();
 
@@ -75,7 +77,7 @@ export function useLoginPage() {
     if (mode === "register" && password !== confirmPassword) {
       setMessage({
         type: "error",
-        text: "Passwords do not match.",
+        text: t("passwordMismatch"),
       });
       return;
     }
@@ -84,7 +86,7 @@ export function useLoginPage() {
     if (mode === "register" && password.length < 8) {
       setMessage({
         type: "error",
-        text: "Password must be at least 8 characters.",
+        text: t("passwordTooShort"),
       });
       return;
     }
@@ -95,7 +97,7 @@ export function useLoginPage() {
 
     // Generic fallback text if the backend sends no usable error
     const fallbackError =
-      mode === "login" ? "Login failed." : "Registration failed.";
+      mode === "login" ? t("loginFailed") : t("registrationFailed");
 
     // Disable the form submit button while the request is running
     setIsSubmitting(true);
@@ -119,7 +121,7 @@ export function useLoginPage() {
 
         setMessage({
           type: "error",
-          text: body?.error ?? fallbackError,
+          text: translateAuthError(body?.error, fallbackError),
         });
         return;
       }
@@ -128,7 +130,7 @@ export function useLoginPage() {
       if (mode === "login") {
         setMessage({
           type: "success",
-          text: "Logged in.",
+          text: t("loggedIn"),
         });
         router.replace("/dashboard");
         return;
@@ -141,7 +143,7 @@ export function useLoginPage() {
       setMode("login");
       setMessage({
         type: "success",
-        text: "Account created. You can log in now.",
+        text: t("accountCreated"),
       });
     } catch {
       // Network or unexpected client-side failures use the fallback message
@@ -153,6 +155,24 @@ export function useLoginPage() {
       // Always re-enable submission after the request finishes
       setIsSubmitting(false);
     }
+  }
+
+  function translateAuthError(error: unknown, fallback: string) {
+    if (typeof error !== "string") {
+      return fallback;
+    }
+
+    const messages: Record<string, string> = {
+      "Email already exists.": t("emailAlreadyExists"),
+      "Invalid email or password.": t("invalidCredentials"),
+      "Invalid email.": t("invalidEmail"),
+      "Invalid request body.": fallback,
+      "Missing fields": t("missingFields"),
+      "Password must be at least 8 characters.": t("passwordTooShort"),
+      "Server error": t("serverError"),
+    };
+
+    return messages[error] ?? fallback;
   }
 
   // Expose state and actions to the page component

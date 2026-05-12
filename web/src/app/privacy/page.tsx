@@ -2,14 +2,17 @@ import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
 import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 
 export default async function PrivacyPage() {
+  const t = await getTranslations("legal");
+  const commonT = await getTranslations("common");
   const cookieStore = await cookies();
   const session = verifySessionToken(
     cookieStore.get(sessionCookieName)?.value
   );
   const homeHref = session ? "/dashboard" : "/login";
-  const homeLabel = session ? "Dashboard" : "Login";
+  const homeLabel = session ? commonT("dashboard") : commonT("login");
 
   return (
     <main className="legal-page">
@@ -22,27 +25,16 @@ export default async function PrivacyPage() {
       <article className="mt-16 space-y-6">
         <div className="space-y-3">
           <p className="app-eyebrow uppercase tracking-wide">
-            Legal
+            {commonT("legal")}
           </p>
-          <h1 className="text-4xl font-semibold">Privacy Policy</h1>
+          <h1 className="text-4xl font-semibold">{t("privacy.title")}</h1>
         </div>
 
-        <p className="legal-copy">
-          ClearTrend is an educational project. The application may store
-          account information, watchlist entries, preferences, and technical
-          logs needed to run and secure the service.
-        </p>
+        <p className="legal-copy">{t("privacy.p1")}</p>
 
-        <p className="legal-copy">
-          Financial data, sentiment results, and generated analysis are used to
-          display trends inside the product. They should not be treated as
-          professional financial advice.
-        </p>
+        <p className="legal-copy">{t("privacy.p2")}</p>
 
-        <p className="legal-copy">
-          Users can request profile updates or account deletion when account
-          management is implemented.
-        </p>
+        <p className="legal-copy">{t("privacy.p3")}</p>
       </article>
 
       <FooterLinks
@@ -54,7 +46,7 @@ export default async function PrivacyPage() {
           },
           {
             href: "/terms",
-            label: "Terms of Service",
+            label: commonT("terms"),
           },
         ]}
       />

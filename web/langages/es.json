@@ -1,0 +1,154 @@
+{
+  "language": {
+    "ariaLabel": "Elegir idioma",
+    "label": "Idioma",
+    "options": {
+      "en": "Inglés",
+      "es": "Español",
+      "fr": "Francés"
+    }
+  },
+  "common": {
+    "appName": "ClearTrend",
+    "cancel": "Cancelar",
+    "dashboard": "Panel",
+    "legal": "Legal",
+    "login": "Iniciar sesión",
+    "na": "N/A",
+    "privacy": "Política de privacidad",
+    "save": "Guardar",
+    "saveChanges": "Guardar cambios",
+    "saving": "Guardando...",
+    "terms": "Condiciones de servicio"
+  },
+  "footer": {
+    "privacy": "Política de privacidad",
+    "terms": "Condiciones de servicio"
+  },
+  "login": {
+    "fields": {
+      "confirmPassword": "Confirmar contraseña",
+      "email": "Email",
+      "password": "Contraseña"
+    },
+    "feedback": {
+      "accountCreated": "Cuenta creada. Ya puedes iniciar sesión.",
+      "emailAlreadyExists": "Este email ya existe.",
+      "invalidEmail": "Email inválido.",
+      "invalidCredentials": "Email o contraseña inválido.",
+      "loggedIn": "Sesión iniciada.",
+      "loginFailed": "No se pudo iniciar sesión.",
+      "missingFields": "Faltan campos.",
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
+      "registrationFailed": "No se pudo crear la cuenta.",
+      "serverError": "Error del servidor."
+    },
+    "modes": {
+      "login": "Iniciar sesión",
+      "register": "Crear cuenta"
+    },
+    "submit": {
+      "login": "Continuar",
+      "loginLoading": "Iniciando sesión...",
+      "register": "Crear cuenta",
+      "registerLoading": "Creando cuenta..."
+    }
+  },
+  "oauth": {
+    "continueWith": "Continuar con {provider}",
+    "groupLabel": "Opciones de inicio de sesión OAuth"
+  },
+  "dashboard": {
+    "logoAria": "Panel de ClearTrend",
+    "logout": "Cerrar sesión",
+    "loggingOut": "Cerrando sesión...",
+    "openUserMenu": "Abrir menú de usuario de {name}",
+    "openWatchlist": "Abrir watchlist",
+    "overview": "Resumen",
+    "profileSettings": "Ajustes del perfil",
+    "sentiment": "Sentimiento",
+    "sentimentPending": "Pendiente",
+    "theme": "Tema",
+    "trend": "Tendencia",
+    "trendNeutral": "Neutral"
+  },
+  "theme": {
+    "dark": "oscuro",
+    "light": "claro",
+    "switchTo": "Cambiar a modo {theme}"
+  },
+  "watchlist": {
+    "addFailed": "No se pudo añadir el asset",
+    "adding": "Añadiendo...",
+    "noResult": "Sin resultados",
+    "searchAsset": "Buscar asset",
+    "searchFailed": "Búsqueda fallida",
+    "searchPlaceholder": "Apple, TSLA...",
+    "searching": "Buscando...",
+    "sort": "Ordenar",
+    "sortOptions": {
+      "bestDay": "Mejor día",
+      "nameAsc": "A-Z",
+      "nameDesc": "Z-A",
+      "worstDay": "Peor día"
+    }
+  },
+  "chart": {
+    "loading": "Cargando gráfico...",
+    "noAsset": "Ningún asset seleccionado",
+    "points": "{count} puntos",
+    "priceChart": "Gráfico de precio de {symbol}",
+    "providerFallback": "Twelve Data",
+    "rangeLabel": "Rango del gráfico",
+    "titleFallback": "Gráfico",
+    "unavailable": "Gráfico no disponible",
+    "volume": "Volumen {value}"
+  },
+  "profile": {
+    "aria": {
+      "chooseImage": "Elegir imagen de perfil",
+      "closeCrop": "Cerrar editor de foto",
+      "closeSettings": "Cerrar ajustes del perfil",
+      "editCrop": "Editar encuadre de la foto",
+      "moveCrop": "Mover la foto detrás del círculo de recorte",
+      "zoom": "Zoom de la foto de perfil",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar"
+    },
+    "buttons": {
+      "downloadWatchlist": "Descargar CSV/JSON",
+      "importWatchlist": "Importar CSV/JSON",
+      "remove": "Eliminar",
+      "uploadWatchlist": "Subir CSV/JSON"
+    },
+    "displayName": "Nombre visible",
+    "editPhoto": "Editar foto",
+    "errors": {
+      "displayNameInvalid": "Nombre visible inválido.",
+      "displayNameLetters": "El nombre visible debe incluir al menos una letra o un número.",
+      "displayNameMax": "El nombre visible debe tener 32 caracteres o menos.",
+      "displayNameMin": "El nombre visible debe tener al menos 3 caracteres.",
+      "displayNameUnsupported": "El nombre visible contiene caracteres no soportados.",
+      "imageType": "Elige una imagen JPEG, PNG o WebP.",
+      "profileSave": "No se pudo guardar el perfil.",
+      "tooLarge": "El avatar debe pesar {size} o menos."
+    },
+    "title": "Ajustes del perfil",
+    "watchlist": "Watchlist"
+  },
+  "legal": {
+    "privacy": {
+      "title": "Política de privacidad",
+      "p1": "ClearTrend es un proyecto educativo. La aplicación puede almacenar información de cuenta, entradas de watchlist, preferencias y logs técnicos necesarios para ejecutar y proteger el servicio.",
+      "p2": "Los datos financieros, los resultados de sentimiento y los análisis generados se usan para mostrar tendencias dentro del producto. No deben considerarse asesoramiento financiero profesional.",
+      "p3": "Los usuarios podrán solicitar actualizaciones de perfil o eliminación de cuenta cuando se implemente la gestión de cuentas."
+    },
+    "terms": {
+      "title": "Condiciones de servicio",
+      "p1": "ClearTrend ofrece herramientas para explorar datos de mercado, watchlists y análisis automatizados en un contexto educativo.",
+      "p2": "La información mostrada por la aplicación no es asesoramiento de inversión. Los usuarios siguen siendo responsables de cualquier decisión tomada a partir de información externa de mercado o contenido generado.",
+      "p3": "El acceso al servicio puede cambiar durante el desarrollo a medida que se añaden autenticación, permisos y fuentes de datos."
+    }
+  }
+}

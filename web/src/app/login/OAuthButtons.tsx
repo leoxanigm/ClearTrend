@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { signIn } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 const oauthProviders = [
   {
@@ -25,15 +26,19 @@ const oauthProviders = [
 ] as const;
 
 export function OAuthButtons() {
+  const t = useTranslations("oauth");
+
   return (
     <div
-      aria-label="OAuth sign in options"
+      aria-label={t("groupLabel")}
       className="oauth-actions"
       role="group"
     >
       {oauthProviders.map((provider) => (
         <button
-          aria-label={`Continue with ${provider.label}`}
+          aria-label={t("continueWith", {
+            provider: provider.label,
+          })}
           className="oauth-button"
           key={provider.id}
           onClick={() =>

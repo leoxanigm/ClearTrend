@@ -1,0 +1,154 @@
+{
+  "language": {
+    "ariaLabel": "Choose language",
+    "label": "Language",
+    "options": {
+      "en": "English",
+      "es": "Spanish",
+      "fr": "French"
+    }
+  },
+  "common": {
+    "appName": "ClearTrend",
+    "cancel": "Cancel",
+    "dashboard": "Dashboard",
+    "legal": "Legal",
+    "login": "Login",
+    "na": "N/A",
+    "privacy": "Privacy Policy",
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "saving": "Saving...",
+    "terms": "Terms of Service"
+  },
+  "footer": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  },
+  "login": {
+    "fields": {
+      "confirmPassword": "Confirm password",
+      "email": "Email",
+      "password": "Password"
+    },
+    "feedback": {
+      "accountCreated": "Account created. You can log in now.",
+      "emailAlreadyExists": "Email already exists.",
+      "invalidEmail": "Invalid email.",
+      "invalidCredentials": "Invalid email or password.",
+      "loggedIn": "Logged in.",
+      "loginFailed": "Login failed.",
+      "missingFields": "Missing fields.",
+      "passwordMismatch": "Passwords do not match.",
+      "passwordTooShort": "Password must be at least 8 characters.",
+      "registrationFailed": "Registration failed.",
+      "serverError": "Server error."
+    },
+    "modes": {
+      "login": "Login",
+      "register": "Register"
+    },
+    "submit": {
+      "login": "Continue",
+      "loginLoading": "Signing in...",
+      "register": "Create account",
+      "registerLoading": "Creating account..."
+    }
+  },
+  "oauth": {
+    "continueWith": "Continue with {provider}",
+    "groupLabel": "OAuth sign in options"
+  },
+  "dashboard": {
+    "logoAria": "ClearTrend dashboard",
+    "logout": "Logout",
+    "loggingOut": "Logging out...",
+    "openUserMenu": "Open user menu for {name}",
+    "openWatchlist": "Open watchlist",
+    "overview": "Overview",
+    "profileSettings": "Profile settings",
+    "sentiment": "Sentiment",
+    "sentimentPending": "Pending",
+    "theme": "Theme",
+    "trend": "Trend",
+    "trendNeutral": "Neutral"
+  },
+  "theme": {
+    "dark": "dark",
+    "light": "light",
+    "switchTo": "Switch to {theme} mode"
+  },
+  "watchlist": {
+    "addFailed": "Could not add asset",
+    "adding": "Adding...",
+    "noResult": "No result",
+    "searchAsset": "Search asset",
+    "searchFailed": "Search failed",
+    "searchPlaceholder": "Apple, TSLA...",
+    "searching": "Searching...",
+    "sort": "Sort",
+    "sortOptions": {
+      "bestDay": "Best day",
+      "nameAsc": "A-Z",
+      "nameDesc": "Z-A",
+      "worstDay": "Worst day"
+    }
+  },
+  "chart": {
+    "loading": "Loading chart...",
+    "noAsset": "No asset selected",
+    "points": "{count} points",
+    "priceChart": "{symbol} price chart",
+    "providerFallback": "Twelve Data",
+    "rangeLabel": "Chart range",
+    "titleFallback": "Chart",
+    "unavailable": "Chart unavailable",
+    "volume": "Volume {value}"
+  },
+  "profile": {
+    "aria": {
+      "chooseImage": "Choose profile image",
+      "closeCrop": "Close photo editor",
+      "closeSettings": "Close profile settings",
+      "editCrop": "Edit profile photo crop",
+      "moveCrop": "Move profile photo behind the crop circle",
+      "zoom": "Profile photo zoom",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out"
+    },
+    "buttons": {
+      "downloadWatchlist": "Download CSV/JSON",
+      "importWatchlist": "Import CSV/JSON",
+      "remove": "Remove",
+      "uploadWatchlist": "Upload CSV/JSON"
+    },
+    "displayName": "Display name",
+    "editPhoto": "Edit photo",
+    "errors": {
+      "displayNameInvalid": "Invalid display name.",
+      "displayNameLetters": "Display name must include at least one letter or number.",
+      "displayNameMax": "Display name must be 32 characters or fewer.",
+      "displayNameMin": "Display name must be at least 3 characters.",
+      "displayNameUnsupported": "Display name contains unsupported characters.",
+      "imageType": "Choose a JPEG, PNG, or WebP image.",
+      "profileSave": "Profile could not be saved.",
+      "tooLarge": "Avatar must be {size} or smaller."
+    },
+    "title": "Profile settings",
+    "watchlist": "Watchlist"
+  },
+  "legal": {
+    "privacy": {
+      "title": "Privacy Policy",
+      "p1": "ClearTrend is an educational project. The application may store account information, watchlist entries, preferences, and technical logs needed to run and secure the service.",
+      "p2": "Financial data, sentiment results, and generated analysis are used to display trends inside the product. They should not be treated as professional financial advice.",
+      "p3": "Users can request profile updates or account deletion when account management is implemented."
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "p1": "ClearTrend provides tools for exploring market data, watchlists, and automated analysis in an educational context.",
+      "p2": "The information shown by the application is not investment advice. Users remain responsible for any decision made from external market information or generated content.",
+      "p3": "Access to the service can change during development as authentication, permissions, and data sources are added."
+    }
+  }
+}

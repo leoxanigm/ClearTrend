@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 type FooterLink = {
   href: string;
@@ -10,24 +11,25 @@ type FooterLinksProps = {
   items?: FooterLink[];
 };
 
-const defaultItems: FooterLink[] = [
-  {
-    href: "/privacy",
-    label: "Privacy Policy",
-  },
-  {
-    href: "/terms",
-    label: "Terms of Service",
-  },
-];
-
 export function FooterLinks({
   className = "footer-links",
-  items = defaultItems,
+  items,
 }: FooterLinksProps) {
+  const t = useTranslations("footer");
+  const resolvedItems = items ?? [
+    {
+      href: "/privacy",
+      label: t("privacy"),
+    },
+    {
+      href: "/terms",
+      label: t("terms"),
+    },
+  ];
+
   return (
     <footer className={className}>
-      {items.map((item) => (
+      {resolvedItems.map((item) => (
         <Link className="app-link" href={item.href} key={item.href}>
           {item.label}
         </Link>

@@ -1,0 +1,154 @@
+{
+  "language": {
+    "ariaLabel": "Choisir la langue",
+    "label": "Langue",
+    "options": {
+      "en": "Anglais",
+      "es": "Espagnol",
+      "fr": "Français"
+    }
+  },
+  "common": {
+    "appName": "ClearTrend",
+    "cancel": "Annuler",
+    "dashboard": "Dashboard",
+    "legal": "Legal",
+    "login": "Connexion",
+    "na": "N/A",
+    "privacy": "Politique de confidentialité",
+    "save": "Enregistrer",
+    "saveChanges": "Enregistrer",
+    "saving": "Enregistrement...",
+    "terms": "Conditions d'utilisation"
+  },
+  "footer": {
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation"
+  },
+  "login": {
+    "fields": {
+      "confirmPassword": "Confirmer le mot de passe",
+      "email": "Email",
+      "password": "Mot de passe"
+    },
+    "feedback": {
+      "accountCreated": "Compte créé. Tu peux te connecter.",
+      "emailAlreadyExists": "Cet email existe déjà.",
+      "invalidEmail": "Email invalide.",
+      "invalidCredentials": "Email ou mot de passe invalide.",
+      "loggedIn": "Connecté.",
+      "loginFailed": "Connexion échouée.",
+      "missingFields": "Champs manquants.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
+      "registrationFailed": "Inscription échouée.",
+      "serverError": "Erreur serveur."
+    },
+    "modes": {
+      "login": "Connexion",
+      "register": "Inscription"
+    },
+    "submit": {
+      "login": "Continuer",
+      "loginLoading": "Connexion...",
+      "register": "Créer un compte",
+      "registerLoading": "Création du compte..."
+    }
+  },
+  "oauth": {
+    "continueWith": "Continuer avec {provider}",
+    "groupLabel": "Options de connexion OAuth"
+  },
+  "dashboard": {
+    "logoAria": "Dashboard ClearTrend",
+    "logout": "Déconnexion",
+    "loggingOut": "Déconnexion...",
+    "openUserMenu": "Ouvrir le menu utilisateur de {name}",
+    "openWatchlist": "Ouvrir la watchlist",
+    "overview": "Vue d'ensemble",
+    "profileSettings": "Paramètres du profil",
+    "sentiment": "Sentiment",
+    "sentimentPending": "En attente",
+    "theme": "Thème",
+    "trend": "Tendance",
+    "trendNeutral": "Neutre"
+  },
+  "theme": {
+    "dark": "sombre",
+    "light": "clair",
+    "switchTo": "Passer en mode {theme}"
+  },
+  "watchlist": {
+    "addFailed": "Impossible d'ajouter l'asset",
+    "adding": "Ajout...",
+    "noResult": "Aucun résultat",
+    "searchAsset": "Rechercher un asset",
+    "searchFailed": "Recherche échouée",
+    "searchPlaceholder": "Apple, TSLA...",
+    "searching": "Recherche...",
+    "sort": "Tri",
+    "sortOptions": {
+      "bestDay": "Meilleure journée",
+      "nameAsc": "A-Z",
+      "nameDesc": "Z-A",
+      "worstDay": "Pire journée"
+    }
+  },
+  "chart": {
+    "loading": "Chargement du graphique...",
+    "noAsset": "Aucun asset sélectionné",
+    "points": "{count} points",
+    "priceChart": "Graphique du prix de {symbol}",
+    "providerFallback": "Twelve Data",
+    "rangeLabel": "Période du graphique",
+    "titleFallback": "Graphique",
+    "unavailable": "Graphique indisponible",
+    "volume": "Volume {value}"
+  },
+  "profile": {
+    "aria": {
+      "chooseImage": "Choisir une image de profil",
+      "closeCrop": "Fermer l'éditeur photo",
+      "closeSettings": "Fermer les paramètres du profil",
+      "editCrop": "Modifier le cadrage de la photo",
+      "moveCrop": "Déplacer la photo derrière le cercle de cadrage",
+      "zoom": "Zoom de la photo de profil",
+      "zoomIn": "Zoomer",
+      "zoomOut": "Dézoomer"
+    },
+    "buttons": {
+      "downloadWatchlist": "Télécharger CSV/JSON",
+      "importWatchlist": "Importer CSV/JSON",
+      "remove": "Retirer",
+      "uploadWatchlist": "Uploader CSV/JSON"
+    },
+    "displayName": "Pseudo affiché",
+    "editPhoto": "Modifier la photo",
+    "errors": {
+      "displayNameInvalid": "Pseudo invalide.",
+      "displayNameLetters": "Le pseudo doit contenir au moins une lettre ou un chiffre.",
+      "displayNameMax": "Le pseudo doit contenir 32 caractères maximum.",
+      "displayNameMin": "Le pseudo doit contenir au moins 3 caractères.",
+      "displayNameUnsupported": "Le pseudo contient des caractères non supportés.",
+      "imageType": "Choisis une image JPEG, PNG ou WebP.",
+      "profileSave": "Le profil n'a pas pu être enregistré.",
+      "tooLarge": "L'avatar doit faire {size} ou moins."
+    },
+    "title": "Paramètres du profil",
+    "watchlist": "Watchlist"
+  },
+  "legal": {
+    "privacy": {
+      "title": "Politique de confidentialité",
+      "p1": "ClearTrend est un projet éducatif. L'application peut stocker les informations de compte, les entrées de watchlist, les préférences et les logs techniques nécessaires au fonctionnement et à la sécurité du service.",
+      "p2": "Les données financières, les résultats de sentiment et les analyses générées servent à afficher des tendances dans le produit. Ils ne doivent pas être considérés comme des conseils financiers professionnels.",
+      "p3": "Les utilisateurs pourront demander une mise à jour du profil ou la suppression du compte lorsque la gestion de compte sera implémentée."
+    },
+    "terms": {
+      "title": "Conditions d'utilisation",
+      "p1": "ClearTrend fournit des outils pour explorer des données de marché, des watchlists et des analyses automatisées dans un contexte éducatif.",
+      "p2": "Les informations affichées par l'application ne constituent pas un conseil en investissement. Les utilisateurs restent responsables de toute décision prise à partir de données de marché externes ou de contenu généré.",
+      "p3": "L'accès au service peut évoluer pendant le développement à mesure que l'authentification, les permissions et les sources de données sont ajoutées."
+    }
+  }
+}
