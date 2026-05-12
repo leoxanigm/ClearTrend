@@ -4,7 +4,9 @@ import Providers from "./providers";
 
 const themeInitScript = `
 try {
-  const theme = localStorage.getItem("cleartrend-theme");
+  const theme = location.pathname === "/login"
+    ? null
+    : localStorage.getItem("cleartrend-theme");
   if (theme === "dark" || theme === "light") {
     document.documentElement.dataset.theme = theme;
   }
