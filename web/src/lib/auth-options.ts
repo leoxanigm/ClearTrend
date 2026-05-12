@@ -4,6 +4,24 @@ import Github from "next-auth/providers/github";
 import FortyTwo from "next-auth/providers/42-school";
 import { getPrisma } from "@/lib/prisma";
 
+function getOAuthAvatarUrl(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.length > 0) {
+      return value;
+    }
+
+    if (value && typeof value === "object" && "link" in value) {
+      const link = (value as { link?: unknown }).link;
+
+      if (typeof link === "string" && link.length > 0) {
+        return link;
+      }
+    }
+  }
+
+  return null;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     Google({
@@ -26,6 +44,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ account, user, profile }) {
       const oauthProvider = account?.provider;
       const oauthProviderAccountId = account?.providerAccountId;
+      const avatarUrl = getOAuthAvatarUrl(user.image, profile?.image);
 
       if (!user.email || !oauthProvider || !oauthProviderAccountId) {
         return false;
@@ -47,7 +66,7 @@ export const authOptions: NextAuthOptions = {
           create: {
             email: user.email,
             displayName: user.name || user.email.split("@")[0],
-            avatarUrl: user.image || profile?.image || null,
+            avatarUrl,
             oauthProvider,
             oauthProviderAccountId,
           },
