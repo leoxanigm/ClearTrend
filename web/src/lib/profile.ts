@@ -2,7 +2,7 @@ import { authOptions } from "@/lib/auth-options";
 import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import {
-  clampAvatarOffset,
+  clampAvatarOffsetForScale,
   clampAvatarScale,
   normalizeDisplayName,
   validateDisplayName,
@@ -36,11 +36,19 @@ export function getFallbackDisplayName(email: string) {
 }
 
 function toProfile(row: UserProfileRow): UserProfile {
+  const avatarScale = clampAvatarScale(row.avatarScale ?? 1);
+
   return {
     avatarMimeType: row.avatarMimeType,
-    avatarOffsetX: clampAvatarOffset(row.avatarOffsetX ?? 0),
-    avatarOffsetY: clampAvatarOffset(row.avatarOffsetY ?? 0),
-    avatarScale: clampAvatarScale(row.avatarScale ?? 1),
+    avatarOffsetX: clampAvatarOffsetForScale(
+      row.avatarOffsetX ?? 0,
+      avatarScale
+    ),
+    avatarOffsetY: clampAvatarOffsetForScale(
+      row.avatarOffsetY ?? 0,
+      avatarScale
+    ),
+    avatarScale,
     avatarSize: row.avatarSize,
     avatarUrl: row.avatarUrl,
     displayName: row.displayName ?? getFallbackDisplayName(row.email),

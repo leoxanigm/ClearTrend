@@ -12,12 +12,20 @@ import {
   useRef,
   useState,
 } from "react";
-import { getAvatarImageStyle, UserAvatar } from "@/components/UserAvatar";
+import {
+  getAvatarCropStageStyle,
+  getAvatarImageStyle,
+  getAvatarStageStyle,
+  getDefaultAvatarScale,
+  UserAvatar,
+} from "@/components/UserAvatar";
 import {
   avatarUploadRules,
-  clampAvatarOffset,
+  clampAvatarOffsetForScale,
   clampAvatarScale,
   displayNameLimits,
+  getAvatarCropRatio,
+  getAvatarMaxOffset,
   normalizeDisplayName,
   validateDisplayName,
 } from "@/lib/profile-rules";
@@ -56,13 +64,6 @@ function formatMegabytes(bytes: number) {
 
 function hasNumberChanged(currentValue: number, nextValue: number) {
   return Math.abs(currentValue - nextValue) > 0.001;
-}
-
-function getCropTargetStyle(offsetX: number, offsetY: number) {
-  return {
-    left: `${50 + offsetX}%`,
-    top: `${50 + offsetY}%`,
-  };
 }
 
 export function ProfileSettingsDialog({
@@ -111,6 +112,7 @@ export function ProfileSettingsDialog({
     avatarScale: cropDraftScale,
   };
   const hasAvatar = Boolean(previewAvatarUrl);
+  const isCropMovable = getAvatarMaxOffset(cropDraftScale) > 0;
   const normalizedDisplayName = normalizeDisplayName(displayName);
   const hasChanges = useMemo(() => {
     const cropChanged =
@@ -166,10 +168,22 @@ export function ProfileSettingsDialog({
   function resetCrop() {
     setAvatarOffsetX(0);
     setAvatarOffsetY(0);
-    setAvatarScale(1);
+    setAvatarScale(getDefaultAvatarScale());
     setCropDraftOffsetX(0);
     setCropDraftOffsetY(0);
-    setCropDraftScale(1);
+    setCropDraftScale(getDefaultAvatarScale());
+  }
+
+  function setCropDraftScaleValue(nextValue: unknown) {
+    const nextScale = clampAvatarScale(nextValue);
+
+    setCropDraftScale(nextScale);
+    setCropDraftOffsetX((currentOffset) =>
+      clampAvatarOffsetForScale(currentOffset, nextScale)
+    );
+    setCropDraftOffsetY((currentOffset) =>
+      clampAvatarOffsetForScale(currentOffset, nextScale)
+    );
   }
 
   function openCropEditor() {
@@ -177,16 +191,20 @@ export function ProfileSettingsDialog({
       return;
     }
 
-    setCropDraftOffsetX(avatarOffsetX);
-    setCropDraftOffsetY(avatarOffsetY);
-    setCropDraftScale(avatarScale);
+    const nextScale = clampAvatarScale(avatarScale);
+
+    setCropDraftOffsetX(clampAvatarOffsetForScale(avatarOffsetX, nextScale));
+    setCropDraftOffsetY(clampAvatarOffsetForScale(avatarOffsetY, nextScale));
+    setCropDraftScale(nextScale);
     setIsCropEditorOpen(true);
   }
 
   function saveCropDraft() {
-    setAvatarOffsetX(cropDraftOffsetX);
-    setAvatarOffsetY(cropDraftOffsetY);
-    setAvatarScale(cropDraftScale);
+    const nextScale = clampAvatarScale(cropDraftScale);
+
+    setAvatarOffsetX(clampAvatarOffsetForScale(cropDraftOffsetX, nextScale));
+    setAvatarOffsetY(clampAvatarOffsetForScale(cropDraftOffsetY, nextScale));
+    setAvatarScale(nextScale);
     setIsCropEditorOpen(false);
   }
 
@@ -262,6 +280,15 @@ export function ProfileSettingsDialog({
       return;
     }
 
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (getAvatarMaxOffset(cropDraftScale) <= 0) {
+      setCropDraftOffsetX(0);
+      setCropDraftOffsetY(0);
+      return;
+    }
+
     const rect = previewRef.current.getBoundingClientRect();
     dragStateRef.current = {
       height: rect.height,
@@ -272,7 +299,10 @@ export function ProfileSettingsDialog({
       startY: event.clientY,
       width: rect.width,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
+
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
   }
 
   function handleAvatarPointerMove(
@@ -284,11 +314,22 @@ export function ProfileSettingsDialog({
       return;
     }
 
-    const deltaX = ((event.clientX - dragState.startX) / dragState.width) * 100;
-    const deltaY = ((event.clientY - dragState.startY) / dragState.height) * 100;
+    event.preventDefault();
 
-    setCropDraftOffsetX(clampAvatarOffset(dragState.offsetX + deltaX));
-    setCropDraftOffsetY(clampAvatarOffset(dragState.offsetY + deltaY));
+    const cropRatio = Math.max(getAvatarCropRatio(cropDraftScale), 0.001);
+    const deltaX =
+      ((event.clientX - dragState.startX) / (dragState.width * cropRatio)) *
+      100;
+    const deltaY =
+      ((event.clientY - dragState.startY) / (dragState.height * cropRatio)) *
+      100;
+
+    setCropDraftOffsetX(
+      clampAvatarOffsetForScale(dragState.offsetX + deltaX, cropDraftScale)
+    );
+    setCropDraftOffsetY(
+      clampAvatarOffsetForScale(dragState.offsetY + deltaY, cropDraftScale)
+    );
   }
 
   function handleAvatarPointerUp(event: ReactPointerEvent<HTMLElement>) {
@@ -296,6 +337,7 @@ export function ProfileSettingsDialog({
       return;
     }
 
+    event.preventDefault();
     dragStateRef.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -317,11 +359,20 @@ export function ProfileSettingsDialog({
       return;
     }
 
+    const nextAvatarScale = clampAvatarScale(avatarScale);
+    const nextAvatarOffsetX = clampAvatarOffsetForScale(
+      avatarOffsetX,
+      nextAvatarScale
+    );
+    const nextAvatarOffsetY = clampAvatarOffsetForScale(
+      avatarOffsetY,
+      nextAvatarScale
+    );
     const formData = new FormData();
     formData.set("displayName", validation.value);
-    formData.set("avatarScale", String(clampAvatarScale(avatarScale)));
-    formData.set("avatarOffsetX", String(clampAvatarOffset(avatarOffsetX)));
-    formData.set("avatarOffsetY", String(clampAvatarOffset(avatarOffsetY)));
+    formData.set("avatarScale", String(nextAvatarScale));
+    formData.set("avatarOffsetX", String(nextAvatarOffsetX));
+    formData.set("avatarOffsetY", String(nextAvatarOffsetY));
     formData.set("removeAvatar", String(removeAvatar));
 
     if (selectedFile) {
@@ -520,27 +571,33 @@ export function ProfileSettingsDialog({
               </header>
 
               <div className="profile-crop-editor">
-                <div className="profile-crop-stage" ref={previewRef}>
-                  <img
-                    alt=""
-                    className="profile-crop-stage-image"
-                    draggable={false}
-                    src={previewAvatarUrl}
-                    style={getAvatarImageStyle(profileWithCropDraft)}
-                  />
-                  <button
-                    aria-label="Move profile crop target"
-                    className="profile-crop-target"
-                    onPointerCancel={handleAvatarPointerUp}
-                    onPointerDown={handleAvatarPointerDown}
-                    onPointerMove={handleAvatarPointerMove}
-                    onPointerUp={handleAvatarPointerUp}
-                    style={getCropTargetStyle(
-                      cropDraftOffsetX,
-                      cropDraftOffsetY
-                    )}
-                    type="button"
-                  />
+                <div
+                  aria-label="Move profile photo behind the crop circle"
+                  className={`profile-crop-stage${
+                    isCropMovable ? " profile-crop-stage-movable" : ""
+                  }`}
+                  onDragStart={(event) => event.preventDefault()}
+                  onPointerCancel={handleAvatarPointerUp}
+                  onPointerDown={handleAvatarPointerDown}
+                  onPointerMove={handleAvatarPointerMove}
+                  onPointerUp={handleAvatarPointerUp}
+                  ref={previewRef}
+                  role="application"
+                  style={getAvatarCropStageStyle(profileWithCropDraft)}
+                >
+                  <div
+                    className="profile-crop-stage-frame"
+                    style={getAvatarStageStyle(profileWithCropDraft)}
+                  >
+                    <img
+                      alt=""
+                      className="profile-crop-stage-image"
+                      draggable={false}
+                      src={previewAvatarUrl}
+                      style={getAvatarImageStyle(profileWithCropDraft)}
+                    />
+                  </div>
+                  <div aria-hidden="true" className="profile-crop-target" />
                 </div>
 
                 <div className="profile-zoom-control">
@@ -549,9 +606,7 @@ export function ProfileSettingsDialog({
                     className="profile-zoom-button"
                     disabled={cropDraftScale <= 1}
                     onClick={() =>
-                      setCropDraftScale((currentScale) =>
-                        clampAvatarScale(currentScale - 0.05)
-                      )
+                      setCropDraftScaleValue(cropDraftScale - 0.05)
                     }
                     type="button"
                   >
@@ -562,7 +617,7 @@ export function ProfileSettingsDialog({
                     max="2.5"
                     min="1"
                     onChange={(event) =>
-                      setCropDraftScale(Number(event.target.value))
+                      setCropDraftScaleValue(event.target.value)
                     }
                     step="0.05"
                     type="range"
@@ -573,9 +628,7 @@ export function ProfileSettingsDialog({
                     className="profile-zoom-button"
                     disabled={cropDraftScale >= 2.5}
                     onClick={() =>
-                      setCropDraftScale((currentScale) =>
-                        clampAvatarScale(currentScale + 0.05)
-                      )
+                      setCropDraftScaleValue(cropDraftScale + 0.05)
                     }
                     type="button"
                   >
