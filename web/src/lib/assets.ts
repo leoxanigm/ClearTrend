@@ -1,4 +1,5 @@
 import { fetchFinnhubAsset } from "@/lib/finnhub";
+import { wasAttemptedRecently } from "@/lib/external-data";
 import { getPrisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 
@@ -180,7 +181,9 @@ export type WatchlistAsset = {
 };
 
 type StoredAsset = {
+  dataFetchedAt: Date | null;
   dayChangePercent: number | null;
+  fetchAttemptedAt: Date | null;
   lastPrice: number | null;
   name: string | null;
   symbol: string;
@@ -235,17 +238,63 @@ function fallbackAsset(symbol: string): WatchlistAsset {
   };
 }
 
-function isFresh(updatedAt: Date) {
-  return Date.now() - updatedAt.getTime() < assetCacheTtlMs;
+function isFresh(asset: StoredAsset) {
+  return Boolean(
+    asset.dataFetchedAt &&
+      Date.now() - asset.dataFetchedAt.getTime() < assetCacheTtlMs
+  );
+}
+
+function wasRecentlyAttempted(asset: StoredAsset) {
+  return wasAttemptedRecently(asset.fetchAttemptedAt);
 }
 
 async function findStoredAsset(symbol: string) {
   const prisma = getPrisma();
   const rows = await prisma.$queryRaw<StoredAsset[]>`
-    SELECT symbol, name, "lastPrice", "dayChangePercent", "updatedAt"
+    SELECT
+      symbol,
+      name,
+      "lastPrice",
+      "dayChangePercent",
+      "dataFetchedAt",
+      "fetchAttemptedAt",
+      "updatedAt"
     FROM assets
     WHERE symbol = ${symbol}
     LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+async function markAssetFetchAttempt(symbol: string) {
+  const prisma = getPrisma();
+  const rows = await prisma.$queryRaw<StoredAsset[]>`
+    INSERT INTO assets (
+      id,
+      symbol,
+      "fetchAttemptedAt",
+      "createdAt",
+      "updatedAt"
+    )
+    VALUES (
+      ${randomUUID()},
+      ${symbol},
+      now(),
+      now(),
+      now()
+    )
+    ON CONFLICT (symbol) DO UPDATE SET
+      "fetchAttemptedAt" = now()
+    RETURNING
+      symbol,
+      name,
+      "lastPrice",
+      "dayChangePercent",
+      "dataFetchedAt",
+      "fetchAttemptedAt",
+      "updatedAt"
   `;
 
   return rows[0] ?? null;
@@ -280,6 +329,8 @@ async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAs
       "dayOpen",
       "previousClose",
       "quoteTimestamp",
+      "dataFetchedAt",
+      "fetchAttemptedAt",
       "rawProfile",
       "rawQuote",
       "createdAt",
@@ -311,6 +362,8 @@ async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAs
       ${asset.dayOpen},
       ${asset.previousClose},
       ${asset.quoteTimestamp},
+      now(),
+      now(),
       ${JSON.stringify(asset.rawProfile)}::jsonb,
       ${JSON.stringify(asset.rawQuote)}::jsonb,
       now(),
@@ -340,10 +393,19 @@ async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAs
       "dayOpen" = EXCLUDED."dayOpen",
       "previousClose" = EXCLUDED."previousClose",
       "quoteTimestamp" = EXCLUDED."quoteTimestamp",
+      "dataFetchedAt" = now(),
+      "fetchAttemptedAt" = now(),
       "rawProfile" = EXCLUDED."rawProfile",
       "rawQuote" = EXCLUDED."rawQuote",
       "updatedAt" = now()
-    RETURNING symbol, name, "lastPrice", "dayChangePercent", "updatedAt"
+    RETURNING
+      symbol,
+      name,
+      "lastPrice",
+      "dayChangePercent",
+      "dataFetchedAt",
+      "fetchAttemptedAt",
+      "updatedAt"
   `;
 
   return rows[0];
@@ -352,9 +414,15 @@ async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAs
 async function getOrSyncAsset(symbol: string) {
   const existingAsset = await findStoredAsset(symbol);
 
-  if (existingAsset && isFresh(existingAsset.updatedAt)) {
+  if (existingAsset && isFresh(existingAsset)) {
     return toWatchlistAsset(existingAsset);
   }
+
+  if (existingAsset && wasRecentlyAttempted(existingAsset)) {
+    return toWatchlistAsset(existingAsset, true);
+  }
+
+  await markAssetFetchAttempt(symbol);
 
   try {
     const asset = await fetchFinnhubAsset(symbol);

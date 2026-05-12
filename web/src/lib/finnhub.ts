@@ -1,3 +1,9 @@
+import {
+  ExternalDataCooldownError,
+  externalDataCooldownMs,
+  wasAttemptedRecently,
+} from "@/lib/external-data";
+
 type FinnhubProfile = Record<string, unknown>;
 type FinnhubQuote = Record<string, unknown>;
 type FinnhubSearchResult = {
@@ -6,8 +12,22 @@ type FinnhubSearchResult = {
   symbol?: unknown;
   type?: unknown;
 };
+type NormalizedFinnhubSearchResult = {
+  description: string | null;
+  displaySymbol: string | null;
+  symbol: string | null;
+  type: string | null;
+};
 
 const finnhubBaseUrl = "https://finnhub.io/api/v1";
+const searchCache = new Map<
+  string,
+  {
+    attemptedAt: number;
+    expiresAt: number;
+    value?: NormalizedFinnhubSearchResult[];
+  }
+>();
 
 function getFinnhubApiKey() {
   return process.env.FINNHUB_API_KEY;
@@ -82,6 +102,28 @@ export async function searchFinnhubAssets(query: string) {
     return [];
   }
 
+  const cacheKey = normalizedQuery.toLowerCase();
+  const cached = searchCache.get(cacheKey);
+  const now = Date.now();
+
+  if (cached?.value && cached.expiresAt > now) {
+    return cached.value;
+  }
+
+  if (cached && wasAttemptedRecently(cached.attemptedAt, now)) {
+    if (cached.value) {
+      return cached.value;
+    }
+
+    throw new ExternalDataCooldownError("Asset search was requested recently.");
+  }
+
+  searchCache.set(cacheKey, {
+    attemptedAt: now,
+    expiresAt: cached?.expiresAt ?? 0,
+    value: cached?.value,
+  });
+
   const body = await fetchFinnhubJson("/search", {
     q: normalizedQuery,
   });
@@ -89,7 +131,7 @@ export async function searchFinnhubAssets(query: string) {
     ? (body.result as FinnhubSearchResult[])
     : [];
 
-  return results
+  const normalizedResults = results
     .map((result) => ({
       description: readString(result.description),
       displaySymbol: readString(result.displaySymbol),
@@ -98,6 +140,14 @@ export async function searchFinnhubAssets(query: string) {
     }))
     .filter((result) => result.symbol && result.description)
     .slice(0, 8);
+
+  searchCache.set(cacheKey, {
+    attemptedAt: now,
+    expiresAt: now + externalDataCooldownMs,
+    value: normalizedResults,
+  });
+
+  return normalizedResults;
 }
 
 export async function fetchFinnhubAsset(symbol: string) {
