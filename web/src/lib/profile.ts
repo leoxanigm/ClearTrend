@@ -158,11 +158,24 @@ export async function getCurrentUserProfile() {
     identity.email
   );
 
-  await prisma.$executeRaw`
-    INSERT INTO users (email, "displayName")
-    VALUES (${identity.email}, ${initialDisplayName})
-    ON CONFLICT (email) DO NOTHING
-  `;
+  try {
+    await prisma.user.create({
+      data: {
+        email: identity.email,
+        displayName: initialDisplayName,
+      },
+    });
+  } catch (error) {
+    const isUniqueEmailConflict =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2002";
+
+    if (!isUniqueEmailConflict) {
+      throw error;
+    }
+  }
 
   return readUserProfileByEmail(identity.email);
 }
