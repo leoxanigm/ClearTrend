@@ -1,10 +1,12 @@
 const displayNameMinLength = 3;
 const displayNameMaxLength = 32;
+const avatarFixedCropRatio = 2 / 3;
+const avatarFixedCropRatioScale = 1.5;
 
 export const avatarCropLimits = {
-  maxOffset: 25,
+  maxOffset: 100,
   maxScale: 2.5,
-  minOffset: -25,
+  minOffset: -100,
   minScale: 1,
 };
 
@@ -87,4 +89,53 @@ export function clampAvatarOffset(value: unknown) {
     avatarCropLimits.maxOffset,
     Math.max(avatarCropLimits.minOffset, nextValue)
   );
+}
+
+export function getAvatarCropRatio(scaleValue: unknown) {
+  const scale = clampAvatarScale(scaleValue);
+
+  if (scale <= avatarCropLimits.minScale) {
+    return 1;
+  }
+
+  if (scale >= avatarFixedCropRatioScale) {
+    return avatarFixedCropRatio;
+  }
+
+  const progress =
+    (scale - avatarCropLimits.minScale) /
+    (avatarFixedCropRatioScale - avatarCropLimits.minScale);
+
+  return 1 - progress * (1 - avatarFixedCropRatio);
+}
+
+export function getAvatarMaxOffset(scaleValue: unknown) {
+  const scale = clampAvatarScale(scaleValue);
+
+  if (scale <= avatarCropLimits.minScale) {
+    return 0;
+  }
+
+  const coverageOffset = Math.max(0, (scale - 1) * 50);
+
+  return Math.min(avatarCropLimits.maxOffset, coverageOffset);
+}
+
+export function clampAvatarOffsetForScale(
+  value: unknown,
+  scaleValue: unknown
+) {
+  const nextValue = Number(value);
+
+  if (!Number.isFinite(nextValue)) {
+    return 0;
+  }
+
+  const maxOffset = getAvatarMaxOffset(scaleValue);
+
+  return Math.min(maxOffset, Math.max(-maxOffset, nextValue));
+}
+
+export function getDefaultAvatarScale() {
+  return avatarFixedCropRatioScale;
 }

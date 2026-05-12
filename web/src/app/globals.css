@@ -137,7 +137,7 @@ input {
 
 .user-avatar,
 .user-menu-avatar {
-    --avatar-crop-ratio: 0.5;
+    --avatar-crop-ratio: 0.6667;
     position: relative;
     display: flex;
     width: 100%;
@@ -152,7 +152,7 @@ input {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: calc(100% / var(--avatar-crop-ratio));
+    width: 100%;
     aspect-ratio: 1;
     transform-origin: center;
 }
@@ -370,7 +370,7 @@ input {
 }
 
 .profile-avatar-preview {
-    --avatar-crop-ratio: 0.5;
+    --avatar-crop-ratio: 0.6667;
     position: relative;
     display: flex;
     width: 100%;
@@ -393,7 +393,7 @@ input {
 }
 
 .profile-avatar-preview-media {
-    --avatar-crop-ratio: 0.5;
+    --avatar-crop-ratio: 0.6667;
     position: relative;
     display: flex;
     width: 100%;
@@ -528,7 +528,7 @@ input {
 }
 
 .profile-crop-stage {
-    --avatar-crop-ratio: 0.5;
+    --avatar-crop-ratio: 0.6667;
     position: relative;
     width: 100%;
     aspect-ratio: 1;
@@ -536,7 +536,32 @@ input {
     border: 1px solid var(--app-border);
     border-radius: 0.5rem;
     background: var(--app-panel);
+    cursor: default;
     touch-action: none;
+    user-select: none;
+}
+
+.profile-crop-stage,
+.profile-crop-stage * {
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+.profile-crop-stage-movable {
+    cursor: grab;
+}
+
+.profile-crop-stage-movable:active {
+    cursor: grabbing;
+}
+
+.profile-crop-stage-frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(var(--avatar-crop-ratio) * 100%);
+    aspect-ratio: 1;
+    transform-origin: center;
 }
 
 .profile-crop-stage-image {
@@ -552,22 +577,20 @@ input {
 
 .profile-crop-target {
     position: absolute;
+    top: 50%;
+    left: 50%;
     width: calc(var(--avatar-crop-ratio) * 100%);
     aspect-ratio: 1;
-    border: 3px solid #ffffff;
+    border: 0;
     border-radius: 999px;
     background: transparent;
     box-shadow:
+        inset 0 0 0 3px #ffffff,
         0 0 0 999px rgb(2 6 23 / 0.22),
         0 8px 24px rgb(15 23 42 / 0.22);
-    cursor: grab;
     padding: 0;
+    pointer-events: none;
     transform: translate(-50%, -50%);
-    touch-action: none;
-}
-
-.profile-crop-target:active {
-    cursor: grabbing;
 }
 
 .profile-crop-target:focus-visible,
@@ -640,9 +663,16 @@ input {
 }
 
 .profile-footer-button {
-    flex: 0 0 8rem;
-    width: 8rem;
-    min-width: 8rem;
+    display: inline-flex;
+    flex: 0 0 9.5rem;
+    width: 9.5rem;
+    min-width: 9.5rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    line-height: 1.1;
+    white-space: nowrap;
 }
 
 .profile-footer-button:disabled {

@@ -2,7 +2,7 @@ import { getCurrentUserProfile, readUserProfileById } from "@/lib/profile";
 import { getPrisma } from "@/lib/prisma";
 import {
   avatarUploadRules,
-  clampAvatarOffset,
+  clampAvatarOffsetForScale,
   clampAvatarScale,
   validateDisplayName,
 } from "@/lib/profile-rules";
@@ -180,11 +180,13 @@ export async function PATCH(req: Request) {
   }
 
   const avatarScale = clampAvatarScale(readString(formData.get("avatarScale")));
-  const avatarOffsetX = clampAvatarOffset(
-    readString(formData.get("avatarOffsetX"))
+  const avatarOffsetX = clampAvatarOffsetForScale(
+    readString(formData.get("avatarOffsetX")),
+    avatarScale
   );
-  const avatarOffsetY = clampAvatarOffset(
-    readString(formData.get("avatarOffsetY"))
+  const avatarOffsetY = clampAvatarOffsetForScale(
+    readString(formData.get("avatarOffsetY")),
+    avatarScale
   );
   const removeAvatar = readBoolean(formData.get("removeAvatar"));
   const avatarFile = formData.get("avatar");

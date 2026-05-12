@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { CSSProperties } from "react";
+import { getAvatarCropRatio } from "@/lib/profile-rules";
+export { getDefaultAvatarScale } from "@/lib/profile-rules";
 
 type AvatarProfile = {
   avatarOffsetX: number;
@@ -46,10 +48,20 @@ export function getAvatarStageStyle(
 ): CSSProperties {
   const offsetX = safeNumber(profile.avatarOffsetX, 0);
   const offsetY = safeNumber(profile.avatarOffsetY, 0);
+  const cropRatio = getAvatarCropRatio(profile.avatarScale);
 
   return {
-    transform: `translate(-50%, -50%) translate(${-offsetX}%, ${-offsetY}%)`,
-  };
+    "--avatar-crop-ratio": cropRatio,
+    transform: `translate(-50%, -50%) translate(${offsetX}%, ${offsetY}%)`,
+  } as CSSProperties;
+}
+
+export function getAvatarCropStageStyle(
+  profile: Pick<AvatarProfile, "avatarScale">
+): CSSProperties {
+  return {
+    "--avatar-crop-ratio": getAvatarCropRatio(profile.avatarScale),
+  } as CSSProperties;
 }
 
 export function UserAvatar({
