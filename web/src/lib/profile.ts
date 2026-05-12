@@ -14,6 +14,8 @@ import { getServerSession } from "next-auth";
 type CurrentUserIdentity = {
   email: string;
   name: string | null;
+  oauthProvider: string | null;
+  oauthProviderAccountId: string | null;
   userId: string | null;
 };
 
@@ -59,20 +61,35 @@ export async function getCurrentUserIdentity(): Promise<
     return {
       email: localSession.email,
       name: null,
+      oauthProvider: null,
+      oauthProviderAccountId: null,
       userId: localSession.userId,
     };
   }
 
   const authSession = await getServerSession(authOptions);
-  const email = authSession?.user?.email;
+  const sessionUser = authSession?.user as Record<string, unknown> | undefined;
+  const email = typeof sessionUser?.email === "string" ? sessionUser.email : null;
 
   if (!email) {
     return null;
   }
 
+  const oauthProvider =
+    typeof sessionUser?.oauthProvider === "string"
+      ? sessionUser.oauthProvider
+      : null;
+  const oauthProviderAccountId =
+    typeof sessionUser?.oauthProviderAccountId === "string"
+      ? sessionUser.oauthProviderAccountId
+      : null;
+  const name = typeof sessionUser?.name === "string" ? sessionUser.name : null;
+
   return {
     email,
-    name: authSession.user?.name ?? null,
+    name,
+    oauthProvider,
+    oauthProviderAccountId,
     userId: null,
   };
 }
@@ -119,6 +136,32 @@ async function readUserProfileByEmail(email: string) {
   return rows[0] ? toProfile(rows[0]) : null;
 }
 
+async function readUserProfileByOauth(
+  oauthProvider: string,
+  oauthProviderAccountId: string
+) {
+  const prisma = getPrisma();
+  const rows = await prisma.$queryRaw<UserProfileRow[]>`
+    SELECT
+      id,
+      email,
+      "displayName",
+      "avatarUrl",
+      "avatarMimeType",
+      "avatarSize",
+      "avatarScale",
+      "avatarOffsetX",
+      "avatarOffsetY"
+    FROM users
+    WHERE
+      "oauthProvider" = ${oauthProvider}
+      AND "oauthProviderAccountId" = ${oauthProviderAccountId}
+    LIMIT 1
+  `;
+
+  return rows[0] ? toProfile(rows[0]) : null;
+}
+
 function getInitialDisplayName(name: string | null, email: string) {
   const normalizedName = normalizeDisplayName(name);
 
@@ -146,7 +189,13 @@ export async function getCurrentUserProfile() {
     }
   }
 
-  const existingProfile = await readUserProfileByEmail(identity.email);
+  const existingProfile =
+    identity.oauthProvider && identity.oauthProviderAccountId
+      ? await readUserProfileByOauth(
+          identity.oauthProvider,
+          identity.oauthProviderAccountId
+        )
+      : await readUserProfileByEmail(identity.email);
 
   if (existingProfile) {
     return existingProfile;
@@ -163,6 +212,8 @@ export async function getCurrentUserProfile() {
       data: {
         email: identity.email,
         displayName: initialDisplayName,
+        oauthProvider: identity.oauthProvider,
+        oauthProviderAccountId: identity.oauthProviderAccountId,
       },
     });
   } catch (error) {

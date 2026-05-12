@@ -45,9 +45,12 @@ export async function POST(req: Request) {
     }
 
     const prisma = getPrisma();
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: {
         email,
+        passwordHash: {
+          not: null,
+        },
       },
     });
 

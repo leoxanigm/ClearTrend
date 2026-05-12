@@ -47,9 +47,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: {
         email,
+        passwordHash: {
+          not: null,
+        },
       },
     });
 
