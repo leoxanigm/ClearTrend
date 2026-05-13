@@ -87,12 +87,17 @@
     "searchPlaceholder": "Apple, TSLA...",
     "searching": "Buscando...",
     "sort": "Ordenar",
+    "sortDailyPercent": "Ordenar por porcentaje diario",
+    "sortFavorites": "Ordenar favoritos",
+    "sortName": "Ordenar por nombre de asset",
     "sortOptions": {
       "bestDay": "Mejor día",
       "nameAsc": "A-Z",
       "nameDesc": "Z-A",
       "worstDay": "Peor día"
-    }
+    },
+    "favoriteAsset": "Añadir {symbol} a favoritos",
+    "unfavoriteAsset": "Quitar {symbol} de favoritos"
   },
   "chart": {
     "loading": "Cargando gráfico...",

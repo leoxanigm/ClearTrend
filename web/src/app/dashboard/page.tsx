@@ -1,5 +1,5 @@
 import { DashboardClient } from "@/components/DashboardClient";
-import { getWatchlistAssets } from "@/lib/assets";
+import { getUserWatchlistAssets } from "@/lib/assets";
 import { getCurrentUserProfile } from "@/lib/profile";
 import { redirect } from "next/navigation";
 
@@ -10,7 +10,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const watchlistAssets = await getWatchlistAssets();
+  const watchlistAssets = await getUserWatchlistAssets(userProfile.id);
 
   return (
     <DashboardClient
