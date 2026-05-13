@@ -4,12 +4,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { WatchlistAsset } from "@/lib/assets";
 import { useTranslations } from "next-intl";
 
-type SortMode = "dp-asc" | "dp-desc" | "name-asc" | "name-desc";
+type SortDirection = "asc" | "desc";
+type SortKey = "dp" | "favorite" | "name";
+type SortState = {
+  direction: SortDirection;
+  favoritesFirst: boolean;
+  key: SortKey;
+};
 
 type WatchlistNavProps = {
   assets: WatchlistAsset[];
   mobile?: boolean;
   onAssetAdd: (asset: WatchlistAsset) => void;
+  onFavoriteChange: (symbol: string, isFavorite: boolean) => Promise<void> | void;
   onSelectSymbol: (symbol: string) => void;
   selectedSymbol: string | null;
 };
@@ -20,25 +27,6 @@ type AssetSearchResult = {
   symbol: string | null;
   type: string | null;
 };
-
-const sortOptions: Array<{ labelKey: string; value: SortMode }> = [
-  {
-    labelKey: "nameAsc",
-    value: "name-asc",
-  },
-  {
-    labelKey: "nameDesc",
-    value: "name-desc",
-  },
-  {
-    labelKey: "bestDay",
-    value: "dp-desc",
-  },
-  {
-    labelKey: "worstDay",
-    value: "dp-asc",
-  },
-];
 
 function formatDayChangePercent(value: number | null) {
   if (value === null) {
@@ -86,33 +74,69 @@ function compareAssetPerformance(
   return direction === "asc" ? result : -result;
 }
 
-function sortAssets(assets: WatchlistAsset[], sortMode: SortMode) {
+function compareAssetFavorites(
+  a: WatchlistAsset,
+  b: WatchlistAsset,
+  favoritesFirst: boolean
+) {
+  if (a.isFavorite === b.isFavorite) {
+    return 0;
+  }
+
+  if (favoritesFirst) {
+    return a.isFavorite ? -1 : 1;
+  }
+
+  return a.isFavorite ? 1 : -1;
+}
+
+function sortAssets(assets: WatchlistAsset[], sortState: SortState) {
   return [...assets].sort((a, b) => {
-    if (sortMode === "name-asc") {
-      return compareAssetNames(a, b);
+    const favoriteResult = compareAssetFavorites(
+      a,
+      b,
+      sortState.favoritesFirst
+    );
+
+    if (favoriteResult !== 0) {
+      return favoriteResult;
     }
 
-    if (sortMode === "name-desc") {
+    if (sortState.key === "dp") {
+      return compareAssetPerformance(a, b, sortState.direction);
+    }
+
+    if (sortState.direction === "desc" && sortState.key === "name") {
       return compareAssetNames(b, a);
     }
 
-    if (sortMode === "dp-desc") {
-      return compareAssetPerformance(a, b, "desc");
-    }
-
-    return compareAssetPerformance(a, b, "asc");
+    return compareAssetNames(a, b);
   });
+}
+
+function getNextSortDirection(direction: SortDirection) {
+  return direction === "asc" ? "desc" : "asc";
+}
+
+function getSortArrow(direction: SortDirection) {
+  return direction === "asc" ? "↑" : "↓";
 }
 
 function WatchlistItem({
   asset,
+  favoriteLabel,
+  favoritePending,
   mobile,
+  onFavoriteToggle,
   onSelect,
   selected,
   setItemRef,
 }: {
   asset: WatchlistAsset;
+  favoriteLabel: string;
+  favoritePending: boolean;
   mobile: boolean;
+  onFavoriteToggle: (symbol: string, isFavorite: boolean) => void;
   onSelect: (symbol: string) => void;
   selected: boolean;
   setItemRef: (symbol: string, element: HTMLElement | null) => void;
@@ -135,33 +159,57 @@ function WatchlistItem({
       </span>
     </>
   );
+  const favoriteButton = (
+    <button
+      aria-label={favoriteLabel}
+      aria-pressed={asset.isFavorite}
+      className={`watchlist-favorite-button${
+        asset.isFavorite ? " watchlist-favorite-button-active" : ""
+      }`}
+      disabled={favoritePending}
+      onClick={() => onFavoriteToggle(asset.symbol, !asset.isFavorite)}
+      type="button"
+    >
+      <span aria-hidden="true">{asset.isFavorite ? "★" : "☆"}</span>
+    </button>
+  );
 
   if (mobile) {
     return (
-      <label
+      <div
         className={className}
-        htmlFor="dashboard-drawer"
-        onClick={() => onSelect(asset.symbol)}
         ref={(element) => setItemRef(asset.symbol, element)}
       >
-        {content}
-      </label>
+        {favoriteButton}
+        <label
+          className="sidebar-asset-select"
+          htmlFor="dashboard-drawer"
+          onClick={() => onSelect(asset.symbol)}
+        >
+          {content}
+        </label>
+      </div>
     );
   }
 
   return (
-    <button
-      aria-label={`${asset.name} ${formatDayChangePercent(
-        asset.dayChangePercent
-      )}`}
-      aria-pressed={selected}
+    <div
       className={className}
-      onClick={() => onSelect(asset.symbol)}
       ref={(element) => setItemRef(asset.symbol, element)}
-      type="button"
     >
-      {content}
-    </button>
+      {favoriteButton}
+      <button
+        aria-label={`${asset.name} ${formatDayChangePercent(
+          asset.dayChangePercent
+        )}`}
+        aria-pressed={selected}
+        className="sidebar-asset-select"
+        onClick={() => onSelect(asset.symbol)}
+        type="button"
+      >
+        {content}
+      </button>
+    </div>
   );
 }
 
@@ -169,15 +217,23 @@ export function WatchlistNav({
   assets,
   mobile = false,
   onAssetAdd,
+  onFavoriteChange,
   onSelectSymbol,
   selectedSymbol,
 }: WatchlistNavProps) {
   const t = useTranslations("watchlist");
-  const [sortMode, setSortMode] = useState<SortMode>("name-asc");
+  const [sortState, setSortState] = useState<SortState>({
+    direction: "asc",
+    favoritesFirst: true,
+    key: "name",
+  });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AssetSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [pendingFavorites, setPendingFavorites] = useState<Set<string>>(
+    () => new Set()
+  );
   const itemRefs = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => {
@@ -230,8 +286,8 @@ export function WatchlistNav({
   }, [query, t]);
 
   const sortedAssets = useMemo(
-    () => sortAssets(assets, sortMode),
-    [assets, sortMode]
+    () => sortAssets(assets, sortState),
+    [assets, sortState]
   );
   const searchInputId = mobile ? "asset-search-mobile" : "asset-search-desktop";
 
@@ -262,6 +318,62 @@ export function WatchlistNav({
       setResults([]);
       setIsSearching(false);
       setSearchMessage(null);
+    }
+  }
+
+  function handleSortChange(key: SortKey) {
+    setSortState((currentSort) => {
+      if (key === "favorite") {
+        return {
+          ...currentSort,
+          favoritesFirst: !currentSort.favoritesFirst,
+          key,
+        };
+      }
+
+      if (currentSort.key === key) {
+        return {
+          ...currentSort,
+          direction: getNextSortDirection(currentSort.direction),
+          key,
+        };
+      }
+
+      return {
+        ...currentSort,
+        direction: key === "dp" ? "desc" : "asc",
+        key,
+      };
+    });
+  }
+
+  function setFavoritePending(symbol: string, isPending: boolean) {
+    setPendingFavorites((currentPending) => {
+      const nextPending = new Set(currentPending);
+
+      if (isPending) {
+        nextPending.add(symbol);
+      } else {
+        nextPending.delete(symbol);
+      }
+
+      return nextPending;
+    });
+  }
+
+  async function handleFavoriteToggle(symbol: string, isFavorite: boolean) {
+    if (pendingFavorites.has(symbol)) {
+      return;
+    }
+
+    setFavoritePending(symbol, true);
+
+    try {
+      await onFavoriteChange(symbol, isFavorite);
+    } catch {
+      // The parent already rolls the optimistic state back.
+    } finally {
+      setFavoritePending(symbol, false);
     }
   }
 
@@ -356,27 +468,68 @@ export function WatchlistNav({
         )}
       </div>
 
-      <label className="watchlist-sort">
-        <span className="watchlist-sort-label">{t("sort")}</span>
-        <select
-          className="watchlist-sort-select"
-          onChange={(event) => setSortMode(event.target.value as SortMode)}
-          value={sortMode}
+      <div
+        aria-label={t("sort")}
+        className="watchlist-sort-bar"
+        role="group"
+      >
+        <button
+          aria-label={t("sortFavorites")}
+          className="watchlist-sort-button watchlist-sort-button-favorite"
+          onClick={() => handleSortChange("favorite")}
+          type="button"
         >
-          {sortOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {t(`sortOptions.${option.labelKey}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+          <span aria-hidden="true">★</span>
+          <span className="watchlist-sort-arrow" aria-hidden="true">
+            {sortState.favoritesFirst ? "↑" : "↓"}
+          </span>
+        </button>
+        <button
+          aria-label={t("sortName")}
+          className={`watchlist-sort-button watchlist-sort-button-name${
+            sortState.key === "name" ? " watchlist-sort-button-active" : ""
+          }`}
+          onClick={() => handleSortChange("name")}
+          type="button"
+        >
+          <span>A-Z</span>
+          {sortState.key === "name" ? (
+            <span className="watchlist-sort-arrow" aria-hidden="true">
+              {getSortArrow(sortState.direction)}
+            </span>
+          ) : null}
+        </button>
+        <button
+          aria-label={t("sortDailyPercent")}
+          className={`watchlist-sort-button watchlist-sort-button-percent${
+            sortState.key === "dp" ? " watchlist-sort-button-active" : ""
+          }`}
+          onClick={() => handleSortChange("dp")}
+          type="button"
+        >
+          <span>%</span>
+          {sortState.key === "dp" ? (
+            <span className="watchlist-sort-arrow" aria-hidden="true">
+              {getSortArrow(sortState.direction)}
+            </span>
+          ) : null}
+        </button>
+      </div>
 
       <nav className="watchlist-nav space-y-2">
         {sortedAssets.map((asset) => (
           <WatchlistItem
             asset={asset}
+            favoriteLabel={t(
+              asset.isFavorite ? "unfavoriteAsset" : "favoriteAsset",
+              {
+                symbol: asset.symbol,
+              }
+            )}
+            favoritePending={pendingFavorites.has(asset.symbol)}
             key={asset.symbol}
             mobile={mobile}
+            onFavoriteToggle={handleFavoriteToggle}
             onSelect={onSelectSymbol}
             selected={asset.symbol === selectedSymbol}
             setItemRef={setItemRef}

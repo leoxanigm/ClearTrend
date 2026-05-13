@@ -1135,31 +1135,55 @@ input {
     padding: 0.5rem;
 }
 
-.watchlist-sort {
-    display: grid;
-    gap: 0.375rem;
-    margin-bottom: 0.75rem;
-}
-
 .watchlist-sort-label {
     color: var(--app-muted);
     font-size: 0.75rem;
     font-weight: 600;
 }
 
-.watchlist-sort-select {
-    width: 100%;
-    border: 1px solid var(--app-border);
-    border-radius: 0.375rem;
-    background: var(--app-surface);
-    color: var(--app-text);
-    padding: 0.5rem 0.625rem;
-    font-size: 0.875rem;
-    outline: none;
+.watchlist-sort-bar {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) 3.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding: 0 0.5rem;
 }
 
-.watchlist-sort-select:focus {
-    border-color: var(--app-accent);
+.watchlist-sort-button {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.25rem;
+    border: 0;
+    background: transparent;
+    color: var(--app-muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.watchlist-sort-button:hover,
+.watchlist-sort-button-active {
+    color: var(--app-text);
+}
+
+.watchlist-sort-button-favorite {
+    justify-content: center;
+}
+
+.watchlist-sort-button-name {
+    justify-content: flex-start;
+}
+
+.watchlist-sort-button-percent {
+    justify-content: flex-end;
+}
+
+.watchlist-sort-arrow {
+    color: var(--app-accent);
+    font-size: 0.6875rem;
 }
 
 .watchlist-nav {
@@ -1181,11 +1205,52 @@ input {
 }
 
 .sidebar-asset {
-    display: flex;
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
     min-height: 3.25rem;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem;
+}
+
+.watchlist-favorite-button {
+    display: flex;
+    width: 1.75rem;
+    height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--app-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.watchlist-favorite-button:hover,
+.watchlist-favorite-button-active {
+    color: #f59e0b;
+}
+
+.watchlist-favorite-button:disabled {
+    cursor: wait;
+    opacity: 0.6;
+}
+
+.sidebar-asset-select {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     gap: 0.75rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
 }
 
 .sidebar-asset-main {

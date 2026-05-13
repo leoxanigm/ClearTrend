@@ -53,6 +53,80 @@ export function DashboardClient({
     });
   }
 
+  async function updateWatchlistFavorite(
+    symbol: string,
+    isFavorite: boolean
+  ) {
+    let previousFavorite: boolean | null = null;
+
+    setWatchlistAssets((currentAssets) =>
+      currentAssets.map((asset) => {
+        if (asset.symbol !== symbol) {
+          return asset;
+        }
+
+        previousFavorite = asset.isFavorite;
+
+        return {
+          ...asset,
+          isFavorite,
+        };
+      })
+    );
+
+    try {
+      const response = await fetch("/api/assets/watchlist", {
+        body: JSON.stringify({
+          isFavorite,
+          symbol,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
+      });
+
+      if (!response.ok) {
+        throw new Error("Favorite update failed");
+      }
+
+      const body = (await response.json()) as {
+        isFavorite?: boolean;
+        symbol?: string;
+      };
+      const savedSymbol = body.symbol ?? symbol;
+      const savedFavorite = body.isFavorite ?? isFavorite;
+
+      setWatchlistAssets((currentAssets) =>
+        currentAssets.map((asset) =>
+          asset.symbol === savedSymbol
+            ? {
+                ...asset,
+                isFavorite: savedFavorite,
+              }
+            : asset
+        )
+      );
+    } catch (error) {
+      if (previousFavorite !== null) {
+        const rollbackFavorite = previousFavorite;
+
+        setWatchlistAssets((currentAssets) =>
+          currentAssets.map((asset) =>
+            asset.symbol === symbol
+              ? {
+                  ...asset,
+                  isFavorite: rollbackFavorite,
+                }
+              : asset
+          )
+        );
+      }
+
+      throw error;
+    }
+  }
+
   function handleLogout() {
     startLogoutTransition(async () => {
       await fetch("/api/auth/logout", {
@@ -100,6 +174,7 @@ export function DashboardClient({
         <WatchlistNav
           assets={watchlistAssets}
           onAssetAdd={addWatchlistAsset}
+          onFavoriteChange={updateWatchlistFavorite}
           onSelectSymbol={setSelectedSymbol}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
@@ -124,6 +199,7 @@ export function DashboardClient({
           assets={watchlistAssets}
           mobile
           onAssetAdd={addWatchlistAsset}
+          onFavoriteChange={updateWatchlistFavorite}
           onSelectSymbol={setSelectedSymbol}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
