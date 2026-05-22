@@ -19,7 +19,8 @@ services:
       - ./analysis:/app
     ports:
       - "8000:8000"
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    # If launching for the first time, then it might take several minute for downloading the DBs
+    command: sh -c "python -m src.database_builder && uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
 
   db:
     expose:
