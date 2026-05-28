@@ -7,24 +7,93 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  USER
+  ADMIN
+  ANALYST
+}
+
+enum AnalysisStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum TrendLabel {
+  BULLISH
+  NEUTRAL
+  BEARISH
+}
+
+enum RecommendationLabel {
+  BUY
+  HOLD
+  SELL
+  WATCH
+}
+
+enum SourceKind {
+  PRICE
+  COMMENT
+  NEWS
+  API
+  SCRAPE
+}
+
+enum NotificationType {
+  WATCHLIST_CREATED
+  WATCHLIST_UPDATED
+  WATCHLIST_DELETED
+  ANALYSIS_CREATED
+  ANALYSIS_UPDATED
+  ANALYSIS_FAILED
+  API_KEY_CREATED
+  API_KEY_REVOKED
+  EXPORT_READY
+  SYSTEM
+}
+
+enum UserEventType {
+  LOGIN
+  SEARCH
+  VIEW_ASSET
+  VIEW_REPORT
+  ADD_WATCHLIST_ITEM
+  REMOVE_WATCHLIST_ITEM
+  FAVORITE_ASSET
+  EXPORT
+  CLICK_SOURCE
+}
+
 model User {
-  id             String   @id @default(uuid())
-  email          String
-  oauthProvider  String?
+  id                     String   @id @default(uuid())
+  email                  String
+  oauthProvider          String?
   oauthProviderAccountId String?
-  passwordHash   String?
-  displayName    String?
-  avatarUrl      String?
-  avatarMimeType String?
-  avatarSize     Int?
-  avatarScale    Float    @default(1)
-  avatarOffsetX  Float    @default(0)
-  avatarOffsetY  Float    @default(0)
-  favoriteSymbols String[] @default([])
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  passwordHash           String?
+  displayName            String?
+  avatarUrl              String?
+  avatarMimeType         String?
+  avatarSize             Int?
+  avatarScale            Float    @default(1)
+  avatarOffsetX          Float    @default(0)
+  avatarOffsetY          Float    @default(0)
+  favoriteSymbols        String[] @default([])
+  role                   Role     @default(USER)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  analyses      Analysis[]
+  watchlists    Watchlist[]
+  notifications Notification[]
+  apiKeys       ApiKey[]
+  events        UserEvent[]
+  reports       Report[]
 
   @@unique([oauthProvider, oauthProviderAccountId])
+  @@index([email])
+  @@index([role])
   @@map("users")
 }
 
@@ -61,5 +130,181 @@ model Asset {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  analyses      Analysis[]
+  watchlistItems WatchlistItem[]
+  reports       Report[]
+  events        UserEvent[]
+
+  @@index([symbol])
+  @@index([name])
+  @@index([type])
+  @@index([exchange])
+  @@index([createdAt])
   @@map("assets")
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String   @default("Default")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items WatchlistItem[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("watchlists")
+}
+
+model WatchlistItem {
+  id          String   @id @default(uuid())
+  watchlistId String
+  assetId     String
+  createdAt   DateTime @default(now())
+
+  watchlist Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  asset     Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([watchlistId, assetId])
+  @@index([watchlistId])
+  @@index([assetId])
+  @@index([createdAt])
+  @@map("watchlist_items")
+}
+
+model Analysis {
+  id              String               @id @default(uuid())
+  userId          String
+  assetId         String
+  status          AnalysisStatus       @default(QUEUED)
+  horizon         String               @default("short")
+  trendLabel      TrendLabel?
+  recommendation  RecommendationLabel?
+  technicalScore  Float?
+  emotionScore    Float?
+  confidenceScore Float?
+  summary         String?
+  error           String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset   Asset            @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  sources AnalysisSource[]
+  reports Report[]
+
+  @@index([userId])
+  @@index([assetId])
+  @@index([status])
+  @@index([trendLabel])
+  @@index([recommendation])
+  @@index([createdAt])
+  @@map("analyses")
+}
+
+model AnalysisSource {
+  id          String     @id @default(uuid())
+  analysisId  String
+  kind        SourceKind
+  url         String?
+  title       String?
+  excerpt     String?
+  publishedAt DateTime?
+  rawPayload   Json?
+  createdAt   DateTime   @default(now())
+
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@index([kind])
+  @@index([publishedAt])
+  @@index([createdAt])
+  @@map("analysis_sources")
+}
+
+model Report {
+  id         String   @id @default(uuid())
+  userId     String
+  assetId    String
+  analysisId String?
+  title      String
+  summary    String?
+  content    String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset    Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  analysis Analysis? @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([assetId])
+  @@index([analysisId])
+  @@index([createdAt])
+  @@map("reports")
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String
+  type       NotificationType
+  entityType String?
+  entityId   String?
+  title      String
+  body       String?
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([readAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  userId     String
+  name       String
+  keyHash    String    @unique
+  prefix     String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([prefix])
+  @@index([revokedAt])
+  @@index([createdAt])
+  @@map("api_keys")
+}
+
+model UserEvent {
+  id        String        @id @default(uuid())
+  userId    String
+  assetId   String?
+  type      UserEventType
+  metadata  Json?
+  createdAt DateTime      @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset Asset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([assetId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("user_events")
 }
