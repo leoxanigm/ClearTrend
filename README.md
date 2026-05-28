@@ -101,3 +101,7 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 ## mathboye
 
 ## zalemu
+
+(rough bullet points to remember. edit and explain later)
+* Prisma ORM for tables
+* Advanced search

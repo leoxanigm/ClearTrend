@@ -244,6 +244,10 @@ export function DashboardClient({
                 {t("profileSettings")}
               </button>
 
+              <a className="user-menu-action" href="/search">
+                Search
+              </a>
+
               <div className="user-menu-row">
                 <span>{t("theme")}</span>
                 <ThemeSwitch />
