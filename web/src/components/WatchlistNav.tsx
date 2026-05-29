@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { WatchlistAsset } from "@/lib/assets";
-import { useTranslations } from "next-intl";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { WatchlistAsset } from '@/lib/assets';
+import { useTranslations } from 'next-intl';
 
-type SortDirection = "asc" | "desc";
-type SortKey = "dp" | "favorite" | "name";
+type SortDirection = 'asc' | 'desc';
+type SortKey = 'dp' | 'favorite' | 'name';
 type SortState = {
   direction: SortDirection;
   favoritesFirst: boolean;
@@ -16,7 +16,10 @@ type WatchlistNavProps = {
   assets: WatchlistAsset[];
   mobile?: boolean;
   onAssetAdd: (asset: WatchlistAsset) => void;
-  onFavoriteChange: (symbol: string, isFavorite: boolean) => Promise<void> | void;
+  onFavoriteChange: (
+    symbol: string,
+    isFavorite: boolean
+  ) => Promise<void> | void;
   onSelectSymbol: (symbol: string) => void;
   selectedSymbol: string | null;
 };
@@ -30,32 +33,32 @@ type AssetSearchResult = {
 
 function formatDayChangePercent(value: number | null) {
   if (value === null) {
-    return "N/A";
+    return 'N/A';
   }
 
-  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
 }
 
 function getDayChangeClass(value: number | null) {
   if (value === null || value === 0) {
-    return "asset-performance-muted";
+    return 'asset-performance-muted';
   }
 
   return value > 0
-    ? "asset-performance-positive"
-    : "asset-performance-negative";
+    ? 'asset-performance-positive'
+    : 'asset-performance-negative';
 }
 
 function compareAssetNames(a: WatchlistAsset, b: WatchlistAsset) {
-  return a.name.localeCompare(b.name, "en", {
-    sensitivity: "base",
+  return a.name.localeCompare(b.name, 'en', {
+    sensitivity: 'base'
   });
 }
 
 function compareAssetPerformance(
   a: WatchlistAsset,
   b: WatchlistAsset,
-  direction: "asc" | "desc"
+  direction: 'asc' | 'desc'
 ) {
   if (a.dayChangePercent === null && b.dayChangePercent === null) {
     return compareAssetNames(a, b);
@@ -71,7 +74,7 @@ function compareAssetPerformance(
 
   const result = a.dayChangePercent - b.dayChangePercent;
 
-  return direction === "asc" ? result : -result;
+  return direction === 'asc' ? result : -result;
 }
 
 function compareAssetFavorites(
@@ -102,11 +105,11 @@ function sortAssets(assets: WatchlistAsset[], sortState: SortState) {
       return favoriteResult;
     }
 
-    if (sortState.key === "dp") {
+    if (sortState.key === 'dp') {
       return compareAssetPerformance(a, b, sortState.direction);
     }
 
-    if (sortState.direction === "desc" && sortState.key === "name") {
+    if (sortState.direction === 'desc' && sortState.key === 'name') {
       return compareAssetNames(b, a);
     }
 
@@ -115,11 +118,11 @@ function sortAssets(assets: WatchlistAsset[], sortState: SortState) {
 }
 
 function getNextSortDirection(direction: SortDirection) {
-  return direction === "asc" ? "desc" : "asc";
+  return direction === 'asc' ? 'desc' : 'asc';
 }
 
 function getSortArrow(direction: SortDirection) {
-  return direction === "asc" ? "↑" : "↓";
+  return direction === 'asc' ? '↑' : '↓';
 }
 
 function WatchlistItem({
@@ -130,7 +133,7 @@ function WatchlistItem({
   onFavoriteToggle,
   onSelect,
   selected,
-  setItemRef,
+  setItemRef
 }: {
   asset: WatchlistAsset;
   favoriteLabel: string;
@@ -142,19 +145,18 @@ function WatchlistItem({
   setItemRef: (symbol: string, element: HTMLElement | null) => void;
 }) {
   const className = `sidebar-item sidebar-asset${
-    selected ? " sidebar-asset-selected" : ""
+    selected ? ' sidebar-asset-selected' : ''
   }`;
   const content = (
     <>
-      <span className="sidebar-asset-main">
-        <span className="sidebar-asset-name">{asset.name}</span>
-        <span className="sidebar-asset-symbol">{asset.symbol}</span>
+      <span className='sidebar-asset-main'>
+        <span className='sidebar-asset-name'>{asset.name}</span>
+        <span className='sidebar-asset-symbol'>{asset.symbol}</span>
       </span>
       <span
         className={`sidebar-performance ${getDayChangeClass(
           asset.dayChangePercent
-        )}`}
-      >
+        )}`}>
         {formatDayChangePercent(asset.dayChangePercent)}
       </span>
     </>
@@ -164,13 +166,12 @@ function WatchlistItem({
       aria-label={favoriteLabel}
       aria-pressed={asset.isFavorite}
       className={`watchlist-favorite-button${
-        asset.isFavorite ? " watchlist-favorite-button-active" : ""
+        asset.isFavorite ? ' watchlist-favorite-button-active' : ''
       }`}
       disabled={favoritePending}
       onClick={() => onFavoriteToggle(asset.symbol, !asset.isFavorite)}
-      type="button"
-    >
-      <span aria-hidden="true">{asset.isFavorite ? "★" : "☆"}</span>
+      type='button'>
+      <span aria-hidden='true'>{asset.isFavorite ? '★' : '☆'}</span>
     </button>
   );
 
@@ -178,14 +179,12 @@ function WatchlistItem({
     return (
       <div
         className={className}
-        ref={(element) => setItemRef(asset.symbol, element)}
-      >
+        ref={element => setItemRef(asset.symbol, element)}>
         {favoriteButton}
         <label
-          className="sidebar-asset-select"
-          htmlFor="dashboard-drawer"
-          onClick={() => onSelect(asset.symbol)}
-        >
+          className='sidebar-asset-select'
+          htmlFor='dashboard-drawer'
+          onClick={() => onSelect(asset.symbol)}>
           {content}
         </label>
       </div>
@@ -195,18 +194,16 @@ function WatchlistItem({
   return (
     <div
       className={className}
-      ref={(element) => setItemRef(asset.symbol, element)}
-    >
+      ref={element => setItemRef(asset.symbol, element)}>
       {favoriteButton}
       <button
         aria-label={`${asset.name} ${formatDayChangePercent(
           asset.dayChangePercent
         )}`}
         aria-pressed={selected}
-        className="sidebar-asset-select"
+        className='sidebar-asset-select'
         onClick={() => onSelect(asset.symbol)}
-        type="button"
-      >
+        type='button'>
         {content}
       </button>
     </div>
@@ -219,15 +216,16 @@ export function WatchlistNav({
   onAssetAdd,
   onFavoriteChange,
   onSelectSymbol,
-  selectedSymbol,
+  selectedSymbol
 }: WatchlistNavProps) {
-  const t = useTranslations("watchlist");
+  const t = useTranslations('watchlist');
+  const commonT = useTranslations('common');
   const [sortState, setSortState] = useState<SortState>({
-    direction: "asc",
+    direction: 'asc',
     favoritesFirst: true,
-    key: "name",
+    key: 'name'
   });
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState<AssetSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
@@ -252,12 +250,12 @@ export function WatchlistNav({
         const response = await fetch(
           `/api/assets/search?q=${encodeURIComponent(trimmedQuery)}`,
           {
-            signal: controller.signal,
+            signal: controller.signal
           }
         );
 
         if (!response.ok) {
-          throw new Error("Search failed");
+          throw new Error('Search failed');
         }
 
         const body = (await response.json()) as {
@@ -266,11 +264,11 @@ export function WatchlistNav({
         const nextResults = body.results ?? [];
 
         setResults(nextResults);
-        setSearchMessage(nextResults.length === 0 ? t("noResult") : null);
+        setSearchMessage(nextResults.length === 0 ? t('noResult') : null);
       } catch {
         if (!controller.signal.aborted) {
           setResults([]);
-          setSearchMessage(t("searchFailed"));
+          setSearchMessage(t('searchFailed'));
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -289,7 +287,7 @@ export function WatchlistNav({
     () => sortAssets(assets, sortState),
     [assets, sortState]
   );
-  const searchInputId = mobile ? "asset-search-mobile" : "asset-search-desktop";
+  const searchInputId = mobile ? 'asset-search-mobile' : 'asset-search-desktop';
 
   useEffect(() => {
     if (!selectedSymbol) {
@@ -297,8 +295,8 @@ export function WatchlistNav({
     }
 
     itemRefs.current.get(selectedSymbol)?.scrollIntoView({
-      block: "nearest",
-      behavior: "smooth",
+      block: 'nearest',
+      behavior: 'smooth'
     });
   }, [selectedSymbol, sortedAssets]);
 
@@ -322,12 +320,12 @@ export function WatchlistNav({
   }
 
   function handleSortChange(key: SortKey) {
-    setSortState((currentSort) => {
-      if (key === "favorite") {
+    setSortState(currentSort => {
+      if (key === 'favorite') {
         return {
           ...currentSort,
           favoritesFirst: !currentSort.favoritesFirst,
-          key,
+          key
         };
       }
 
@@ -335,20 +333,20 @@ export function WatchlistNav({
         return {
           ...currentSort,
           direction: getNextSortDirection(currentSort.direction),
-          key,
+          key
         };
       }
 
       return {
         ...currentSort,
-        direction: key === "dp" ? "desc" : "asc",
-        key,
+        direction: key === 'dp' ? 'desc' : 'asc',
+        key
       };
     });
   }
 
   function setFavoritePending(symbol: string, isPending: boolean) {
-    setPendingFavorites((currentPending) => {
+    setPendingFavorites(currentPending => {
       const nextPending = new Set(currentPending);
 
       if (isPending) {
@@ -384,16 +382,14 @@ export function WatchlistNav({
 
     const normalizedSymbol = symbol.trim().toUpperCase();
 
-    if (
-      assets.some((asset) => asset.symbol === normalizedSymbol)
-    ) {
+    if (assets.some(asset => asset.symbol === normalizedSymbol)) {
       onSelectSymbol(normalizedSymbol);
-      setQuery("");
+      setQuery('');
       setResults([]);
       return;
     }
 
-    setSearchMessage(t("adding"));
+    setSearchMessage(t('adding'));
 
     try {
       const response = await fetch(
@@ -401,7 +397,7 @@ export function WatchlistNav({
       );
 
       if (!response.ok) {
-        throw new Error("Add failed");
+        throw new Error('Add failed');
       }
 
       const body = (await response.json()) as {
@@ -410,120 +406,118 @@ export function WatchlistNav({
       const [asset] = body.assets ?? [];
 
       if (!asset) {
-        throw new Error("No asset returned");
+        throw new Error('No asset returned');
       }
 
       onAssetAdd(asset);
       onSelectSymbol(asset.symbol);
-      setQuery("");
+      setQuery('');
       setResults([]);
       setSearchMessage(null);
     } catch {
-      setSearchMessage(t("addFailed"));
+      setSearchMessage(t('addFailed'));
     }
   }
 
   return (
-    <div className="watchlist-panel mt-5">
-      <div className="asset-search">
-        <label className="watchlist-sort-label" htmlFor={searchInputId}>
-          {t("searchAsset")}
+    <div className='watchlist-panel mt-5'>
+      <div className='asset-search'>
+        <label className='asset-search-label' htmlFor={searchInputId}>
+          {t('searchAsset')}
         </label>
         <input
-          className="asset-search-input"
+          className='asset-search-input'
           id={searchInputId}
-          onChange={(event) => handleQueryChange(event.target.value)}
-          placeholder={t("searchPlaceholder")}
-          type="search"
+          onChange={event => handleQueryChange(event.target.value)}
+          placeholder={t('searchPlaceholder')}
+          type='search'
           value={query}
         />
 
+        
+
         {(results.length > 0 || isSearching || searchMessage) && (
-          <div className="asset-search-results">
+          <div className='asset-search-results'>
             {isSearching && (
-              <p className="asset-search-message">{t("searching")}</p>
+              <p className='asset-search-message'>{t('searching')}</p>
             )}
 
             {!isSearching &&
-              results.map((result) => (
+              results.map(result => (
                 <button
-                  className="asset-search-result"
+                  className='asset-search-result'
                   key={`${result.symbol}-${result.description}`}
                   onClick={() => addAsset(result.symbol)}
-                  type="button"
-                >
-                  <span className="asset-search-result-name">
+                  type='button'>
+                  <span className='asset-search-result-name'>
                     {result.description}
                   </span>
-                  <span className="asset-search-result-symbol">
+                  <span className='asset-search-result-symbol'>
                     {result.displaySymbol ?? result.symbol}
                   </span>
                 </button>
               ))}
 
             {!isSearching && searchMessage && (
-              <p className="asset-search-message">{searchMessage}</p>
+              <p className='asset-search-message'>{searchMessage}</p>
             )}
           </div>
         )}
+
+        <a className='asset-advanced-search-button' href='/search'>
+          {commonT("advancedSearch")}
+        </a>
       </div>
 
-      <div
-        aria-label={t("sort")}
-        className="watchlist-sort-bar"
-        role="group"
-      >
+      <div aria-label={t('sort')} className='watchlist-sort-bar' role='group'>
         <button
-          aria-label={t("sortFavorites")}
-          className="watchlist-sort-button watchlist-sort-button-favorite"
-          onClick={() => handleSortChange("favorite")}
-          type="button"
-        >
-          <span aria-hidden="true">★</span>
-          <span className="watchlist-sort-arrow" aria-hidden="true">
-            {sortState.favoritesFirst ? "↑" : "↓"}
+          aria-label={t('sortFavorites')}
+          className='watchlist-sort-button watchlist-sort-button-favorite'
+          onClick={() => handleSortChange('favorite')}
+          type='button'>
+          <span aria-hidden='true'>★</span>
+          <span className='watchlist-sort-arrow' aria-hidden='true'>
+            {sortState.favoritesFirst ? '↑' : '↓'}
           </span>
         </button>
         <button
-          aria-label={t("sortName")}
+          aria-label={t('sortName')}
           className={`watchlist-sort-button watchlist-sort-button-name${
-            sortState.key === "name" ? " watchlist-sort-button-active" : ""
+            sortState.key === 'name' ? ' watchlist-sort-button-active' : ''
           }`}
-          onClick={() => handleSortChange("name")}
-          type="button"
-        >
+          onClick={() => handleSortChange('name')}
+          type='button'>
           <span>A-Z</span>
-          {sortState.key === "name" ? (
-            <span className="watchlist-sort-arrow" aria-hidden="true">
+          {sortState.key === 'name' ? (
+            <span className='watchlist-sort-arrow' aria-hidden='true'>
               {getSortArrow(sortState.direction)}
             </span>
           ) : null}
         </button>
         <button
-          aria-label={t("sortDailyPercent")}
+          aria-label={t('sortDailyPercent')}
           className={`watchlist-sort-button watchlist-sort-button-percent${
-            sortState.key === "dp" ? " watchlist-sort-button-active" : ""
+            sortState.key === 'dp' ? ' watchlist-sort-button-active' : ''
           }`}
-          onClick={() => handleSortChange("dp")}
-          type="button"
-        >
+          onClick={() => handleSortChange('dp')}
+          type='button'>
           <span>%</span>
-          {sortState.key === "dp" ? (
-            <span className="watchlist-sort-arrow" aria-hidden="true">
+          {sortState.key === 'dp' ? (
+            <span className='watchlist-sort-arrow' aria-hidden='true'>
               {getSortArrow(sortState.direction)}
             </span>
           ) : null}
         </button>
       </div>
 
-      <nav className="watchlist-nav space-y-2">
-        {sortedAssets.map((asset) => (
+      <nav className='watchlist-nav space-y-2'>
+        {sortedAssets.map(asset => (
           <WatchlistItem
             asset={asset}
             favoriteLabel={t(
-              asset.isFavorite ? "unfavoriteAsset" : "favoriteAsset",
+              asset.isFavorite ? 'unfavoriteAsset' : 'favoriteAsset',
               {
-                symbol: asset.symbol,
+                symbol: asset.symbol
               }
             )}
             favoritePending={pendingFavorites.has(asset.symbol)}
