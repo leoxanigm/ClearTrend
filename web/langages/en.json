@@ -19,7 +19,9 @@
     "save": "Save",
     "saveChanges": "Save changes",
     "saving": "Saving...",
-    "terms": "Terms of Service"
+    "terms": "Terms of Service",
+    "search": "Search",
+    "advancedSearch": "Advanced Search"
   },
   "footer": {
     "privacy": "Privacy Policy",
@@ -141,6 +143,75 @@
     },
     "title": "Profile settings",
     "watchlist": "Watchlist"
+  },
+  "searchPage": {
+    "labels": {
+      "query": "Query",
+      "type": "Type",
+      "sort": "Sort",
+      "direction": "Direction",
+      "sentiment": "Sentiment",
+      "source": "Source",
+      "from": "From",
+      "to": "To"
+    },
+    "placeholders": {
+      "query": "Symbol, company, report, notification..."
+    },
+    "buttons": {
+      "reset": "Reset",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "entityTypes": {
+      "all": "All",
+      "assets": "Assets",
+      "analyses": "Analyses",
+      "reports": "Reports",
+      "notifications": "Notifications"
+    },
+    "sortOptions": {
+      "createdAt": "Created date",
+      "name": "Name",
+      "symbol": "Symbol"
+    },
+    "directionOptions": {
+      "desc": "Newest / Z-A",
+      "asc": "Oldest / A-Z"
+    },
+    "sentimentOptions": {
+      "any": "Any sentiment",
+      "bullish": "Bullish",
+      "neutral": "Neutral",
+      "bearish": "Bearish"
+    },
+    "sourceOptions": {
+      "any": "Any source",
+      "price": "Price",
+      "comment": "Comment",
+      "news": "News",
+      "api": "API",
+      "scrape": "Scrape"
+    },
+    "resultTypes": {
+      "asset": "Asset",
+      "analysis": "Analysis",
+      "report": "Report",
+      "notification": "Notification"
+    },
+    "states": {
+      "loading": "Loading...",
+      "noResults": "No results.",
+      "noDate": "No date"
+    },
+    "errors": {
+      "searchFailed": "Search failed."
+    },
+    "pagination": {
+      "results": "{count} result",
+      "resultsPlural": "{count} results",
+      "pageOf": "Page {page} of {totalPages}"
+    }
   },
   "legal": {
     "privacy": {

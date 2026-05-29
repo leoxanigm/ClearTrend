@@ -19,7 +19,9 @@
     "save": "Guardar",
     "saveChanges": "Guardar cambios",
     "saving": "Guardando...",
-    "terms": "Condiciones de servicio"
+    "terms": "Condiciones de servicio",
+    "search": "Buscar",
+    "advancedSearch": "Búsqueda avanzada"
   },
   "footer": {
     "privacy": "Política de privacidad",
@@ -141,6 +143,75 @@
     },
     "title": "Ajustes del perfil",
     "watchlist": "Watchlist"
+  },
+  "searchPage": {
+    "labels": {
+      "query": "Consulta",
+      "type": "Tipo",
+      "sort": "Ordenar por",
+      "direction": "Dirección",
+      "sentiment": "Sentimiento",
+      "source": "Fuente",
+      "from": "Desde",
+      "to": "Hasta"
+    },
+    "placeholders": {
+      "query": "Símbolo, empresa, informe, notificación..."
+    },
+    "buttons": {
+      "reset": "Restablecer",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    },
+    "entityTypes": {
+      "all": "Todo",
+      "assets": "Activos",
+      "analyses": "Análisis",
+      "reports": "Informes",
+      "notifications": "Notificaciones"
+    },
+    "sortOptions": {
+      "createdAt": "Fecha de creación",
+      "name": "Nombre",
+      "symbol": "Símbolo"
+    },
+    "directionOptions": {
+      "desc": "Más recientes / Z-A",
+      "asc": "Más antiguos / A-Z"
+    },
+    "sentimentOptions": {
+      "any": "Cualquier sentimiento",
+      "bullish": "Alcista",
+      "neutral": "Neutral",
+      "bearish": "Bajista"
+    },
+    "sourceOptions": {
+      "any": "Cualquier fuente",
+      "price": "Precio",
+      "comment": "Comentario",
+      "news": "Noticias",
+      "api": "API",
+      "scrape": "Extracción"
+    },
+    "resultTypes": {
+      "asset": "Activo",
+      "analysis": "Análisis",
+      "report": "Informe",
+      "notification": "Notificación"
+    },
+    "states": {
+      "loading": "Cargando...",
+      "noResults": "Sin resultados.",
+      "noDate": "Sin fecha"
+    },
+    "errors": {
+      "searchFailed": "La búsqueda ha fallado."
+    },
+    "pagination": {
+      "results": "{count} resultado",
+      "resultsPlural": "{count} resultados",
+      "pageOf": "Página {page} de {totalPages}"
+    }
   },
   "legal": {
     "privacy": {
