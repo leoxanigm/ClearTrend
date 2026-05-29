@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { SubmitEvent, useEffect, useMemo, useState } from 'react';
 import type {
   SearchDirection,
   SearchEntityType,
@@ -8,119 +8,13 @@ import type {
   SearchResultItem,
   SearchSortKey
 } from '@/lib/search-types';
-
-const entityTypes: Array<{ label: string; value: SearchEntityType }> = [
-  { label: 'All', value: 'all' },
-  { label: 'Assets', value: 'assets' },
-  { label: 'Analyses', value: 'analyses' },
-  { label: 'Reports', value: 'reports' },
-  { label: 'Notifications', value: 'notifications' }
-];
-
-const sortOptions: Array<{ label: string; value: SearchSortKey }> = [
-  { label: 'Created date', value: 'createdAt' },
-  { label: 'Name', value: 'name' },
-  { label: 'Symbol', value: 'symbol' }
-];
-
-const directionOptions: Array<{ label: string; value: SearchDirection }> = [
-  { label: 'Newest / Z-A', value: 'desc' },
-  { label: 'Oldest / A-Z', value: 'asc' }
-];
-
-const sentimentOptions = [
-  { label: 'Any sentiment', value: '' },
-  { label: 'Bullish', value: 'BULLISH' },
-  { label: 'Neutral', value: 'NEUTRAL' },
-  { label: 'Bearish', value: 'BEARISH' }
-];
-
-const sourceOptions = [
-  { label: 'Any source', value: '' },
-  { label: 'Price', value: 'PRICE' },
-  { label: 'Comment', value: 'COMMENT' },
-  { label: 'News', value: 'NEWS' },
-  { label: 'API', value: 'API' },
-  { label: 'Scrape', value: 'SCRAPE' }
-];
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return 'No date';
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }).format(new Date(value));
-}
-
-function resultTypeLabel(type: SearchResultItem['type']) {
-  if (type === 'asset') {
-    return 'Asset';
-  }
-
-  if (type === 'analysis') {
-    return 'Analysis';
-  }
-
-  if (type === 'report') {
-    return 'Report';
-  }
-
-  return 'Notification';
-}
-
-function SearchResultCard({ result }: { result: SearchResultItem }) {
-  const content = (
-    <>
-      <div className='search-result-header'>
-        <span className='search-result-type'>
-          {resultTypeLabel(result.type)}
-        </span>
-        <span className='search-result-date'>
-          {formatDate(result.createdAt)}
-        </span>
-      </div>
-
-      <h2 className='search-result-title'>{result.title}</h2>
-
-      {result.subtitle ? (
-        <p className='search-result-subtitle'>{result.subtitle}</p>
-      ) : null}
-
-      {result.description ? (
-        <p className='search-result-description'>{result.description}</p>
-      ) : null}
-
-      {Object.keys(result.metadata).length > 0 ? (
-        <dl className='search-result-metadata'>
-          {Object.entries(result.metadata).map(([key, value]) =>
-            value === null ? null : (
-              <div key={key}>
-                <dt>{key}</dt>
-                <dd>{String(value)}</dd>
-              </div>
-            )
-          )}
-        </dl>
-      ) : null}
-    </>
-  );
-
-  if (result.href) {
-    return (
-      <a className='search-result-card' href={result.href}>
-        {content}
-      </a>
-    );
-  }
-
-  return <article className='search-result-card'>{content}</article>;
-}
+import { AppLogo } from '@/components/AppLogo';
+import { useTranslations } from 'next-intl';
 
 export function SearchClient() {
+  const t = useTranslations('searchPage');
+  const tDashboard = useTranslations('dashboard');
+  const commonT = useTranslations('common');
   const [query, setQuery] = useState('');
   const [type, setType] = useState<SearchEntityType>('all');
   const [sort, setSort] = useState<SearchSortKey>('createdAt');
@@ -177,7 +71,7 @@ export function SearchClient() {
         });
 
         if (!nextResponse.ok) {
-          throw new Error('Search failed');
+          throw new Error(t('errors.searchFailed'));
         }
 
         const body = (await nextResponse.json()) as SearchResponse;
@@ -186,7 +80,7 @@ export function SearchClient() {
       } catch {
         if (!controller.signal.aborted) {
           setResponse(null);
-          setError('Search failed.');
+          setError(t('errors.searchFailed'));
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -202,7 +96,7 @@ export function SearchClient() {
     };
   }, [searchUrl]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setPage(1);
   }
@@ -221,36 +115,153 @@ export function SearchClient() {
 
   const pagination = response?.pagination;
 
+  const entityTypes: Array<{ label: string; value: SearchEntityType }> = [
+    { label: t('entityTypes.all'), value: 'all' },
+    { label: t('entityTypes.assets'), value: 'assets' },
+    { label: t('entityTypes.analyses'), value: 'analyses' },
+    { label: t('entityTypes.reports'), value: 'reports' },
+    { label: t('entityTypes.notifications'), value: 'notifications' }
+  ];
+
+  const sortOptions: Array<{ label: string; value: SearchSortKey }> = [
+    { label: t('sortOptions.createdAt'), value: 'createdAt' },
+    { label: t('sortOptions.name'), value: 'name' },
+    { label: t('sortOptions.symbol'), value: 'symbol' }
+  ];
+
+  const directionOptions: Array<{ label: string; value: SearchDirection }> = [
+    { label: t('directionOptions.desc'), value: 'desc' },
+    { label: t('directionOptions.asc'), value: 'asc' }
+  ];
+
+  const sentimentOptions = [
+    { label: t('sentimentOptions.any'), value: '' },
+    { label: t('sentimentOptions.bullish'), value: 'BULLISH' },
+    { label: t('sentimentOptions.neutral'), value: 'NEUTRAL' },
+    { label: t('sentimentOptions.bearish'), value: 'BEARISH' }
+  ];
+
+  const sourceOptions = [
+    { label: t('sourceOptions.any'), value: '' },
+    { label: t('sourceOptions.price'), value: 'PRICE' },
+    { label: t('sourceOptions.comment'), value: 'COMMENT' },
+    { label: t('sourceOptions.news'), value: 'NEWS' },
+    { label: t('sourceOptions.api'), value: 'API' },
+    { label: t('sourceOptions.scrape'), value: 'SCRAPE' }
+  ];
+
+  function formatDate(value: string | null) {
+    if (!value) {
+      return t('states.noDate');
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }).format(new Date(value));
+  }
+
+  function resultTypeLabel(type: SearchResultItem['type']) {
+    if (type === 'asset') {
+      return t('resultTypes.asset');
+    }
+
+    if (type === 'analysis') {
+      return t('resultTypes.analysis');
+    }
+
+    if (type === 'report') {
+      return t('resultTypes.report');
+    }
+
+    return t('resultTypes.notification');
+  }
+
+  function SearchResultCard({ result }: { result: SearchResultItem }) {
+    const content = (
+      <>
+        <div className='search-result-header'>
+          <span className='search-result-type'>
+            {resultTypeLabel(result.type)}
+          </span>
+          <span className='search-result-date'>
+            {formatDate(result.createdAt)}
+          </span>
+        </div>
+
+        <h2 className='search-result-title'>{result.title}</h2>
+
+        {result.subtitle ? (
+          <p className='search-result-subtitle'>{result.subtitle}</p>
+        ) : null}
+
+        {result.description ? (
+          <p className='search-result-description'>{result.description}</p>
+        ) : null}
+
+        {Object.keys(result.metadata).length > 0 ? (
+          <dl className='search-result-metadata'>
+            {Object.entries(result.metadata).map(([key, value]) =>
+              value === null ? null : (
+                <div key={key}>
+                  <dt>{key}</dt>
+                  <dd>{String(value)}</dd>
+                </div>
+              )
+            )}
+          </dl>
+        ) : null}
+      </>
+    );
+
+    if (result.href) {
+      return (
+        <a className='search-result-card' href={result.href}>
+          {content}
+        </a>
+      );
+    }
+
+    return <article className='search-result-card'>{content}</article>;
+  }
+
   return (
     <main className='search-page'>
       <header className='search-page-header'>
+        <AppLogo
+          ariaLabel={tDashboard('logoAria')}
+          href='/dashboard'
+          size='small'
+        />
+
         <div>
-          <p className='app-eyebrow'>Advanced search</p>
-          <h1>Search</h1>
+          <p className='app-eyebrow'>{commonT('advancedSearch')}</p>
+          <h1>{commonT('search')}</h1>
         </div>
 
         <a className='search-back-link' href='/dashboard'>
-          Dashboard
+          {commonT('dashboard')}
         </a>
       </header>
 
       <form className='search-panel' onSubmit={handleSubmit}>
         <div className='search-field search-field-wide'>
-          <label htmlFor='search-q'>Query</label>
+          <label htmlFor='search-q'>{t('labels.query')}</label>
           <input
             id='search-q'
             onChange={event => {
               setQuery(event.target.value);
               setPage(1);
             }}
-            placeholder='Symbol, company, report, notification...'
+            placeholder={t('placeholders.query')}
             type='search'
             value={query}
           />
         </div>
 
         <div className='search-field'>
-          <label htmlFor='search-type'>Type</label>
+          <label htmlFor='search-type'>{t('labels.type')}</label>
           <select
             id='search-type'
             onChange={event => {
@@ -267,7 +278,7 @@ export function SearchClient() {
         </div>
 
         <div className='search-field'>
-          <label htmlFor='search-sort'>Sort</label>
+          <label htmlFor='search-sort'>{t('labels.sort')}</label>
           <select
             id='search-sort'
             onChange={event => {
@@ -284,7 +295,7 @@ export function SearchClient() {
         </div>
 
         <div className='search-field'>
-          <label htmlFor='search-direction'>Direction</label>
+          <label htmlFor='search-direction'>{t('labels.direction')}</label>
           <select
             id='search-direction'
             onChange={event => {
@@ -301,7 +312,7 @@ export function SearchClient() {
         </div>
 
         <div className='search-field'>
-          <label htmlFor='search-sentiment'>Sentiment</label>
+          <label htmlFor='search-sentiment'>{t('labels.sentiment')}</label>
           <select
             id='search-sentiment'
             onChange={event => {
@@ -318,7 +329,7 @@ export function SearchClient() {
         </div>
 
         <div className='search-field'>
-          <label htmlFor='search-source'>Source</label>
+          <label htmlFor='search-source'>{t('labels.source')}</label>
           <select
             id='search-source'
             onChange={event => {
@@ -335,7 +346,7 @@ export function SearchClient() {
         </div>
 
         <div className='search-field'>
-          <label htmlFor='search-date-from'>From</label>
+          <label htmlFor='search-date-from'>{t('labels.from')}</label>
           <input
             id='search-date-from'
             onChange={event => {
@@ -348,7 +359,7 @@ export function SearchClient() {
         </div>
 
         <div className='search-field'>
-          <label htmlFor='search-date-to'>To</label>
+          <label htmlFor='search-date-to'>{t('labels.to')}</label>
           <input
             id='search-date-to'
             onChange={event => {
@@ -361,9 +372,9 @@ export function SearchClient() {
         </div>
 
         <div className='search-actions'>
-          <button type='submit'>Search</button>
+          <button type='submit'>{commonT('search')}</button>
           <button onClick={resetFilters} type='button'>
-            Reset
+            {t('buttons.reset')}
           </button>
         </div>
       </form>
@@ -372,15 +383,20 @@ export function SearchClient() {
         <div className='search-results-toolbar'>
           <p>
             {isLoading
-              ? 'Loading...'
-              : `${pagination?.total ?? 0} result${
-                  pagination?.total === 1 ? '' : 's'
-                }`}
+              ? t('states.loading')
+              : pagination?.total === 1
+                ? t('pagination.results', { count: pagination.total })
+                : t('pagination.resultsPlural', {
+                    count: pagination?.total ?? 0
+                  })}
           </p>
 
           {pagination ? (
             <p>
-              Page {pagination.page} of {pagination.totalPages}
+              {t('pagination.pageOf', {
+                page: pagination.page,
+                totalPages: pagination.totalPages
+              })}
             </p>
           ) : null}
         </div>
@@ -388,7 +404,7 @@ export function SearchClient() {
         {error ? <div className='search-state'>{error}</div> : null}
 
         {!error && !isLoading && response?.results.length === 0 ? (
-          <div className='search-state'>No results.</div>
+          <div className='search-state'>{t('states.noResults')}</div>
         ) : null}
 
         <div className='search-results-list'>
@@ -406,14 +422,14 @@ export function SearchClient() {
               disabled={!pagination.hasPreviousPage || isLoading}
               onClick={() => setPage(current => Math.max(1, current - 1))}
               type='button'>
-              Previous
+              {t('buttons.previous')}
             </button>
 
             <button
               disabled={!pagination.hasNextPage || isLoading}
               onClick={() => setPage(current => current + 1)}
               type='button'>
-              Next
+              {t('buttons.next')}
             </button>
           </div>
         ) : null}
