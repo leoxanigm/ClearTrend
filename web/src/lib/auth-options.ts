@@ -5,6 +5,7 @@ import Google from "next-auth/providers/google";
 import Github from "next-auth/providers/github";
 import FortyTwo from "next-auth/providers/42-school";
 import { getPrisma } from "@/lib/prisma";
+import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 
 function getOAuthAvatarUrl(...values: unknown[]) {
   for (const value of values) {
@@ -53,7 +54,7 @@ export const authOptions: NextAuthOptions = {
           type: "password",
         },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         const email =
           typeof credentials?.email === "string"
             ? credentials.email.trim().toLowerCase()
@@ -65,6 +66,16 @@ export const authOptions: NextAuthOptions = {
 
         if (!email || !password) {
           return null;
+        }
+
+        const ip = getClientIp(req ?? { headers: new Headers() });
+        const loginRateLimit = isRateLimited(`auth:login:${ip}`, {
+          limit: 5,
+          windowMs: 60_000,
+        });
+
+        if (!loginRateLimit.allowed) {
+          throw new Error("RATE_LIMITED");
         }
 
         const prisma = getPrisma();

@@ -98,6 +98,14 @@ export function useLoginPage() {
         });
 
         if (result?.error) {
+          if (result.error === "RATE_LIMITED") {
+            setMessage({
+              type: "error",
+              text: "Too many login attempts. Please try again later.",
+            });
+            return;
+          }
+
           setMessage({
             type: "error",
             text: t("invalidCredentials"),
