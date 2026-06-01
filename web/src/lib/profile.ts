@@ -27,6 +27,7 @@ type UserProfileRow = {
   displayName: string | null;
   email: string;
   id: string;
+  role: "USER" | "ADMIN" | "ANALYST";
 };
 
 export function getFallbackDisplayName(email: string) {
@@ -52,6 +53,7 @@ function toProfile(row: UserProfileRow): UserProfile {
     displayName: row.displayName ?? getFallbackDisplayName(row.email),
     email: row.email,
     id: row.id,
+    role: row.role,
   };
 }
 
@@ -91,6 +93,7 @@ export async function readUserProfileById(id: string) {
     SELECT
       id,
       email,
+      role,
       "displayName",
       "avatarUrl",
       "avatarMimeType",
@@ -112,6 +115,7 @@ async function readUserProfileByEmail(email: string) {
     SELECT
       id,
       email,
+      role,
       "displayName",
       "avatarUrl",
       "avatarMimeType",
@@ -136,6 +140,7 @@ async function readUserProfileByOauth(
     SELECT
       id,
       email,
+      role,
       "displayName",
       "avatarUrl",
       "avatarMimeType",
