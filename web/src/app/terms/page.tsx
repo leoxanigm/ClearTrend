@@ -1,16 +1,13 @@
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
-import { sessionCookieName, verifySessionToken } from "@/lib/auth";
-import { cookies } from "next/headers";
+import { authOptions } from "@/lib/auth-options";
 import { getTranslations } from "next-intl/server";
+import { getServerSession } from "next-auth";
 
 export default async function TermsPage() {
   const t = await getTranslations("legal");
   const commonT = await getTranslations("common");
-  const cookieStore = await cookies();
-  const session = verifySessionToken(
-    cookieStore.get(sessionCookieName)?.value
-  );
+  const session = await getServerSession(authOptions);
   const homeHref = session ? "/dashboard" : "/login";
   const homeLabel = session ? commonT("dashboard") : commonT("login");
 
