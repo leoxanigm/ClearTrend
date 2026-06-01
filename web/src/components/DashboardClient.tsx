@@ -230,6 +230,9 @@ export function DashboardClient({
             </summary>
             <div className="user-menu-panel">
               <p className="user-menu-name">{profile.displayName}</p>
+              {profile.role === "ADMIN" ? (
+                <p className="app-eyebrow text-[var(--app-accent)]">ADMIN</p>
+              ) : null}
               <p className="user-menu-email">{profile.email}</p>
 
               <button
