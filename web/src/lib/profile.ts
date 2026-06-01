@@ -1,5 +1,4 @@
 import { authOptions } from "@/lib/auth-options";
-import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import {
   clampAvatarOffsetForScale,
@@ -8,7 +7,6 @@ import {
   validateDisplayName,
 } from "@/lib/profile-rules";
 import type { UserProfile } from "@/lib/profile-types";
-import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 
 type CurrentUserIdentity = {
@@ -60,21 +58,6 @@ function toProfile(row: UserProfileRow): UserProfile {
 export async function getCurrentUserIdentity(): Promise<
   CurrentUserIdentity | null
 > {
-  const cookieStore = await cookies();
-  const localSession = verifySessionToken(
-    cookieStore.get(sessionCookieName)?.value
-  );
-
-  if (localSession) {
-    return {
-      email: localSession.email,
-      name: null,
-      oauthProvider: null,
-      oauthProviderAccountId: null,
-      userId: localSession.userId,
-    };
-  }
-
   const authSession = await getServerSession(authOptions);
   const sessionUser = authSession?.user as Record<string, unknown> | undefined;
   const email = typeof sessionUser?.email === "string" ? sessionUser.email : null;
@@ -98,7 +81,7 @@ export async function getCurrentUserIdentity(): Promise<
     name,
     oauthProvider,
     oauthProviderAccountId,
-    userId: null,
+    userId: typeof sessionUser?.id === "string" ? sessionUser.id : null,
   };
 }
 

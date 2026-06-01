@@ -129,10 +129,6 @@ export function DashboardClient({
 
   function handleLogout() {
     startLogoutTransition(async () => {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      }).catch(() => null);
-
       await signOut({
         callbackUrl: "/login",
         redirect: true,
