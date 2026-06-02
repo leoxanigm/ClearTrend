@@ -243,6 +243,14 @@ export function DashboardClient({
                 {t("profileSettings")}
               </button>
 
+              <a className="user-menu-action" href="/settings/api">
+                {t("apiSettings")}
+              </a>
+
+              <a className="user-menu-action" href="/api-docs">
+                {t("apiDocs")}
+              </a>
+
               <div className="user-menu-row">
                 <span>{t("theme")}</span>
                 <ThemeSwitch />
@@ -254,7 +262,7 @@ export function DashboardClient({
 
               <div className="user-menu-form">
                 <button
-                  className="user-menu-action"
+                  className="user-menu-action logout-button"
                   disabled={isLoggingOut}
                   onClick={handleLogout}
                   type="button"

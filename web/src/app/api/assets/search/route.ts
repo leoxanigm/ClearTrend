@@ -1,30 +1,31 @@
-import { requireAuthenticatedUser } from "@/lib/api-auth";
-import { ExternalDataCooldownError } from "@/lib/external-data";
-import { searchFinnhubAssets } from "@/lib/finnhub";
-import { NextResponse } from "next/server";
+import { requireApiIdentity } from '@/lib/api-auth';
+import { ExternalDataCooldownError } from '@/lib/external-data';
+import { searchFinnhubAssets } from '@/lib/finnhub';
+import { NextResponse } from 'next/server';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
-  const unauthorizedResponse = await requireAuthenticatedUser();
+  const { response } = await requireApiIdentity(req);
 
-  if (unauthorizedResponse) {
-    return unauthorizedResponse;
+  if (response) {
+    // unauthorized session or api key
+    return response;
   }
 
   const url = new URL(req.url);
-  const query = url.searchParams.get("q")?.trim() ?? "";
+  const query = url.searchParams.get('q')?.trim() ?? '';
 
   if (query.length < 2) {
     return NextResponse.json({
-      results: [],
+      results: []
     });
   }
 
   if (query.length > 40) {
     return NextResponse.json(
       {
-        error: "Search query is too long.",
+        error: 'Search query is too long.'
       },
       { status: 400 }
     );
@@ -34,13 +35,13 @@ export async function GET(req: Request) {
     const results = await searchFinnhubAssets(query);
 
     return NextResponse.json({
-      results,
+      results
     });
   } catch (error) {
     if (error instanceof ExternalDataCooldownError) {
       return NextResponse.json(
         {
-          error: "Asset search was requested recently. Try again shortly.",
+          error: 'Asset search was requested recently. Try again shortly.'
         },
         { status: 429 }
       );
@@ -48,7 +49,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       {
-        error: "Asset search failed.",
+        error: 'Asset search failed.'
       },
       { status: 502 }
     );

@@ -1,4 +1,4 @@
-import { getCurrentUserProfile } from '@/lib/profile';
+import { getApiUserProfile } from '@/lib/api-auth';
 import { getPrisma } from '@/lib/prisma';
 import {
   searchDirections,
@@ -488,10 +488,10 @@ function mergeSearchResults(
 }
 
 export async function GET(req: Request) {
-  const profile = await getCurrentUserProfile();
+  const { profile, response } = await getApiUserProfile(req);
 
-  if (!profile) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+  if (response) {
+    return response;
   }
 
   const url = new URL(req.url);

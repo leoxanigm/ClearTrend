@@ -68,6 +68,8 @@
     "openUserMenu": "Open user menu for {name}",
     "openWatchlist": "Open watchlist",
     "overview": "Overview",
+    "apiDocs": "API documentation",
+    "apiSettings": "API key settings",
     "profileSettings": "Profile settings",
     "sentiment": "Sentiment",
     "sentimentPending": "Pending",
@@ -211,6 +213,59 @@
       "results": "{count} result",
       "resultsPlural": "{count} results",
       "pageOf": "Page {page} of {totalPages}"
+    }
+  },
+  "apiKeyPage": {
+    "eyebrow": "Developer access",
+    "title": "API key",
+    "description": "Create one API key for your account. The secret is displayed once after creation. Delete the existing key before creating a replacement.",
+    "labels": {
+      "prefix": "Key prefix",
+      "createdAt": "Created",
+      "lastUsedAt": "Last used"
+    },
+    "buttons": {
+      "create": "Create API key",
+      "creating": "Creating...",
+      "delete": "Delete API key",
+      "deleting": "Deleting...",
+      "copy": "Copy key",
+      "copied": "Copied",
+      "docs": "API documentation"
+    },
+    "states": {
+      "loading": "Loading API key...",
+      "noKey": "No API key exists for this account.",
+      "neverUsed": "Never used",
+      "secretWarning": "Store this key now. It cannot be displayed again."
+    },
+    "errors": {
+      "load": "Could not load the API key.",
+      "create": "Could not create the API key.",
+      "delete": "Could not delete the API key.",
+      "copy": "Could not copy the API key."
+    }
+  },
+  "apiDocsPage": {
+    "eyebrow": "ClearTrend public API",
+    "title": "API documentation",
+    "description": "Create one API key from your profile menu. Pass it as",
+    "or": "or",
+    "buttons": {
+      "settings": "API key settings"
+    },
+    "auth": {
+      "public": "No API key required",
+      "authenticated": "API key or browser session"
+    },
+    "endpoints": {
+      "health": "Returns web, database, and analysis service health.",
+      "candles": "Returns price candles. Supported ranges: 1D, 1M, 3M, 1Y.",
+      "watchlistGet": "Returns the current user watchlist.",
+      "watchlistPost": "Adds one symbol to the current user watchlist.",
+      "watchlistPut": "Replaces the complete current user watchlist.",
+      "watchlistDelete": "Removes one symbol. Send no request body to clear the complete watchlist.",
+      "search": "Searches assets, analyses, reports, and notifications with filters and pagination."
     }
   },
   "legal": {

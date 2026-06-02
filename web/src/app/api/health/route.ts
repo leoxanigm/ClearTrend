@@ -1,30 +1,58 @@
-import { getPrisma } from "@/lib/prisma";
+import { getPrisma } from '@/lib/prisma';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-export async function GET() {
+async function checkDatabase() {
   try {
     const prisma = getPrisma();
 
     await prisma.$queryRaw`SELECT 1`;
 
-    return Response.json({
-      status: "ok",
-      services: {
-        web: "ok",
-        database: "ok",
-      },
-    });
+    return 'ok';
   } catch {
-    return Response.json(
-      {
-        status: "error",
-        services: {
-          web: "ok",
-          database: "error",
-        },
-      },
-      { status: 503 }
-    );
+    return 'error';
   }
+}
+
+async function checkAnalysis() {
+  const analysisUrl = process.env.ANALYSIS_URL;
+
+  if (!analysisUrl) {
+    return 'not_configured';
+  }
+
+  try {
+    const response = await fetch(`${analysisUrl}/health`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(2000)
+    });
+
+    return response.ok ? 'ok' : 'error';
+  } catch {
+    return 'error';
+  }
+}
+
+export async function GET() {
+  const [database, analysis] = await Promise.all([
+    checkDatabase(),
+    checkAnalysis()
+  ]);
+
+  const status = database === 'ok' && analysis !== 'error' ? 'ok' : 'error';
+
+  return Response.json(
+    {
+      status,
+      timestamp: new Date().toISOString(),
+      services: {
+        web: 'ok',
+        database,
+        analysis
+      }
+    },
+    {
+      status: status === 'ok' ? 200 : 503
+    }
+  );
 }
