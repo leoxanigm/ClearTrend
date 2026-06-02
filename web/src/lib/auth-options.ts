@@ -1,8 +1,11 @@
 import type { NextAuthOptions } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import Google from "next-auth/providers/google";
 import Github from "next-auth/providers/github";
 import FortyTwo from "next-auth/providers/42-school";
 import { getPrisma } from "@/lib/prisma";
+import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 
 function getOAuthAvatarUrl(...values: unknown[]) {
   for (const value of values) {
@@ -39,11 +42,79 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.AUTH_42_SCHOOL_SECRET!,
     }),
 
+    Credentials({
+      name: "credentials",
+      credentials: {
+        email: {
+          label: "Email",
+          type: "email",
+        },
+        password: {
+          label: "Password",
+          type: "password",
+        },
+      },
+      async authorize(credentials, req) {
+        const email =
+          typeof credentials?.email === "string"
+            ? credentials.email.trim().toLowerCase()
+            : "";
+        const password =
+          typeof credentials?.password === "string"
+            ? credentials.password
+            : "";
+
+        if (!email || !password) {
+          return null;
+        }
+
+        const ip = getClientIp(req ?? { headers: new Headers() });
+        const loginRateLimit = isRateLimited(`auth:login:${ip}`, {
+          limit: 5,
+          windowMs: 60_000,
+        });
+
+        if (!loginRateLimit.allowed) {
+          throw new Error("RATE_LIMITED");
+        }
+
+        const prisma = getPrisma();
+        const user = await prisma.user.findFirst({
+          where: {
+            email,
+            passwordHash: {
+              not: null,
+            },
+          },
+        });
+
+        if (!user?.passwordHash) {
+          return null;
+        }
+
+        const valid = await bcrypt.compare(password, user.passwordHash);
+
+        if (!valid) {
+          return null;
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.displayName,
+        };
+      },
+    }),
   ],
   callbacks: {
     async signIn({ account, user, profile }) {
       const oauthProvider = account?.provider;
       const oauthProviderAccountId = account?.providerAccountId;
+
+      if (oauthProvider === "credentials") {
+        return true;
+      }
+
       const avatarUrl = getOAuthAvatarUrl(user.image, profile?.image);
 
       if (!user.email || !oauthProvider || !oauthProviderAccountId) {
@@ -78,7 +149,11 @@ export const authOptions: NextAuthOptions = {
 
       return true;
     },
-    async jwt({ token, account }) {
+    async jwt({ token, account, user }) {
+      if (user?.id) {
+        token.userId = user.id;
+      }
+
       if (account?.provider) {
         token.oauthProvider = account.provider;
       }
@@ -92,6 +167,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         const user = session.user as Record<string, unknown>;
+
+        user.id = typeof token.userId === "string" ? token.userId : null;
 
         user.oauthProvider =
           typeof token.oauthProvider === "string" ? token.oauthProvider : null;

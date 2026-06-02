@@ -1,4 +1,5 @@
 import { getPrisma } from "@/lib/prisma";
+import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
@@ -25,6 +26,18 @@ export async function POST(req: Request) {
     const fields = body as Record<string, unknown>;
     const email = normalizeEmail(fields.email);
     const password = readPassword(fields.password);
+    const ip = getClientIp(req);
+    const registerRateLimit = isRateLimited(`auth:register:${ip}`, {
+      limit: 3,
+      windowMs: 60_000,
+    });
+
+    if (!registerRateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429 }
+      );
+    }
 
     if (!email || !password) {
       return NextResponse.json(

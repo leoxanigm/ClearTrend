@@ -1,5 +1,4 @@
 import { authOptions } from "@/lib/auth-options";
-import { sessionCookieName, verifySessionToken } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import {
   clampAvatarOffsetForScale,
@@ -8,7 +7,6 @@ import {
   validateDisplayName,
 } from "@/lib/profile-rules";
 import type { UserProfile } from "@/lib/profile-types";
-import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 
 type CurrentUserIdentity = {
@@ -29,6 +27,7 @@ type UserProfileRow = {
   displayName: string | null;
   email: string;
   id: string;
+  role: "USER" | "ADMIN" | "ANALYST";
 };
 
 export function getFallbackDisplayName(email: string) {
@@ -54,27 +53,13 @@ function toProfile(row: UserProfileRow): UserProfile {
     displayName: row.displayName ?? getFallbackDisplayName(row.email),
     email: row.email,
     id: row.id,
+    role: row.role,
   };
 }
 
 export async function getCurrentUserIdentity(): Promise<
   CurrentUserIdentity | null
 > {
-  const cookieStore = await cookies();
-  const localSession = verifySessionToken(
-    cookieStore.get(sessionCookieName)?.value
-  );
-
-  if (localSession) {
-    return {
-      email: localSession.email,
-      name: null,
-      oauthProvider: null,
-      oauthProviderAccountId: null,
-      userId: localSession.userId,
-    };
-  }
-
   const authSession = await getServerSession(authOptions);
   const sessionUser = authSession?.user as Record<string, unknown> | undefined;
   const email = typeof sessionUser?.email === "string" ? sessionUser.email : null;
@@ -98,7 +83,7 @@ export async function getCurrentUserIdentity(): Promise<
     name,
     oauthProvider,
     oauthProviderAccountId,
-    userId: null,
+    userId: typeof sessionUser?.id === "string" ? sessionUser.id : null,
   };
 }
 
@@ -108,6 +93,7 @@ export async function readUserProfileById(id: string) {
     SELECT
       id,
       email,
+      role,
       "displayName",
       "avatarUrl",
       "avatarMimeType",
@@ -129,6 +115,7 @@ async function readUserProfileByEmail(email: string) {
     SELECT
       id,
       email,
+      role,
       "displayName",
       "avatarUrl",
       "avatarMimeType",
@@ -153,6 +140,7 @@ async function readUserProfileByOauth(
     SELECT
       id,
       email,
+      role,
       "displayName",
       "avatarUrl",
       "avatarMimeType",

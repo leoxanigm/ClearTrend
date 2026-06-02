@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { getSession, signIn } from "next-auth/react";
 
 export type FormMode = "login" | "register";
 type MessageType = "error" | "success";
@@ -36,22 +37,11 @@ export function useLoginPage() {
 
   // Redirect logged-in users away from the auth page
   useEffect(() => {
-    // Ask the server if the HttpOnly session cookie is valid
     async function redirectIfAuthenticated() {
-      const response = await fetch("/api/auth/session", {
-        cache: "no-store",
-      }).catch(() => null);
-
-      // Keep the login page usable if the session check fails
-      if (!response?.ok) {
-        return;
-      }
-
-      // Parse the session response defensively
-      const body = await response.json().catch(() => null);
+      const session = await getSession().catch(() => null);
 
       // Already authenticated users should land on the dashboard
-      if (body?.authenticated) {
+      if (session?.user?.email) {
         router.replace("/dashboard");
       }
     }
@@ -91,10 +81,6 @@ export function useLoginPage() {
       return;
     }
 
-    // Pick the backend route based on the active tab
-    const endpoint =
-      mode === "login" ? "/api/auth/login" : "/api/auth/register";
-
     // Generic fallback text if the backend sends no usable error
     const fallbackError =
       mode === "login" ? t("loginFailed") : t("registrationFailed");
@@ -103,8 +89,36 @@ export function useLoginPage() {
     setIsSubmitting(true);
 
     try {
+      if (mode === "login") {
+        const result = await signIn("credentials", {
+          callbackUrl: "/dashboard",
+          email,
+          password,
+          redirect: false,
+        });
+
+        if (result?.error) {
+          if (result.error === "RATE_LIMITED") {
+            setMessage({
+              type: "error",
+              text: "Too many login attempts. Please try again later.",
+            });
+            return;
+          }
+
+          setMessage({
+            type: "error",
+            text: t("invalidCredentials"),
+          });
+          return;
+        }
+
+        router.replace("/dashboard");
+        return;
+      }
+
       // Send credentials to the selected auth endpoint
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -123,16 +137,6 @@ export function useLoginPage() {
           type: "error",
           text: translateAuthError(body?.error, fallbackError),
         });
-        return;
-      }
-
-      // Successful login creates a cookie server-side, then enters the app
-      if (mode === "login") {
-        setMessage({
-          type: "success",
-          text: t("loggedIn"),
-        });
-        router.replace("/dashboard");
         return;
       }
 

@@ -129,10 +129,6 @@ export function DashboardClient({
 
   function handleLogout() {
     startLogoutTransition(async () => {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      }).catch(() => null);
-
       await signOut({
         callbackUrl: "/login",
         redirect: true,
@@ -234,6 +230,9 @@ export function DashboardClient({
             </summary>
             <div className="user-menu-panel">
               <p className="user-menu-name">{profile.displayName}</p>
+              {profile.role === "ADMIN" ? (
+                <p className="app-eyebrow text-[var(--app-accent)]">ADMIN</p>
+              ) : null}
               <p className="user-menu-email">{profile.email}</p>
 
               <button
