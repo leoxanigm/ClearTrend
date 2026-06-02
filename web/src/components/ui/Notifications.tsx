@@ -26,12 +26,14 @@ type NotificationItem = Required<NotificationInput> & {
 
 type NotificationContextValue = {
   notify: (notification: NotificationInput) => string;
+  notifyAfterNavigation: (notification: NotificationInput) => void;
   dismissNotification: (id: string) => void;
 };
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
 const defaultNotificationDurationMs = 5_000;
+const queuedNotificationStorageKey = "cleartrend-next-notification";
 
 function createNotificationId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -87,12 +89,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [dismissNotification]
   );
 
+  const notifyAfterNavigation = useCallback((notification: NotificationInput) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      queuedNotificationStorageKey,
+      JSON.stringify(notification)
+    );
+  }, []);
+
   const contextValue = useMemo(
     () => ({
       dismissNotification,
       notify,
+      notifyAfterNavigation,
     }),
-    [dismissNotification, notify]
+    [dismissNotification, notify, notifyAfterNavigation]
   );
 
   useEffect(() => {
@@ -103,6 +117,28 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       timeouts.clear();
     };
   }, []);
+
+  useEffect(() => {
+    const queuedNotification = window.sessionStorage.getItem(
+      queuedNotificationStorageKey
+    );
+
+    if (!queuedNotification) {
+      return;
+    }
+
+    window.sessionStorage.removeItem(queuedNotificationStorageKey);
+
+    try {
+      const notification = JSON.parse(queuedNotification) as NotificationInput;
+
+      if (notification.title) {
+        setTimeout(() => notify(notification), 0);
+      }
+    } catch {
+      window.sessionStorage.removeItem(queuedNotificationStorageKey);
+    }
+  }, [notify]);
 
   return (
     <NotificationContext.Provider value={contextValue}>

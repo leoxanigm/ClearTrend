@@ -5,6 +5,7 @@ import { AppLogo } from "@/components/AppLogo";
 import { AssetChart } from "@/components/AssetChart";
 import { FooterLinks } from "@/components/FooterLinks";
 import { ProfileSettingsDialog } from "@/components/ProfileSettingsDialog";
+import { useNotifications } from "@/components/ui/Notifications";
 import { UserAvatar } from "@/components/UserAvatar";
 import { WatchlistNav } from "@/components/WatchlistNav";
 import { LanguageSelect } from "@/components/ui/LanguageSelect";
@@ -26,6 +27,8 @@ export function DashboardClient({
   const t = useTranslations("dashboard");
   const commonT = useTranslations("common");
   const userMenuRef = useRef<HTMLDetailsElement>(null);
+  const { notifyAfterNavigation } = useNotifications();
+  const { notify } = useNotifications();
   const [profile, setProfile] = useState(userProfile);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [watchlistAssets, setWatchlistAssets] = useState(initialWatchlistAssets);
@@ -130,6 +133,11 @@ export function DashboardClient({
 
   function handleLogout() {
     startLogoutTransition(async () => {
+      notifyAfterNavigation({
+        title: "Logged out",
+        tone: "success",
+      });
+
       await signOut({
         callbackUrl: "/login",
         redirect: true,
@@ -141,6 +149,10 @@ export function DashboardClient({
     const confirmed = window.confirm(t("confirmDeleteProfile"));
 
     if (!confirmed) {
+      notify({
+        title: "Account deletion cancelled",
+        tone: "error",
+      });
       return;
     }
 
@@ -152,9 +164,17 @@ export function DashboardClient({
 
         if (!response.ok) {
           window.alert(t("deleteProfileError"));
+          notify({
+            title: "Account deletion error",
+            tone: "error",
+          });
           return;
         }
 
+        notifyAfterNavigation({
+          title: "Account deleted",
+          tone: "success",
+        });
         await signOut({
           callbackUrl: "/login",
           redirect: true,
