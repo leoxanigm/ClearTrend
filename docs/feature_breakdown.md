@@ -28,20 +28,20 @@ Modules coeur annonces: 20 pts.
 
 | Module | Pts | Priorite | Owner principal | Support |
 |---|---:|---|---|---|
-| Framework frontend + backend | 2 | P0 | elhirond / amoureau | zalemu |
-| Navigateurs additionnels | 1 | P2 | elhirond | tous |
-| Design system 10 composants | 1 | P1 | elhirond | amoureau |
-| Backend microservices | 2 | P2 risque | mathboys / amoureau | zalemu |
-| Analytics dashboard avance | 2 | P1 | elhirond | mathboys |
-| Real-time WebSocket/SSE | 2 | P2 | amoureau | elhirond |
-| ORM | 1 | P0 | zalemu | amoureau |
-| Recommendation ML | 2 | P2 risque | mathboys | zalemu |
-| Advanced search | 1 | P1 | zalemu | elhirond |
-| Health/status/backups/DR | 1 | P1 | zalemu | amoureau |
-| Public API securisee | 2 | P1 | amoureau | zalemu |
-| OAuth 2.0 | 1 | P2 | amoureau | elhirond |
-| Notifications CRUD | 1 | P1 | amoureau | elhirond |
-| 3 langues | 1 | P1 | elhirond | tous |
+| Framework frontend + backend | 2 | P0 | elhirond / amoureau | zalemu |	2
+| Navigateurs additionnels | 1 | P2 | elhirond | tous |						1
+| Design system 10 composants | 1 | P1 | elhirond | amoureau |				1	§
+| Backend microservices | 2 | P2 risque | mathboys / amoureau | zalemu |	2
+| Analytics dashboard avance | 2 | P1 | elhirond | mathboys |				
+| Real-time WebSocket/SSE | 2 | P2 | amoureau | elhirond |					
+| ORM | 1 | P0 | zalemu | amoureau |										1
+| Recommendation ML | 2 | P2 risque | mathboys | zalemu |					2	§
+| Advanced search | 1 | P1 | zalemu | elhirond |							1
+| Health/status/backups/DR | 1 | P1 | zalemu | amoureau |					1
+| Public API securisee | 2 | P1 | amoureau | zalemu |						2
+| OAuth 2.0 | 1 | P2 | amoureau | elhirond |								1
+| Notifications CRUD | 1 | P1 | amoureau | elhirond |						1	§
+| 3 langues | 1 | P1 | elhirond | tous |									1
 
 Tampon probable:
 
