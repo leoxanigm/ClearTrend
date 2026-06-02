@@ -63,6 +63,10 @@
   },
   "dashboard": {
     "logoAria": "Dashboard ClearTrend",
+    "confirmDeleteProfile": "Supprimer définitivement votre profil ? Cette action est irréversible.",
+    "deleteProfile": "Supprimer le profil",
+    "deleteProfileError": "Votre profil n'a pas pu être supprimé. Veuillez réessayer.",
+    "deletingProfile": "Suppression du profil...",
     "logout": "Déconnexion",
     "loggingOut": "Déconnexion...",
     "openUserMenu": "Ouvrir le menu utilisateur de {name}",

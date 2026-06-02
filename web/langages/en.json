@@ -63,6 +63,10 @@
   },
   "dashboard": {
     "logoAria": "ClearTrend dashboard",
+    "confirmDeleteProfile": "Delete your profile permanently? This action cannot be undone.",
+    "deleteProfile": "Delete profile",
+    "deleteProfileError": "Your profile could not be deleted. Please try again.",
+    "deletingProfile": "Deleting profile...",
     "logout": "Logout",
     "loggingOut": "Logging out...",
     "openUserMenu": "Open user menu for {name}",

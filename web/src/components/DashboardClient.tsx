@@ -33,6 +33,7 @@ export function DashboardClient({
     initialWatchlistAssets[0]?.symbol ?? null
   );
   const [isLoggingOut, startLogoutTransition] = useTransition();
+  const [isDeletingProfile, startDeleteProfileTransition] = useTransition();
   const selectedAsset = useMemo(
     () =>
       watchlistAssets.find((asset) => asset.symbol === selectedSymbol) ??
@@ -133,6 +134,34 @@ export function DashboardClient({
         callbackUrl: "/login",
         redirect: true,
       });
+    });
+  }
+
+  function handleDeleteProfile() {
+    const confirmed = window.confirm(t("confirmDeleteProfile"));
+
+    if (!confirmed) {
+      return;
+    }
+
+    startDeleteProfileTransition(async () => {
+      try {
+        const response = await fetch("/api/account/delete", {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          window.alert(t("deleteProfileError"));
+          return;
+        }
+
+        await signOut({
+          callbackUrl: "/login",
+          redirect: true,
+        });
+      } catch {
+        window.alert(t("deleteProfileError"));
+      }
     });
   }
 
@@ -262,8 +291,17 @@ export function DashboardClient({
 
               <div className="user-menu-form">
                 <button
+                  className="user-menu-action delete-profile-button"
+                  disabled={isDeletingProfile || isLoggingOut}
+                  onClick={handleDeleteProfile}
+                  type="button"
+                >
+                  {isDeletingProfile ? t("deletingProfile") : t("deleteProfile")}
+                </button>
+
+                <button
                   className="user-menu-action logout-button"
-                  disabled={isLoggingOut}
+                  disabled={isLoggingOut || isDeletingProfile}
                   onClick={handleLogout}
                   type="button"
                 >
