@@ -8,10 +8,13 @@ COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
 # dev starts the coding environment: hot reload, exposed ports, plain HTTP.
 dev: .env
-	$(COMPOSE_DEV) up --build --remove-orphans --renew-anon-volumes db analysis web
+	$(COMPOSE_DEV) up -d --build --remove-orphans db analysis
+	$(COMPOSE_DEV) build web
+	$(COMPOSE_DEV) run --rm --no-deps web npm run db:push
 	-$(COMPOSE_DEV) stop proxy
-	$(COMPOSE_DEV) exec web npm run db:push
+	$(COMPOSE_DEV) up -d --no-deps web
 	$(MAKE) dev-info
+	$(COMPOSE_DEV) logs -f db analysis web
 
 # up starts the evaluation-like environment: built containers and HTTPS through nginx.
 up: .env certs

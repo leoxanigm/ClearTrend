@@ -22,7 +22,7 @@ async function checkAnalysis() {
   }
 
   try {
-    const response = await fetch(`${analysisUrl}/health`, {
+    const response = await fetch(new URL('/health', analysisUrl), {
       cache: 'no-store',
       signal: AbortSignal.timeout(2000)
     });
