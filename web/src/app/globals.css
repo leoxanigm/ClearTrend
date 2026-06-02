@@ -243,6 +243,19 @@ input {
     color: var(--app-accent);
 }
 
+.user-menu-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.user-menu-action.delete-profile-button {
+    color: #b91c1c;
+}
+
+.user-menu-action.delete-profile-button:hover:not(:disabled) {
+    color: #991b1b;
+}
+
 .user-menu-action.logout-button {
   color: orange;
 }

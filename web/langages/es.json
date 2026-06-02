@@ -63,6 +63,10 @@
   },
   "dashboard": {
     "logoAria": "Panel de ClearTrend",
+    "confirmDeleteProfile": "¿Eliminar tu perfil permanentemente? Esta acción no se puede deshacer.",
+    "deleteProfile": "Eliminar perfil",
+    "deleteProfileError": "No se pudo eliminar tu perfil. Inténtalo de nuevo.",
+    "deletingProfile": "Eliminando perfil...",
     "logout": "Cerrar sesión",
     "loggingOut": "Cerrando sesión...",
     "openUserMenu": "Abrir menú de usuario de {name}",
