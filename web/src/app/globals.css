@@ -2275,3 +2275,85 @@ input {
 }
 
 /* API key settings and docs pages end */
+
+.notification-region {
+  position: fixed;
+  z-index: 80;
+  right: 16px;
+  bottom: 68px;
+  display: grid;
+  width: min(360px, calc(100vw - 32px));
+  gap: 10px;
+  pointer-events: none;
+}
+
+.notification-toast {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--app-border);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--app-surface);
+  box-shadow: 0 16px 32px rgb(15 23 42 / 0.18);
+  color: var(--app-text);
+  pointer-events: auto;
+}
+
+.notification-toast-success {
+  border-left-color: var(--app-accent);
+}
+
+.notification-toast-info {
+  border-left-color: var(--app-secondary);
+}
+
+.notification-toast-warning {
+  border-left-color: #d97706;
+}
+
+.notification-toast-error {
+  border-left-color: #dc2626;
+}
+
+.notification-toast-content {
+  min-width: 0;
+}
+
+.notification-toast-title,
+.notification-toast-body {
+  margin: 0;
+}
+
+.notification-toast-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.notification-toast-body {
+  margin-top: 4px;
+  color: var(--app-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.notification-toast-dismiss {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-muted);
+  cursor: pointer;
+}
+
+.notification-toast-dismiss:hover {
+  background: var(--app-panel);
+  color: var(--app-text);
+}

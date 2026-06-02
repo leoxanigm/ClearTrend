@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { getSession, signIn } from "next-auth/react";
+import { useNotifications } from "@/components/ui/Notifications";
 
 export type FormMode = "login" | "register";
 type MessageType = "error" | "success";
@@ -11,6 +12,8 @@ type MessageType = "error" | "success";
 // Hook that owns the login/register form behavior
 export function useLoginPage() {
   const t = useTranslations("login.feedback");
+
+  const { notify, notifyAfterNavigation } = useNotifications();
   // Router is used for client-side redirects after auth checks
   const router = useRouter();
 
@@ -112,7 +115,10 @@ export function useLoginPage() {
           });
           return;
         }
-
+        notifyAfterNavigation({
+          title: "Logged in",
+          tone: "success",
+        });
         router.replace("/dashboard");
         return;
       }
@@ -132,7 +138,10 @@ export function useLoginPage() {
       // Surface backend validation/auth errors to the user
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-
+        notify({
+          title: "Account creation failed",
+          tone: "error",
+        });
         setMessage({
           type: "error",
           text: translateAuthError(body?.error, fallbackError),
@@ -145,6 +154,10 @@ export function useLoginPage() {
       setPassword("");
       setConfirmPassword("");
       setMode("login");
+      notify({
+        title: "Account created",
+        tone: "success",
+      });
       setMessage({
         type: "success",
         text: t("accountCreated"),
