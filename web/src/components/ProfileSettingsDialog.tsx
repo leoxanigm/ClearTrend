@@ -29,6 +29,7 @@ import {
   normalizeDisplayName,
   validateDisplayName,
 } from "@/lib/profile-rules";
+import { useNotifications } from "@/components/ui/Notifications";
 import type { UserProfile } from "@/lib/profile-types";
 import { useTranslations } from "next-intl";
 
@@ -74,6 +75,7 @@ export function ProfileSettingsDialog({
 }: ProfileSettingsDialogProps) {
   const t = useTranslations("profile");
   const commonT = useTranslations("common");
+  const { notify } = useNotifications();
   const displayNameId = useId();
   const avatarInputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -397,14 +399,32 @@ export function ProfileSettingsDialog({
         | null;
 
       if (!response.ok || !body?.profile) {
-        setError(translateProfileError(body?.error));
+        const message = translateProfileError(body?.error);
+
+        setError(message);
+        notify({
+          body: message,
+          title: "Profile update failed",
+          tone: "error",
+        });
         return;
       }
 
       onProfileSave(body.profile);
+      notify({
+        title: "Profile updated",
+        tone: "success",
+      });
       onClose();
     } catch {
-      setError(t("errors.profileSave"));
+      const message = t("errors.profileSave");
+
+      setError(message);
+      notify({
+        body: message,
+        title: "Profile update failed",
+        tone: "error",
+      });
     } finally {
       setIsSaving(false);
     }
