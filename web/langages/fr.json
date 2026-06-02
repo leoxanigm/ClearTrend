@@ -68,6 +68,8 @@
     "openUserMenu": "Ouvrir le menu utilisateur de {name}",
     "openWatchlist": "Ouvrir la watchlist",
     "overview": "Vue d'ensemble",
+    "apiDocs": "Documentation API",
+    "apiSettings": "Clé API",
     "profileSettings": "Paramètres du profil",
     "sentiment": "Sentiment",
     "sentimentPending": "En attente",
@@ -211,6 +213,59 @@
       "results": "{count} résultat",
       "resultsPlural": "{count} résultats",
       "pageOf": "Page {page} sur {totalPages}"
+    }
+  },
+  "apiKeyPage": {
+    "eyebrow": "Accès développeur",
+    "title": "Clé API",
+    "description": "Crée une clé API pour ton compte. Le secret est affiché une seule fois après sa création. Supprime la clé existante avant d'en créer une nouvelle.",
+    "labels": {
+      "prefix": "Préfixe de la clé",
+      "createdAt": "Créée le",
+      "lastUsedAt": "Dernière utilisation"
+    },
+    "buttons": {
+      "create": "Créer une clé API",
+      "creating": "Création...",
+      "delete": "Supprimer la clé API",
+      "deleting": "Suppression...",
+      "copy": "Copier la clé",
+      "copied": "Copiée",
+      "docs": "Documentation API"
+    },
+    "states": {
+      "loading": "Chargement de la clé API...",
+      "noKey": "Aucune clé API n'existe pour ce compte.",
+      "neverUsed": "Jamais utilisée",
+      "secretWarning": "Enregistre cette clé maintenant. Elle ne pourra plus être affichée."
+    },
+    "errors": {
+      "load": "Impossible de charger la clé API.",
+      "create": "Impossible de créer la clé API.",
+      "delete": "Impossible de supprimer la clé API.",
+      "copy": "Impossible de copier la clé API."
+    }
+  },
+  "apiDocsPage": {
+    "eyebrow": "API publique ClearTrend",
+    "title": "Documentation API",
+    "description": "Crée une clé API depuis le menu de ton profil. Transmets-la avec",
+    "or": "ou",
+    "buttons": {
+      "settings": "Paramètres de la clé API"
+    },
+    "auth": {
+      "public": "Aucune clé API requise",
+      "authenticated": "Clé API ou session navigateur"
+    },
+    "endpoints": {
+      "health": "Retourne l'état des services web, base de données et analyse.",
+      "candles": "Retourne les chandeliers de prix. Périodes prises en charge : 1D, 1M, 3M, 1Y.",
+      "watchlistGet": "Retourne la watchlist de l'utilisateur courant.",
+      "watchlistPost": "Ajoute un symbole à la watchlist de l'utilisateur courant.",
+      "watchlistPut": "Remplace toute la watchlist de l'utilisateur courant.",
+      "watchlistDelete": "Supprime un symbole. Envoie une requête sans body pour vider toute la watchlist.",
+      "search": "Recherche des actifs, analyses, rapports et notifications avec filtres et pagination."
     }
   },
   "legal": {

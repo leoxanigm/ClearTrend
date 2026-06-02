@@ -68,6 +68,8 @@
     "openUserMenu": "Abrir menú de usuario de {name}",
     "openWatchlist": "Abrir watchlist",
     "overview": "Resumen",
+    "apiDocs": "Documentación de API",
+    "apiSettings": "Clave API",
     "profileSettings": "Ajustes del perfil",
     "sentiment": "Sentimiento",
     "sentimentPending": "Pendiente",
@@ -211,6 +213,59 @@
       "results": "{count} resultado",
       "resultsPlural": "{count} resultados",
       "pageOf": "Página {page} de {totalPages}"
+    }
+  },
+  "apiKeyPage": {
+    "eyebrow": "Acceso para desarrolladores",
+    "title": "Clave API",
+    "description": "Crea una clave API para tu cuenta. El secreto se muestra una sola vez después de crearla. Elimina la clave existente antes de crear otra.",
+    "labels": {
+      "prefix": "Prefijo de la clave",
+      "createdAt": "Creada",
+      "lastUsedAt": "Último uso"
+    },
+    "buttons": {
+      "create": "Crear clave API",
+      "creating": "Creando...",
+      "delete": "Eliminar clave API",
+      "deleting": "Eliminando...",
+      "copy": "Copiar clave",
+      "copied": "Copiada",
+      "docs": "Documentación de API"
+    },
+    "states": {
+      "loading": "Cargando clave API...",
+      "noKey": "No existe ninguna clave API para esta cuenta.",
+      "neverUsed": "Nunca utilizada",
+      "secretWarning": "Guarda esta clave ahora. No se podrá volver a mostrar."
+    },
+    "errors": {
+      "load": "No se pudo cargar la clave API.",
+      "create": "No se pudo crear la clave API.",
+      "delete": "No se pudo eliminar la clave API.",
+      "copy": "No se pudo copiar la clave API."
+    }
+  },
+  "apiDocsPage": {
+    "eyebrow": "API pública de ClearTrend",
+    "title": "Documentación de API",
+    "description": "Crea una clave API desde el menú de tu perfil. Envíala como",
+    "or": "o",
+    "buttons": {
+      "settings": "Ajustes de la clave API"
+    },
+    "auth": {
+      "public": "No se requiere clave API",
+      "authenticated": "Clave API o sesión del navegador"
+    },
+    "endpoints": {
+      "health": "Devuelve el estado de los servicios web, base de datos y análisis.",
+      "candles": "Devuelve velas de precio. Rangos disponibles: 1D, 1M, 3M, 1Y.",
+      "watchlistGet": "Devuelve la watchlist del usuario actual.",
+      "watchlistPost": "Añade un símbolo a la watchlist del usuario actual.",
+      "watchlistPut": "Reemplaza toda la watchlist del usuario actual.",
+      "watchlistDelete": "Elimina un símbolo. Envía la solicitud sin body para vaciar toda la watchlist.",
+      "search": "Busca activos, análisis, informes y notificaciones con filtros y paginación."
     }
   },
   "legal": {

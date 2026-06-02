@@ -94,7 +94,7 @@ export function SearchClient() {
     return () => {
       controller.abort();
     };
-  }, [searchUrl]);
+  }, [searchUrl, t]);
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();

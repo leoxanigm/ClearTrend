@@ -235,11 +235,16 @@ input {
     color: var(--app-text);
     padding-top: 0.75rem;
     text-align: left;
+    text-decoration: none;
     font-size: 0.875rem;
 }
 
 .user-menu-action:hover {
     color: var(--app-accent);
+}
+
+.user-menu-action.logout-button {
+  color: orange;
 }
 
 .profile-dialog-backdrop {
@@ -2033,3 +2038,227 @@ input {
 }
 
 /* Search page end */
+
+/* API key settings and docs pages start */
+
+.api-key-page,
+.api-docs-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: var(--app-background);
+  color: var(--app-text);
+}
+
+.api-key-page-header,
+.api-docs-header,
+.api-key-page-content,
+.api-docs-content {
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+.api-key-page-header,
+.api-docs-header,
+.api-key-page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.api-key-page-content,
+.api-docs-content {
+  margin-top: 48px;
+}
+
+.api-key-page-content h1,
+.api-docs-content h1 {
+  margin-top: 4px;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.api-key-page-description,
+.api-docs-description {
+  max-width: 720px;
+  margin-top: 12px;
+  color: var(--app-muted);
+  line-height: 1.6;
+}
+
+.api-key-panel {
+  margin-top: 24px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 20px;
+  background: var(--app-surface);
+}
+
+.api-key-metadata {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.api-key-metadata div {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 12px;
+}
+
+.api-key-metadata dt,
+.api-docs-auth {
+  color: var(--app-muted);
+}
+
+.api-key-metadata dd {
+  margin: 0;
+}
+
+.primary-action-button,
+.secondary-action-button,
+.danger-action-button,
+.secondary-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary-action-button {
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+}
+
+.secondary-action-button,
+.secondary-link-button {
+  background: transparent;
+  color: var(--app-text);
+}
+
+.danger-action-button {
+  border-color: #b91c1c;
+  background: #b91c1c;
+  color: #ffffff;
+}
+
+.primary-action-button:disabled,
+.danger-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.api-key-secret {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  border-top: 1px solid var(--app-border);
+  padding-top: 20px;
+}
+
+.api-key-secret code,
+.api-docs-description code,
+.api-docs-endpoint code {
+  overflow-wrap: anywhere;
+}
+
+.api-key-secret > code,
+.api-docs-endpoint pre {
+  overflow-x: auto;
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--app-panel);
+}
+
+.api-key-error {
+  margin-top: 16px;
+  color: #dc2626;
+}
+
+.api-docs-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.api-docs-endpoint {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--app-surface);
+}
+
+.api-docs-endpoint header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.api-docs-endpoint p {
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.api-docs-endpoint pre {
+  margin-top: 12px;
+  white-space: pre;
+}
+
+.api-method {
+  border-radius: 4px;
+  padding: 3px 7px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.api-method-get {
+  background: #047857;
+}
+
+.api-method-post {
+  background: #1d4ed8;
+}
+
+.api-method-put {
+  background: #a16207;
+}
+
+.api-method-delete {
+  background: #b91c1c;
+}
+
+@media (max-width: 620px) {
+  .api-key-page,
+  .api-docs-page {
+    padding: 20px;
+  }
+
+  .api-key-page-header,
+  .api-docs-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .api-key-page-actions {
+    width: 100%;
+  }
+
+  .api-key-page-actions .secondary-link-button {
+    flex: 1;
+  }
+
+  .api-key-metadata div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+/* API key settings and docs pages end */

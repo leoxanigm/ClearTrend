@@ -18,7 +18,7 @@ function readApiKey(req: Request) {
   return req.headers.get('x-api-key')?.trim() ?? null;
 }
 
-function hashApiKey(apiKey: string) {
+export function hashApiKey(apiKey: string) {
   return createHash('sha256').update(apiKey).digest('hex');
 }
 

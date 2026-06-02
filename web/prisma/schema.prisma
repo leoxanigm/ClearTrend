@@ -273,7 +273,7 @@ model Notification {
 
 model ApiKey {
   id         String    @id @default(uuid())
-  userId     String
+  userId     String    @unique
   name       String
   keyHash    String    @unique
   prefix     String

@@ -1,5 +1,4 @@
 import {
-  getUserFavoriteSymbols,
   getUserWatchlistAssets,
   normalizeWatchlistSymbols,
   parseWatchlistSymbols,
