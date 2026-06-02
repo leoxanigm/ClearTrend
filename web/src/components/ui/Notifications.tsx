@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 
 export type NotificationTone = "error" | "info" | "success" | "warning";
 
@@ -44,6 +45,7 @@ function createNotificationId() {
 }
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const timeoutRefs = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
@@ -138,7 +140,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     } catch {
       window.sessionStorage.removeItem(queuedNotificationStorageKey);
     }
-  }, [notify]);
+  }, [notify, pathname]);
 
   return (
     <NotificationContext.Provider value={contextValue}>
