@@ -112,9 +112,17 @@
     "noAsset": "No asset selected",
     "points": "{count} points",
     "priceChart": "{symbol} price chart",
-    "providerFallback": "Twelve Data",
+    "providerFallback": "Analysis",
     "rangeLabel": "Chart range",
     "titleFallback": "Chart",
+    "tooltips": {
+      "interval": "Granularity between two chart candles.",
+      "points": "Number of candles currently displayed.",
+      "provider": "Source used to provide this market data.",
+      "updated": "Time elapsed since the cache used here was last updated.",
+      "volume": "Volume traded on the latest visible candle."
+    },
+    "updated": "Updated {value}",
     "unavailable": "Chart unavailable",
     "volume": "Volume {value}"
   },
@@ -264,7 +272,7 @@
     },
     "endpoints": {
       "health": "Returns web, database, and analysis service health.",
-      "candles": "Returns price candles. Supported ranges: 1D, 1M, 3M, 1Y.",
+      "candles": "Returns price candles. Supported ranges: 1D, 1W, 1M, 3M, 1Y.",
       "watchlistGet": "Returns the current user watchlist.",
       "watchlistPost": "Adds one symbol to the current user watchlist.",
       "watchlistPut": "Replaces the complete current user watchlist.",

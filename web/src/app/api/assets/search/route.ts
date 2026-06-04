@@ -1,6 +1,5 @@
 import { requireApiIdentity } from '@/lib/api-auth';
-import { ExternalDataCooldownError } from '@/lib/external-data';
-import { searchFinnhubAssets } from '@/lib/finnhub';
+import { searchAnalysisTickers } from '@/lib/analysis-data';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -32,21 +31,14 @@ export async function GET(req: Request) {
   }
 
   try {
-    const results = await searchFinnhubAssets(query);
+    // Search is symbol-only for now because analysis exposes tickers, not full
+    // provider profiles like Finnhub did.
+    const results = await searchAnalysisTickers(query);
 
     return NextResponse.json({
       results
     });
-  } catch (error) {
-    if (error instanceof ExternalDataCooldownError) {
-      return NextResponse.json(
-        {
-          error: 'Asset search was requested recently. Try again shortly.'
-        },
-        { status: 429 }
-      );
-    }
-
+  } catch {
     return NextResponse.json(
       {
         error: 'Asset search failed.'

@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { AppLogo } from "@/components/AppLogo";
 import { AssetChart } from "@/components/AssetChart";
 import { FooterLinks } from "@/components/FooterLinks";
@@ -11,16 +18,44 @@ import { WatchlistNav } from "@/components/WatchlistNav";
 import { LanguageSelect } from "@/components/ui/LanguageSelect";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
 import type { WatchlistAsset } from "@/lib/assets";
+import { isChartRange, type ChartRange } from "@/lib/analysis-data";
 import type { UserProfile } from "@/lib/profile-types";
 import { useTranslations } from "next-intl";
 import { signOut } from "next-auth/react";
 
 type DashboardClientProps = {
+  initialRange?: string | null;
+  initialSymbol?: string | null;
   userProfile: UserProfile;
   watchlistAssets: WatchlistAsset[];
 };
 
+type AssetSnapshotUpdate = {
+  dayChangePercent: number | null;
+  lastPrice: number | null;
+  symbol: string;
+};
+
+function normalizeInitialRange(value: string | null | undefined): ChartRange {
+  const normalizedValue = value?.trim().toUpperCase() ?? "";
+
+  return isChartRange(normalizedValue) ? normalizedValue : "1M";
+}
+
+function normalizeInitialSymbol(
+  value: string | null | undefined,
+  assets: WatchlistAsset[]
+): string | null {
+  const normalizedValue = value?.trim().toUpperCase() ?? "";
+
+  return assets.some((asset) => asset.symbol === normalizedValue)
+    ? normalizedValue
+    : null;
+}
+
 export function DashboardClient({
+  initialRange,
+  initialSymbol,
   userProfile,
   watchlistAssets: initialWatchlistAssets,
 }: DashboardClientProps) {
@@ -32,8 +67,15 @@ export function DashboardClient({
   const [profile, setProfile] = useState(userProfile);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [watchlistAssets, setWatchlistAssets] = useState(initialWatchlistAssets);
+  const normalizedInitialSymbol = normalizeInitialSymbol(
+    initialSymbol,
+    initialWatchlistAssets
+  );
   const [selectedSymbol, setSelectedSymbol] = useState(
-    initialWatchlistAssets[0]?.symbol ?? null
+    normalizedInitialSymbol ?? initialWatchlistAssets[0]?.symbol ?? null
+  );
+  const [chartRange, setChartRange] = useState<ChartRange>(
+    normalizeInitialRange(initialRange)
   );
   const [isLoggingOut, startLogoutTransition] = useTransition();
   const [isDeletingProfile, startDeleteProfileTransition] = useTransition();
@@ -44,6 +86,53 @@ export function DashboardClient({
       null,
     [selectedSymbol, watchlistAssets]
   );
+
+  function replaceDashboardUrl(symbol: string | null, range: ChartRange) {
+    const params = new URLSearchParams(window.location.search);
+
+    if (symbol) {
+      params.set("symbol", symbol);
+    } else {
+      params.delete("symbol");
+    }
+
+    params.set("range", range);
+    window.history.replaceState(null, "", `/dashboard?${params.toString()}`);
+  }
+
+  function handleSelectSymbol(symbol: string) {
+    setSelectedSymbol(symbol);
+    replaceDashboardUrl(symbol, chartRange);
+  }
+
+  function handleRangeChange(range: ChartRange) {
+    const symbol = selectedAsset?.symbol ?? selectedSymbol;
+
+    setChartRange(range);
+    replaceDashboardUrl(symbol, range);
+  }
+
+  const updateWatchlistSnapshot = useCallback(
+    (snapshot: AssetSnapshotUpdate) => {
+      setWatchlistAssets((currentAssets) =>
+        currentAssets.map((asset) =>
+          asset.symbol === snapshot.symbol
+            ? {
+                ...asset,
+                dayChangePercent:
+                  snapshot.dayChangePercent ?? asset.dayChangePercent,
+                lastPrice: snapshot.lastPrice ?? asset.lastPrice,
+              }
+            : asset
+        )
+      );
+    },
+    []
+  );
+
+  useEffect(() => {
+    replaceDashboardUrl(selectedAsset?.symbol ?? selectedSymbol, chartRange);
+  }, [chartRange, selectedAsset?.symbol, selectedSymbol]);
 
   function addWatchlistAsset(asset: WatchlistAsset) {
     setWatchlistAssets((currentAssets) => {
@@ -220,7 +309,7 @@ export function DashboardClient({
           assets={watchlistAssets}
           onAssetAdd={addWatchlistAsset}
           onFavoriteChange={updateWatchlistFavorite}
-          onSelectSymbol={setSelectedSymbol}
+          onSelectSymbol={handleSelectSymbol}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
 
@@ -245,7 +334,7 @@ export function DashboardClient({
           mobile
           onAssetAdd={addWatchlistAsset}
           onFavoriteChange={updateWatchlistFavorite}
-          onSelectSymbol={setSelectedSymbol}
+          onSelectSymbol={handleSelectSymbol}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
 
@@ -333,7 +422,12 @@ export function DashboardClient({
         </header>
 
         <div className="dashboard-grid mt-8 grid flex-1 gap-6">
-          <AssetChart asset={selectedAsset} />
+          <AssetChart
+            asset={selectedAsset}
+            onAssetSnapshotChange={updateWatchlistSnapshot}
+            onRangeChange={handleRangeChange}
+            range={chartRange}
+          />
 
           <aside className="dashboard-summary-grid">
             <div className="app-card p-4">

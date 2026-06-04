@@ -2,23 +2,35 @@
 
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { WatchlistAsset } from "@/lib/assets";
-import type { ChartCandle } from "@/lib/twelvedata";
+import {
+  chartRanges,
+  type ChartCandle,
+  type ChartRange,
+} from "@/lib/analysis-data";
 import { useLocale, useTranslations } from "next-intl";
 
 type AssetChartProps = {
   asset: WatchlistAsset | null;
+  onAssetSnapshotChange?: (snapshot: AssetSnapshotUpdate) => void;
+  onRangeChange: (range: ChartRange) => void;
+  range: ChartRange;
 };
 
 type ChartResponse = {
   candles?: ChartCandle[];
   currency?: string | null;
+  dayChangePercent?: number | null;
   exchange?: string | null;
   interval?: string;
+  lastPrice?: number | null;
   symbol?: string;
+  updatedAt?: string | null;
 };
 
-const chartRanges = ["1D", "1M", "3M", "1Y"] as const;
-type ChartRange = (typeof chartRanges)[number];
+type ChartMetaResponse = {
+  symbol?: string;
+  updatedAt?: string | null;
+};
 
 type ChartSize = {
   height: number;
@@ -29,6 +41,24 @@ type ChartSize = {
     top: number;
   };
   width: number;
+};
+
+type ChartFooterMetricProps = {
+  label: string;
+  tooltip: string;
+};
+
+type AssetSnapshotUpdate = {
+  dayChangePercent: number | null;
+  lastPrice: number | null;
+  symbol: string;
+};
+
+type ChartPoint = {
+  candle: ChartCandle;
+  tooltipDateLabel: string;
+  x: number;
+  y: number;
 };
 
 const desktopChartSize: ChartSize = {
@@ -52,6 +82,63 @@ const compactChartSize: ChartSize = {
   },
   width: 360,
 };
+
+const chartMetaPollIntervalMs = 5 * 60 * 1000;
+const intradayCandleMs = 5 * 60 * 1000;
+const regularStockSessionMs = 6.5 * 60 * 60 * 1000;
+
+function ChartFooterMetric({ label, tooltip }: ChartFooterMetricProps) {
+  return (
+    <button
+      aria-label={`${label}: ${tooltip}`}
+      className="asset-chart-footer-metric"
+      data-tooltip={tooltip}
+      type="button"
+    >
+      {label}
+    </button>
+  );
+}
+
+async function fetchChartCandles(
+  symbol: string,
+  range: ChartRange,
+  signal?: AbortSignal
+) {
+  const response = await fetch(
+    `/api/assets/candles?symbol=${encodeURIComponent(symbol)}&range=${range}`,
+    {
+      signal,
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Chart request failed");
+  }
+
+  return (await response.json()) as ChartResponse;
+}
+
+async function fetchChartMeta(
+  symbol: string,
+  range: ChartRange,
+  signal?: AbortSignal
+) {
+  const response = await fetch(
+    `/api/assets/candles/meta?symbol=${encodeURIComponent(
+      symbol
+    )}&range=${range}`,
+    {
+      signal,
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Chart metadata request failed");
+  }
+
+  return (await response.json()) as ChartMetaResponse;
+}
 
 function formatPrice(
   value: number | null,
@@ -90,6 +177,43 @@ function formatVolume(value: number | null, locale: string, fallback: string) {
   }).format(value);
 }
 
+function formatRelativeUpdate(
+  value: string | null,
+  locale: string,
+  fallback: string
+) {
+  if (!value) {
+    return fallback;
+  }
+
+  const timestamp = Date.parse(value);
+
+  if (!Number.isFinite(timestamp)) {
+    return fallback;
+  }
+
+  const diffSeconds = Math.round((timestamp - Date.now()) / 1000);
+  const divisions: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+    ["year", 60 * 60 * 24 * 365],
+    ["month", 60 * 60 * 24 * 30],
+    ["day", 60 * 60 * 24],
+    ["hour", 60 * 60],
+    ["minute", 60],
+    ["second", 1],
+  ];
+  const formatter = new Intl.RelativeTimeFormat(locale, {
+    numeric: "auto",
+  });
+
+  for (const [unit, seconds] of divisions) {
+    if (Math.abs(diffSeconds) >= seconds || unit === "second") {
+      return formatter.format(Math.round(diffSeconds / seconds), unit);
+    }
+  }
+
+  return fallback;
+}
+
 function formatAxisPrice(value: number, locale: string) {
   return new Intl.NumberFormat(locale, {
     maximumFractionDigits: value >= 100 ? 0 : 2,
@@ -97,13 +221,30 @@ function formatAxisPrice(value: number, locale: string) {
   }).format(value);
 }
 
-function formatAxisDate(datetime: string, range: ChartRange, locale: string) {
-  const [datePart, timePart] = datetime.split(" ");
+function getSystemTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
 
-  if (range === "1D" && timePart) {
-    return timePart.slice(0, 5);
-  }
+function formatAxisTime(timestamp: number, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: getSystemTimeZone(),
+  }).format(new Date(timestamp));
+}
 
+function getDatePart(datetime: string) {
+  return datetime.includes("T")
+    ? datetime.split("T")[0]
+    : datetime.split(" ")[0];
+}
+
+function formatCalendarDate(
+  datetime: string,
+  range: ChartRange,
+  locale: string
+) {
+  const datePart = getDatePart(datetime);
   const date = new Date(`${datePart}T00:00:00`);
 
   return new Intl.DateTimeFormat(locale, {
@@ -112,25 +253,41 @@ function formatAxisDate(datetime: string, range: ChartRange, locale: string) {
   }).format(date);
 }
 
-function formatTooltipDate(
-  datetime: string,
+function formatTimestampDate(
+  timestamp: number,
   range: ChartRange,
   locale: string
 ) {
-  const [datePart, timePart] = datetime.split(" ");
-  const date = new Date(`${datePart}T${timePart ?? "00:00:00"}`);
+  const options: Intl.DateTimeFormatOptions = {
+    day: "2-digit",
+    month: "short",
+    timeZone: getSystemTimeZone(),
+    year: range === "1Y" ? "numeric" : undefined,
+  };
 
-  if (Number.isNaN(date.getTime())) {
-    return datetime;
+  if (range === "1D" || range === "1W") {
+    options.hour = "2-digit";
+    options.minute = "2-digit";
   }
 
-  return new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    hour: timePart ? "2-digit" : undefined,
-    minute: timePart ? "2-digit" : undefined,
-    month: "short",
-    year: range === "1Y" ? "numeric" : undefined,
-  }).format(date);
+  return new Intl.DateTimeFormat(locale, options).format(new Date(timestamp));
+}
+
+function formatTooltipDate(
+  candle: ChartCandle,
+  displayTimestamp: number,
+  range: ChartRange,
+  locale: string
+) {
+  if (range === "1D") {
+    return formatTimestampDate(displayTimestamp, range, locale);
+  }
+
+  if (range === "1W") {
+    return formatTimestampDate(candle.timestamp, range, locale);
+  }
+
+  return formatCalendarDate(candle.datetime, range, locale);
 }
 
 function getPerformanceClass(value: number | null) {
@@ -162,18 +319,51 @@ function buildChartData(
   const closes = candles.map((candle) => candle.close);
   const minClose = Math.min(...closes);
   const maxClose = Math.max(...closes);
-  const valuePadding = Math.max((maxClose - minClose) * 0.1, maxClose * 0.002, 1);
+  const valuePadding = Math.max(
+    (maxClose - minClose) * 0.1,
+    maxClose * 0.002,
+    1
+  );
   const minValue = minClose - valuePadding;
   const maxValue = maxClose + valuePadding;
   const { height, padding, width } = chartSize;
   const usableWidth = width - padding.left - padding.right;
   const usableHeight = height - padding.top - padding.bottom;
   const lastIndex = Math.max(candles.length - 1, 1);
+  const firstTimestamp = candles[0].timestamp;
+  const lastTimestamp =
+    range === "1D"
+      ? candles[candles.length - 1].timestamp + intradayCandleMs
+      : candles[candles.length - 1].timestamp;
+  // Keep the 1D chart on a fixed regular-session window. The coordinates use
+  // absolute timestamps; labels are rendered in the browser/system timezone.
+  const isFixedOneDayWindow =
+    range === "1D" &&
+    Number.isFinite(firstTimestamp) &&
+    Number.isFinite(lastTimestamp);
+  const oneDayWindowEnd = firstTimestamp + regularStockSessionMs;
+  const xMin = isFixedOneDayWindow ? firstTimestamp : 0;
+  const xMax = isFixedOneDayWindow
+    ? Math.max(oneDayWindowEnd, lastTimestamp)
+    : lastIndex;
+  const xDomain = Math.max(xMax - xMin, 1);
   const xTickIndexes = Array.from(
     new Set([0, Math.floor(lastIndex / 2), lastIndex])
   );
 
+  function getDisplayTimestamp(candle: ChartCandle) {
+    return range === "1D"
+      ? candle.timestamp + intradayCandleMs
+      : candle.timestamp;
+  }
+
   function getX(index: number) {
+    if (isFixedOneDayWindow) {
+      const timestamp = getDisplayTimestamp(candles[index]);
+
+      return padding.left + ((timestamp - xMin) / xDomain) * usableWidth;
+    }
+
     return padding.left + (index / lastIndex) * usableWidth;
   }
 
@@ -189,6 +379,12 @@ function buildChartData(
 
     return {
       candle,
+      tooltipDateLabel: formatTooltipDate(
+        candle,
+        getDisplayTimestamp(candle),
+        range,
+        locale
+      ),
       x,
       y,
     };
@@ -209,21 +405,37 @@ function buildChartData(
     areaPath,
     linePath,
     points: chartPoints,
-    xTicks: xTickIndexes.map((index, tickIndex) => {
-      const isFirstTick = tickIndex === 0;
-      const isLastTick = tickIndex === xTickIndexes.length - 1;
-      const anchor: "end" | "middle" | "start" = isFirstTick
-        ? "start"
-        : isLastTick
-          ? "end"
-          : "middle";
+    xTicks: isFixedOneDayWindow
+      ? [xMin, xMin + xDomain / 2, xMax].map((timestamp, tickIndex) => {
+          const isFirstTick = tickIndex === 0;
+          const isLastTick = tickIndex === 2;
+          const anchor: "end" | "middle" | "start" = isFirstTick
+            ? "start"
+            : isLastTick
+              ? "end"
+              : "middle";
 
-      return {
-        anchor,
-        label: formatAxisDate(candles[index].datetime, range, locale),
-        x: getX(index),
-      };
-    }),
+          return {
+            anchor,
+            label: formatAxisTime(timestamp, locale),
+            x: padding.left + ((timestamp - xMin) / xDomain) * usableWidth,
+          };
+        })
+      : xTickIndexes.map((index, tickIndex) => {
+          const isFirstTick = tickIndex === 0;
+          const isLastTick = tickIndex === xTickIndexes.length - 1;
+          const anchor: "end" | "middle" | "start" = isFirstTick
+            ? "start"
+            : isLastTick
+              ? "end"
+              : "middle";
+
+          return {
+            anchor,
+            label: formatCalendarDate(candles[index].datetime, range, locale),
+            x: getX(index),
+          };
+        }),
     yTicks: yTickValues.map((value) => ({
       label: formatAxisPrice(value, locale),
       y: getY(value),
@@ -231,19 +443,23 @@ function buildChartData(
   };
 }
 
-export function AssetChart({ asset }: AssetChartProps) {
+export function AssetChart({
+  asset,
+  onAssetSnapshotChange,
+  onRangeChange,
+  range,
+}: AssetChartProps) {
   const locale = useLocale();
   const t = useTranslations("chart");
   const commonT = useTranslations("common");
   const [isCompactChart, setIsCompactChart] = useState(false);
-  const [range, setRange] = useState<ChartRange>("1M");
   const [candles, setCandles] = useState<ChartCandle[]>([]);
-  const [hoveredPoint, setHoveredPoint] = useState<
-    { candle: ChartCandle; x: number; y: number } | null
-  >(null);
+  const [hoveredPoint, setHoveredPoint] = useState<ChartPoint | null>(null);
   const [currency, setCurrency] = useState<string | null>(null);
+  const [dayChangePercent, setDayChangePercent] = useState<number | null>(null);
   const [exchange, setExchange] = useState<string | null>(null);
   const [interval, setInterval] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -275,23 +491,15 @@ export function AssetChart({ asset }: AssetChartProps) {
     async function loadCandles() {
       setIsLoading(true);
       setError(null);
+      setDayChangePercent(null);
       setHoveredPoint(null);
 
       try {
-        const response = await fetch(
-          `/api/assets/candles?symbol=${encodeURIComponent(
-            requestedSymbol
-          )}&range=${range}`,
-          {
-            signal: controller.signal,
-          }
+        const body = await fetchChartCandles(
+          requestedSymbol,
+          range,
+          controller.signal
         );
-
-        if (!response.ok) {
-          throw new Error("Chart request failed");
-        }
-
-        const body = (await response.json()) as ChartResponse;
         const nextCandles = body.candles ?? [];
 
         if (nextCandles.length === 0) {
@@ -300,11 +508,22 @@ export function AssetChart({ asset }: AssetChartProps) {
 
         setCandles(nextCandles);
         setCurrency(body.currency ?? null);
+        setDayChangePercent(body.dayChangePercent ?? null);
         setExchange(body.exchange ?? null);
         setInterval(body.interval ?? null);
+        setUpdatedAt(body.updatedAt ?? null);
+        if (range === "1D") {
+          onAssetSnapshotChange?.({
+            dayChangePercent: body.dayChangePercent ?? null,
+            lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
+            symbol: body.symbol ?? requestedSymbol,
+          });
+        }
       } catch {
         if (!controller.signal.aborted) {
           setCandles([]);
+          setDayChangePercent(null);
+          setUpdatedAt(null);
           setError(t("unavailable"));
         }
       } finally {
@@ -319,7 +538,93 @@ export function AssetChart({ asset }: AssetChartProps) {
     return () => {
       controller.abort();
     };
-  }, [asset?.symbol, range, t]);
+  }, [asset?.symbol, onAssetSnapshotChange, range, t]);
+
+  useEffect(() => {
+    const symbol = asset?.symbol;
+
+    if (!symbol) {
+      return;
+    }
+
+    const requestedSymbol = symbol;
+    let activeController: AbortController | null = null;
+    let isDisposed = false;
+
+    async function refreshCandlesIfNeeded() {
+      if (document.hidden) {
+        return;
+      }
+
+      activeController?.abort();
+      const controller = new AbortController();
+      activeController = controller;
+
+      try {
+        const meta = await fetchChartMeta(
+          requestedSymbol,
+          range,
+          controller.signal
+        );
+
+        if (!meta.updatedAt || meta.updatedAt === updatedAt) {
+          return;
+        }
+
+        const body = await fetchChartCandles(
+          requestedSymbol,
+          range,
+          controller.signal
+        );
+        const nextCandles = body.candles ?? [];
+
+        if (nextCandles.length === 0 || isDisposed) {
+          return;
+        }
+
+        setCandles(nextCandles);
+        setCurrency(body.currency ?? null);
+        setDayChangePercent(body.dayChangePercent ?? null);
+        setExchange(body.exchange ?? null);
+        setInterval(body.interval ?? null);
+        setUpdatedAt(body.updatedAt ?? meta.updatedAt);
+        setHoveredPoint(null);
+        setError(null);
+        if (range === "1D") {
+          onAssetSnapshotChange?.({
+            dayChangePercent: body.dayChangePercent ?? null,
+            lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
+            symbol: body.symbol ?? requestedSymbol,
+          });
+        }
+      } catch {
+        // Background polling should never replace visible chart data with an
+        // error state. The next interval can try again.
+      }
+    }
+
+    const intervalId = window.setInterval(
+      () => {
+        void refreshCandlesIfNeeded();
+      },
+      chartMetaPollIntervalMs
+    );
+
+    function handleVisibilityChange() {
+      if (!document.hidden) {
+        void refreshCandlesIfNeeded();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isDisposed = true;
+      activeController?.abort();
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [asset?.symbol, onAssetSnapshotChange, range, updatedAt]);
 
   const chartSize = isCompactChart ? compactChartSize : desktopChartSize;
   const chartData = useMemo(
@@ -328,10 +633,13 @@ export function AssetChart({ asset }: AssetChartProps) {
   );
   const firstCandle = candles[0] ?? null;
   const lastCandle = candles[candles.length - 1] ?? null;
+  const intradayDayChangePercent =
+    range === "1D" ? dayChangePercent : null;
   const rangeChangePercent =
-    firstCandle && lastCandle
+    intradayDayChangePercent ??
+    (firstCandle && lastCandle
       ? ((lastCandle.close - firstCandle.close) / firstCandle.close) * 100
-      : null;
+      : null);
   const tooltipWidth = 124;
   const tooltipHeight = 48;
   const tooltipGap = 12;
@@ -339,7 +647,10 @@ export function AssetChart({ asset }: AssetChartProps) {
     hoveredPoint &&
     hoveredPoint.x + tooltipWidth + tooltipGap >
       chartSize.width - chartSize.padding.right
-      ? Math.max(chartSize.padding.left, hoveredPoint.x - tooltipWidth - tooltipGap)
+      ? Math.max(
+          chartSize.padding.left,
+          hoveredPoint.x - tooltipWidth - tooltipGap
+        )
       : (hoveredPoint?.x ?? 0) + tooltipGap;
   const tooltipY = hoveredPoint
     ? Math.max(
@@ -397,7 +708,7 @@ export function AssetChart({ asset }: AssetChartProps) {
             aria-pressed={range === option}
             className="asset-chart-range"
             key={option}
-            onClick={() => setRange(option)}
+            onClick={() => onRangeChange(option)}
             type="button"
           >
             {option}
@@ -517,11 +828,7 @@ export function AssetChart({ asset }: AssetChartProps) {
                     )}
                   </text>
                   <text className="asset-chart-tooltip-date" x="10" y="36">
-                    {formatTooltipDate(
-                      hoveredPoint.candle.datetime,
-                      range,
-                      locale
-                    )}
+                    {hoveredPoint.tooltipDateLabel}
                   </text>
                 </g>
               </g>
@@ -531,14 +838,30 @@ export function AssetChart({ asset }: AssetChartProps) {
       </div>
 
       <footer className="asset-chart-footer">
-        <span>{t("points", { count: candles.length })}</span>
-        <span>{interval ?? range}</span>
-        <span>{exchange ?? t("providerFallback")}</span>
-        <span>
-          {t("volume", {
+        <ChartFooterMetric
+          label={t("points", { count: candles.length })}
+          tooltip={t("tooltips.points")}
+        />
+        <ChartFooterMetric
+          label={interval ?? range}
+          tooltip={t("tooltips.interval")}
+        />
+        <ChartFooterMetric
+          label={exchange ?? t("providerFallback")}
+          tooltip={t("tooltips.provider")}
+        />
+        <ChartFooterMetric
+          label={t("volume", {
             value: formatVolume(lastCandle?.volume ?? null, locale, commonT("na")),
           })}
-        </span>
+          tooltip={t("tooltips.volume")}
+        />
+        <ChartFooterMetric
+          label={t("updated", {
+            value: formatRelativeUpdate(updatedAt, locale, commonT("na")),
+          })}
+          tooltip={t("tooltips.updated")}
+        />
       </footer>
     </section>
   );

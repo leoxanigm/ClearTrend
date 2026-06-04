@@ -1,4 +1,7 @@
-import { fetchFinnhubAsset } from "@/lib/finnhub";
+import {
+  fetchAnalysisAssetSnapshot,
+  type AnalysisAssetSnapshot,
+} from "@/lib/analysis-data";
 import { wasAttemptedRecently } from "@/lib/external-data";
 import { getPrisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
@@ -162,14 +165,6 @@ export const defaultWatchlistSymbols = [ // list of 150 main assets of S&P500
 ];
 
 const assetCacheTtlMs = 5 * 60 * 1000;  // Time keeping asset in cache = 5 min
-/*
-  FINHUB LIMITS : 
-    - 60 calls / min  => 86 400 call max / day
-    - actually 2 calls by refresh -> 1 call for profil (need just once), 1 for quote
-    - 1 asset = 288 + 1 calls/day
-    - 10 assets = 2 888 + 10 calls/days
-    - 150 assets = 43 200 call still
-*/
 const symbolPattern = /^[A-Z0-9.-]{1,15}$/;
 
 export type WatchlistAsset = {
@@ -351,27 +346,17 @@ async function markAssetFetchAttempt(symbol: string) {
   return rows[0] ?? null;
 }
 
-async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAsset>>) {
+async function upsertStoredAsset(asset: AnalysisAssetSnapshot) {
   const prisma = getPrisma();
+  // Prisma still has provider/profile fields from the Finnhub era. Fill only
+  // stable analysis-owned values until the asset model is simplified.
   const rows = await prisma.$queryRaw<StoredAsset[]>`
     INSERT INTO assets (
       id,
       symbol,
       "displaySymbol",
       name,
-      description,
       type,
-      exchange,
-      mic,
-      currency,
-      country,
-      industry,
-      "logoUrl",
-      "webUrl",
-      "ipoDate",
-      "marketCap",
-      "shareOutstanding",
-      figi,
       "lastPrice",
       "dayChange",
       "dayChangePercent",
@@ -382,7 +367,6 @@ async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAs
       "quoteTimestamp",
       "dataFetchedAt",
       "fetchAttemptedAt",
-      "rawProfile",
       "rawQuote",
       "createdAt",
       "updatedAt"
@@ -390,21 +374,9 @@ async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAs
     VALUES (
       ${randomUUID()},
       ${asset.symbol},
-      ${asset.displaySymbol},
+      ${asset.symbol},
       ${asset.name},
-      ${asset.description},
-      ${asset.type},
-      ${asset.exchange},
-      ${asset.mic},
-      ${asset.currency},
-      ${asset.country},
-      ${asset.industry},
-      ${asset.logoUrl},
-      ${asset.webUrl},
-      ${asset.ipoDate},
-      ${asset.marketCap},
-      ${asset.shareOutstanding},
-      ${asset.figi},
+      ${"Analysis"},
       ${asset.lastPrice},
       ${asset.dayChange},
       ${asset.dayChangePercent},
@@ -415,7 +387,6 @@ async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAs
       ${asset.quoteTimestamp},
       now(),
       now(),
-      ${JSON.stringify(asset.rawProfile)}::jsonb,
       ${JSON.stringify(asset.rawQuote)}::jsonb,
       now(),
       now()
@@ -423,19 +394,7 @@ async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAs
     ON CONFLICT (symbol) DO UPDATE SET
       "displaySymbol" = EXCLUDED."displaySymbol",
       name = EXCLUDED.name,
-      description = EXCLUDED.description,
       type = EXCLUDED.type,
-      exchange = EXCLUDED.exchange,
-      mic = EXCLUDED.mic,
-      currency = EXCLUDED.currency,
-      country = EXCLUDED.country,
-      industry = EXCLUDED.industry,
-      "logoUrl" = EXCLUDED."logoUrl",
-      "webUrl" = EXCLUDED."webUrl",
-      "ipoDate" = EXCLUDED."ipoDate",
-      "marketCap" = EXCLUDED."marketCap",
-      "shareOutstanding" = EXCLUDED."shareOutstanding",
-      figi = EXCLUDED.figi,
       "lastPrice" = EXCLUDED."lastPrice",
       "dayChange" = EXCLUDED."dayChange",
       "dayChangePercent" = EXCLUDED."dayChangePercent",
@@ -446,7 +405,6 @@ async function upsertStoredAsset(asset: Awaited<ReturnType<typeof fetchFinnhubAs
       "quoteTimestamp" = EXCLUDED."quoteTimestamp",
       "dataFetchedAt" = now(),
       "fetchAttemptedAt" = now(),
-      "rawProfile" = EXCLUDED."rawProfile",
       "rawQuote" = EXCLUDED."rawQuote",
       "updatedAt" = now()
     RETURNING
@@ -476,7 +434,9 @@ async function getOrSyncAsset(symbol: string) {
   await markAssetFetchAttempt(symbol);
 
   try {
-    const asset = await fetchFinnhubAsset(symbol);
+    // No Finnhub/TwelveData fallback here: analysis is the active market data
+    // source, while stale DB values are only kept to avoid breaking the UI.
+    const asset = await fetchAnalysisAssetSnapshot(symbol);
     const savedAsset = await upsertStoredAsset(asset);
 
     return toWatchlistAsset(savedAsset);

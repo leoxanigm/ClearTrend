@@ -1,7 +1,7 @@
 import { getCurrentUserProfile } from '@/lib/profile';
 import { getPrisma } from '@/lib/prisma';
 import { apiError } from '@/lib/api-response';
-import { createHash, randomBytes } from 'crypto';
+import { randomBytes } from 'crypto';
 import { NextResponse } from 'next/server';
 import { hashApiKey } from '@/lib/api-auth';
 

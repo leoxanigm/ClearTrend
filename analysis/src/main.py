@@ -1,23 +1,39 @@
-import pandas as pd
-from fastapi import FastAPI, HTTPException, Query
+import asyncio
+from contextlib import asynccontextmanager
 
-from .database_builder import DATA_DIR
+from fastapi import FastAPI, Query
+
+from .market_data import (
+    get_candles,
+    get_data_updated_at,
+    latest_payload,
+    list_cached_tickers,
+    refresh_active_ticker_if_stale,
+    sanitize_ticker,
+)
+from .scheduler import run_market_data_scheduler
 
 
-app = FastAPI(title="Transcendence Analysis Service")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Run cache refreshes in the background; Docker still performs an initial
+    # warmup through database_builder before uvicorn starts.
+    refresh_task = asyncio.create_task(run_market_data_scheduler())
 
-def _sanitize(ticker: str) -> str:
-    return ticker.replace("/", "_").replace("^", "").upper()
+    try:
+        yield
+    finally:
+        refresh_task.cancel()
+        try:
+            await refresh_task
+        except asyncio.CancelledError:
+            pass
 
 
-def _load(ticker: str) -> pd.DataFrame:
-    safe = _sanitize(ticker)
-    path = next(DATA_DIR.glob(f"{safe}_*.csv"), None)
-    if path is None:
-        raise HTTPException(status_code=404, detail=f"No data for ticker '{ticker}'")
-    df = pd.read_csv(path, index_col=0, parse_dates=True)
-    df.index.name = "Date"
-    return df
+app = FastAPI(
+    title="Transcendence Analysis Service",
+    lifespan=lifespan,
+)
 
 
 @app.get("/")
@@ -32,45 +48,49 @@ def health() -> dict[str, str]:
 
 @app.get("/tickers")
 def tickers() -> dict[str, list[str]]:
-    seen: set[str] = set()
-    for path in DATA_DIR.glob("*.csv"):
-        name = path.stem.rsplit("_", 1)[0]
-        seen.add(name)
-    return {"tickers": sorted(seen)}
+    return {"tickers": list_cached_tickers()}
 
 
 @app.get("/history/{ticker}/latest")
 def latest(ticker: str) -> dict:
-    df = _load(ticker)
-    last = df.iloc[-1]
+    return latest_payload(ticker)
+
+
+@app.get("/candles/{ticker}/meta")
+def candles_meta(
+    ticker: str,
+    range_name: str | None = Query(None, alias="range"),
+) -> dict:
+    refresh_active_ticker_if_stale(ticker, range_name=range_name)
+    updated_at = get_data_updated_at(ticker, range_name=range_name)
+
     return {
-        "ticker": _sanitize(ticker),
-        "date": pd.Timestamp(df.index[-1]).strftime("%Y-%m-%d"),
-        "data": {k: (None if pd.isna(v) else float(v)) for k, v in last.items()},
+        "ticker": sanitize_ticker(ticker),
+        "updatedAt": updated_at.isoformat() if updated_at else None,
     }
 
 
 @app.get("/candles/{ticker}")
-def candles(ticker: str,
-    		start: str | None = Query(None),
-    		end: str | None = Query(None),
-    		limit: int | None = Query(None, ge=1, le=10000)) -> dict:
-    df = _load(ticker)
-    if start:
-        df = df[df.index >= pd.Timestamp(start)]
-    if end:
-        df = df[df.index <= pd.Timestamp(end)]
-    if limit:
-        df = df.tail(limit)
-    out = [
-        {
-            "t": pd.Timestamp(idx).strftime("%Y-%m-%d"),
-            "o": None if pd.isna(row["Open"]) else float(row["Open"]),
-            "h": None if pd.isna(row["High"]) else float(row["High"]),
-            "l": None if pd.isna(row["Low"]) else float(row["Low"]),
-            "c": None if pd.isna(row["Close"]) else float(row["Close"]),
-            "v": None if pd.isna(row["Volume"]) else float(row["Volume"]),
-        }
-        for idx, row in df.iterrows()
-    ]
-    return {"ticker": _sanitize(ticker), "candles": out}
+def candles(
+    ticker: str,
+    end: str | None = Query(None),
+    limit: int | None = Query(None, ge=1, le=10000),
+    range_name: str | None = Query(None, alias="range"),
+    start: str | None = Query(None),
+) -> dict:
+    refresh_active_ticker_if_stale(ticker, range_name=range_name)
+    updated_at = get_data_updated_at(ticker, range_name=range_name)
+
+    # Keep endpoint behavior thin; range selection, intraday overlay, and CSV
+    # normalization live behind the market_data facade.
+    return {
+        "ticker": sanitize_ticker(ticker),
+        "updatedAt": updated_at.isoformat() if updated_at else None,
+        "candles": get_candles(
+            ticker,
+            end=end,
+            limit=limit,
+            range_name=range_name,
+            start=start,
+        ),
+    }
