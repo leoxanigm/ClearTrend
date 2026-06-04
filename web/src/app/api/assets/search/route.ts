@@ -31,8 +31,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    // Search is symbol-only for now because analysis exposes tickers, not full
-    // provider profiles like Finnhub did.
+    // Search is symbol-only for now because analysis exposes tickers.
     const results = await searchAnalysisTickers(query);
 
     return NextResponse.json({

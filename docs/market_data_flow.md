@@ -7,10 +7,10 @@ the dashboard.
 
 - Market data comes from the local FastAPI `analysis` service.
 - `analysis` uses the `yfinance` Python package to download Yahoo Finance data.
-- The frontend no longer calls Finnhub or Twelve Data for the active watchlist,
-  search, or dashboard chart paths.
-- There is currently no provider fallback on those paths: if `analysis` cannot
-  serve a ticker, the frontend treats the data as unavailable.
+- The frontend uses `analysis` for the active watchlist, search, and dashboard
+  chart paths.
+- There is currently no provider fallback: if `analysis` cannot serve a ticker,
+  the frontend treats the data as unavailable.
 
 ## Storage
 

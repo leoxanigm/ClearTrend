@@ -2,7 +2,6 @@ import {
   fetchAnalysisAssetSnapshot,
   type AnalysisAssetSnapshot,
 } from "@/lib/analysis-data";
-import { wasAttemptedRecently } from "@/lib/external-data";
 import { getPrisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 
@@ -165,6 +164,7 @@ export const defaultWatchlistSymbols = [ // list of 150 main assets of S&P500
 ];
 
 const assetCacheTtlMs = 5 * 60 * 1000;  // Time keeping asset in cache = 5 min
+const assetAttemptCooldownMs = 5 * 60 * 1000;
 const symbolPattern = /^[A-Z0-9.-]{1,15}$/;
 
 export type WatchlistAsset = {
@@ -292,7 +292,10 @@ function isFresh(asset: StoredAsset) {
 }
 
 function wasRecentlyAttempted(asset: StoredAsset) {
-  return wasAttemptedRecently(asset.fetchAttemptedAt);
+  return Boolean(
+    asset.fetchAttemptedAt &&
+      Date.now() - asset.fetchAttemptedAt.getTime() < assetAttemptCooldownMs
+  );
 }
 
 async function findStoredAsset(symbol: string) {
@@ -348,64 +351,38 @@ async function markAssetFetchAttempt(symbol: string) {
 
 async function upsertStoredAsset(asset: AnalysisAssetSnapshot) {
   const prisma = getPrisma();
-  // Prisma still has provider/profile fields from the Finnhub era. Fill only
-  // stable analysis-owned values until the asset model is simplified.
   const rows = await prisma.$queryRaw<StoredAsset[]>`
     INSERT INTO assets (
       id,
       symbol,
-      "displaySymbol",
       name,
-      type,
       "lastPrice",
       "dayChange",
       "dayChangePercent",
-      "dayHigh",
-      "dayLow",
-      "dayOpen",
-      "previousClose",
-      "quoteTimestamp",
       "dataFetchedAt",
       "fetchAttemptedAt",
-      "rawQuote",
       "createdAt",
       "updatedAt"
     )
     VALUES (
       ${randomUUID()},
       ${asset.symbol},
-      ${asset.symbol},
       ${asset.name},
-      ${"Analysis"},
       ${asset.lastPrice},
       ${asset.dayChange},
       ${asset.dayChangePercent},
-      ${asset.dayHigh},
-      ${asset.dayLow},
-      ${asset.dayOpen},
-      ${asset.previousClose},
-      ${asset.quoteTimestamp},
       now(),
       now(),
-      ${JSON.stringify(asset.rawQuote)}::jsonb,
       now(),
       now()
     )
     ON CONFLICT (symbol) DO UPDATE SET
-      "displaySymbol" = EXCLUDED."displaySymbol",
       name = EXCLUDED.name,
-      type = EXCLUDED.type,
       "lastPrice" = EXCLUDED."lastPrice",
       "dayChange" = EXCLUDED."dayChange",
       "dayChangePercent" = EXCLUDED."dayChangePercent",
-      "dayHigh" = EXCLUDED."dayHigh",
-      "dayLow" = EXCLUDED."dayLow",
-      "dayOpen" = EXCLUDED."dayOpen",
-      "previousClose" = EXCLUDED."previousClose",
-      "quoteTimestamp" = EXCLUDED."quoteTimestamp",
       "dataFetchedAt" = now(),
       "fetchAttemptedAt" = now(),
-      "rawQuote" = EXCLUDED."rawQuote",
       "updatedAt" = now()
     RETURNING
       symbol,
@@ -434,8 +411,8 @@ async function getOrSyncAsset(symbol: string) {
   await markAssetFetchAttempt(symbol);
 
   try {
-    // No Finnhub/TwelveData fallback here: analysis is the active market data
-    // source, while stale DB values are only kept to avoid breaking the UI.
+    // Analysis is the only market data source; stale DB values are only kept
+    // to avoid breaking the UI after a temporary refresh failure.
     const asset = await fetchAnalysisAssetSnapshot(symbol);
     const savedAsset = await upsertStoredAsset(asset);
 

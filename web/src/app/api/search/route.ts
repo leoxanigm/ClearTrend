@@ -156,15 +156,7 @@ async function searchAssets(input: {
   const prisma = getPrisma();
   const skip = (input.page - 1) * input.limit;
   const createdAt = getDateFilter(input.dateFrom, input.dateTo);
-  const stringSearch = getStringSearch(input.q, [
-    'symbol',
-    'displaySymbol',
-    'name',
-    'description',
-    'type',
-    'exchange',
-    'industry'
-  ]);
+  const stringSearch = getStringSearch(input.q, ['symbol', 'name']);
 
   const where = {
     ...(createdAt ? { createdAt } : {}),
@@ -186,12 +178,10 @@ async function searchAssets(input: {
     type: 'asset',
     title: asset.name ?? asset.symbol,
     subtitle: asset.symbol,
-    description: asset.description ?? asset.exchange ?? asset.type,
+    description: null,
     href: `/dashboard?symbol=${encodeURIComponent(asset.symbol)}`,
     createdAt: toIso(asset.createdAt),
     metadata: {
-      exchange: asset.exchange,
-      industry: asset.industry,
       lastPrice: asset.lastPrice,
       symbol: asset.symbol
     }

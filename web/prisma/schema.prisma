@@ -100,33 +100,12 @@ model User {
 model Asset {
   id               String    @id @default(uuid())
   symbol           String    @unique
-  displaySymbol    String?
   name             String?
-  description      String?
-  type             String?
-  exchange         String?
-  mic              String?
-  currency         String?
-  country          String?
-  industry         String?
-  logoUrl          String?
-  webUrl           String?
-  ipoDate          String?
-  marketCap        Float?
-  shareOutstanding Float?
-  figi             String?
   lastPrice        Float?
   dayChange        Float?
   dayChangePercent Float?
-  dayHigh          Float?
-  dayLow           Float?
-  dayOpen          Float?
-  previousClose    Float?
-  quoteTimestamp   DateTime?
   dataFetchedAt    DateTime?
   fetchAttemptedAt DateTime?
-  rawProfile       Json?
-  rawQuote         Json?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -137,8 +116,6 @@ model Asset {
 
   @@index([symbol])
   @@index([name])
-  @@index([type])
-  @@index([exchange])
   @@index([createdAt])
   @@map("assets")
 }

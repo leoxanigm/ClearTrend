@@ -20,9 +20,9 @@ type ChartResponse = {
   candles?: ChartCandle[];
   currency?: string | null;
   dayChangePercent?: number | null;
-  exchange?: string | null;
   interval?: string;
   lastPrice?: number | null;
+  source?: string | null;
   symbol?: string;
   updatedAt?: string | null;
 };
@@ -457,7 +457,7 @@ export function AssetChart({
   const [hoveredPoint, setHoveredPoint] = useState<ChartPoint | null>(null);
   const [currency, setCurrency] = useState<string | null>(null);
   const [dayChangePercent, setDayChangePercent] = useState<number | null>(null);
-  const [exchange, setExchange] = useState<string | null>(null);
+  const [source, setSource] = useState<string | null>(null);
   const [interval, setInterval] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -509,8 +509,8 @@ export function AssetChart({
         setCandles(nextCandles);
         setCurrency(body.currency ?? null);
         setDayChangePercent(body.dayChangePercent ?? null);
-        setExchange(body.exchange ?? null);
         setInterval(body.interval ?? null);
+        setSource(body.source ?? null);
         setUpdatedAt(body.updatedAt ?? null);
         if (range === "1D") {
           onAssetSnapshotChange?.({
@@ -585,8 +585,8 @@ export function AssetChart({
         setCandles(nextCandles);
         setCurrency(body.currency ?? null);
         setDayChangePercent(body.dayChangePercent ?? null);
-        setExchange(body.exchange ?? null);
         setInterval(body.interval ?? null);
+        setSource(body.source ?? null);
         setUpdatedAt(body.updatedAt ?? meta.updatedAt);
         setHoveredPoint(null);
         setError(null);
@@ -847,7 +847,7 @@ export function AssetChart({
           tooltip={t("tooltips.interval")}
         />
         <ChartFooterMetric
-          label={exchange ?? t("providerFallback")}
+          label={source ?? t("providerFallback")}
           tooltip={t("tooltips.provider")}
         />
         <ChartFooterMetric

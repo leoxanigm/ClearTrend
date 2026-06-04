@@ -39,14 +39,8 @@ type AnalysisTickersResponse = {
 export type AnalysisAssetSnapshot = {
   dayChange: number | null;
   dayChangePercent: number | null;
-  dayHigh: number | null;
-  dayLow: number | null;
-  dayOpen: number | null;
   lastPrice: number | null;
   name: string | null;
-  previousClose: number | null;
-  quoteTimestamp: Date | null;
-  rawQuote: Record<string, unknown>;
   symbol: string;
 };
 
@@ -54,14 +48,12 @@ type AnalysisDailyChange = {
   dayChange: number | null;
   dayChangePercent: number | null;
   lastPrice: number | null;
-  previousClose: number | null;
 };
 
 const emptyDailyChange: AnalysisDailyChange = {
   dayChange: null,
   dayChangePercent: null,
   lastPrice: null,
-  previousClose: null,
 };
 
 const chartRangeConfig: Record<
@@ -229,7 +221,6 @@ function getDailyChange(candles: ChartCandle[]): AnalysisDailyChange {
     dayChange,
     dayChangePercent,
     lastPrice: latest?.close ?? null,
-    previousClose: previous?.close ?? null,
   };
 }
 
@@ -257,10 +248,10 @@ export async function fetchAnalysisCandles(symbol: string, range: ChartRange) {
     candles: data.candles,
     currency: null,
     dayChangePercent: dailyChange.dayChangePercent,
-    exchange: "Analysis",
     interval: config.interval,
     lastPrice: dailyChange.lastPrice,
     range,
+    source: "Analysis",
     symbol: data.symbol,
     updatedAt: data.updatedAt,
   };
@@ -292,23 +283,13 @@ export async function fetchAnalysisAssetSnapshot(
   const data = await fetchAnalysisCandlesByParams(symbol, {
     limit: "2",
   });
-  const latest = data.candles[data.candles.length - 1];
   const dailyChange = getDailyChange(data.candles);
 
   return {
     dayChange: dailyChange.dayChange,
     dayChangePercent: dailyChange.dayChangePercent,
-    dayHigh: latest?.high ?? null,
-    dayLow: latest?.low ?? null,
-    dayOpen: latest?.open ?? null,
     lastPrice: dailyChange.lastPrice,
     name: data.symbol,
-    previousClose: dailyChange.previousClose,
-    quoteTimestamp: latest ? new Date(latest.timestamp) : null,
-    rawQuote: {
-      candles: data.candles,
-      provider: "analysis",
-    },
     symbol: data.symbol,
   };
 }
@@ -349,8 +330,7 @@ export async function searchAnalysisTickers(query: string, limit = 8) {
     .filter((ticker) => ticker.includes(normalizedQuery))
     .slice(0, limit)
     .map((ticker) => ({
-      description: ticker,
-      displaySymbol: ticker,
+      name: ticker,
       symbol: ticker,
       type: "Analysis",
     }));
