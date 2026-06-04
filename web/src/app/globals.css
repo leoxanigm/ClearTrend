@@ -1518,6 +1518,58 @@ input {
     font-size: 0.75rem;
 }
 
+.asset-chart-footer-metric {
+    position: relative;
+    border: 0;
+    background: transparent;
+    outline: none;
+    padding: 0;
+    color: inherit;
+    cursor: help;
+    font: inherit;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--app-muted) 40%, transparent);
+    text-decoration-style: dotted;
+    text-underline-offset: 0.25rem;
+}
+
+.asset-chart-footer-metric:hover,
+.asset-chart-footer-metric:focus-visible {
+    color: var(--app-text);
+}
+
+.asset-chart-footer-metric::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    z-index: 4;
+    bottom: calc(100% + 0.625rem);
+    left: 50%;
+    width: max-content;
+    max-width: min(14rem, 70vw);
+    transform: translateX(-50%) translateY(0.25rem);
+    border: 1px solid color-mix(in srgb, var(--app-accent) 28%, var(--app-border));
+    border-radius: 0.375rem;
+    background: color-mix(in srgb, var(--app-surface) 96%, #000000);
+    box-shadow: 0 0.75rem 1.75rem rgb(0 0 0 / 0.28);
+    color: var(--app-text);
+    opacity: 0;
+    padding: 0.5rem 0.625rem;
+    pointer-events: none;
+    text-align: left;
+    white-space: normal;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    transition:
+        opacity 140ms ease,
+        transform 140ms ease;
+}
+
+.asset-chart-footer-metric:hover::after,
+.asset-chart-footer-metric:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 .footer-links {
     display: flex;
     justify-content: center;

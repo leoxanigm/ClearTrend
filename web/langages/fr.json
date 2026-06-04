@@ -112,9 +112,17 @@
     "noAsset": "Aucun asset sélectionné",
     "points": "{count} points",
     "priceChart": "Graphique du prix de {symbol}",
-    "providerFallback": "Twelve Data",
+    "providerFallback": "Analyse",
     "rangeLabel": "Période du graphique",
     "titleFallback": "Graphique",
+    "tooltips": {
+      "interval": "Granularité entre deux bougies du graphique.",
+      "points": "Nombre de bougies actuellement affichées.",
+      "provider": "Source utilisée pour fournir ces données de marché.",
+      "updated": "Temps écoulé depuis la dernière mise à jour du cache utilisé.",
+      "volume": "Volume échangé sur la dernière bougie visible."
+    },
+    "updated": "Mise à jour {value}",
     "unavailable": "Graphique indisponible",
     "volume": "Volume {value}"
   },
@@ -264,7 +272,7 @@
     },
     "endpoints": {
       "health": "Retourne l'état des services web, base de données et analyse.",
-      "candles": "Retourne les chandeliers de prix. Périodes prises en charge : 1D, 1M, 3M, 1Y.",
+      "candles": "Retourne les chandeliers de prix. Périodes prises en charge : 1D, 1W, 1M, 3M, 1Y.",
       "watchlistGet": "Retourne la watchlist de l'utilisateur courant.",
       "watchlistPost": "Ajoute un symbole à la watchlist de l'utilisateur courant.",
       "watchlistPut": "Remplace toute la watchlist de l'utilisateur courant.",

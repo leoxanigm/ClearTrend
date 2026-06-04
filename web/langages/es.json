@@ -112,9 +112,17 @@
     "noAsset": "Ningún asset seleccionado",
     "points": "{count} puntos",
     "priceChart": "Gráfico de precio de {symbol}",
-    "providerFallback": "Twelve Data",
+    "providerFallback": "Análisis",
     "rangeLabel": "Rango del gráfico",
     "titleFallback": "Gráfico",
+    "tooltips": {
+      "interval": "Granularidad entre dos velas del gráfico.",
+      "points": "Número de velas mostradas actualmente.",
+      "provider": "Fuente usada para proporcionar estos datos de mercado.",
+      "updated": "Tiempo transcurrido desde la última actualización de la caché usada.",
+      "volume": "Volumen negociado en la última vela visible."
+    },
+    "updated": "Actualizado {value}",
     "unavailable": "Gráfico no disponible",
     "volume": "Volumen {value}"
   },
@@ -264,7 +272,7 @@
     },
     "endpoints": {
       "health": "Devuelve el estado de los servicios web, base de datos y análisis.",
-      "candles": "Devuelve velas de precio. Rangos disponibles: 1D, 1M, 3M, 1Y.",
+      "candles": "Devuelve velas de precio. Rangos disponibles: 1D, 1W, 1M, 3M, 1Y.",
       "watchlistGet": "Devuelve la watchlist del usuario actual.",
       "watchlistPost": "Añade un símbolo a la watchlist del usuario actual.",
       "watchlistPut": "Reemplaza toda la watchlist del usuario actual.",

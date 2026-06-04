@@ -1,10 +1,9 @@
 import { requireApiIdentity } from '@/lib/api-auth';
-import { ExternalDataCooldownError } from '@/lib/external-data';
 import {
-  fetchTwelveDataCandles,
+  fetchAnalysisCandles,
   isChartRange,
   type ChartRange
-} from '@/lib/twelvedata';
+} from '@/lib/analysis-data';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +21,8 @@ export async function GET(req: Request) {
   const symbol = url.searchParams.get('symbol')?.trim().toUpperCase() ?? '';
   const rangeParam =
     url.searchParams.get('range')?.trim().toUpperCase() ?? '1M';
+  // Only pass supported product ranges to analysis; unknown values fall back to
+  // the dashboard default instead of reaching the backend as arbitrary input.
   const range: ChartRange = isChartRange(rangeParam) ? rangeParam : '1M';
 
   if (!symbolPattern.test(symbol)) {
@@ -34,19 +35,10 @@ export async function GET(req: Request) {
   }
 
   try {
-    const data = await fetchTwelveDataCandles(symbol, range);
+    const data = await fetchAnalysisCandles(symbol, range);
 
     return NextResponse.json(data);
-  } catch (error) {
-    if (error instanceof ExternalDataCooldownError) {
-      return NextResponse.json(
-        {
-          error: 'Chart data was requested recently. Try again shortly.'
-        },
-        { status: 429 }
-      );
-    }
-
+  } catch {
     return NextResponse.json(
       {
         error: 'Chart data failed.'
