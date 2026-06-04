@@ -25,8 +25,7 @@ type WatchlistNavProps = {
 };
 
 type AssetSearchResult = {
-  description: string | null;
-  displaySymbol: string | null;
+  name: string | null;
   symbol: string | null;
   type: string | null;
 };
@@ -446,14 +445,14 @@ export function WatchlistNav({
               results.map(result => (
                 <button
                   className='asset-search-result'
-                  key={`${result.symbol}-${result.description}`}
+                  key={`${result.symbol}-${result.name}`}
                   onClick={() => addAsset(result.symbol)}
                   type='button'>
                   <span className='asset-search-result-name'>
-                    {result.description}
+                    {result.name ?? result.symbol}
                   </span>
                   <span className='asset-search-result-symbol'>
-                    {result.displaySymbol ?? result.symbol}
+                    {result.symbol}
                   </span>
                 </button>
               ))}

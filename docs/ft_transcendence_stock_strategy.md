@@ -139,7 +139,7 @@ Estimation globale pour un MVP propre : environ 5 000 a 9 000 lignes applicative
 Schema DB de depart :
 
 - `users`, `profiles`, `roles`, `permissions`
-- `assets` : symbole, nom, exchange, devise
+- `assets` : symbole, nom, dernier prix, variation
 - `price_candles` : asset, timestamp, open/high/low/close/volume
 - `news_items` : asset, source, url, titre, texte nettoye, date publication
 - `sentiment_runs` : news item ou batch, score, label, modele, cout, erreurs

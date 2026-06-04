@@ -27,8 +27,8 @@ Fait:
 - dashboard protege;
 - user menu avec theme, logout, profile settings;
 - avatar upload local avec crop rond, zoom et deplacement;
-- watchlist initiale, tri, recherche Finnhub, ajout en memoire;
-- chart SVG avec ranges `1D`, `1M`, `3M`, `1Y`, axes, tooltip desktop;
+- watchlist initiale, tri, recherche via `analysis`, ajout en memoire;
+- chart SVG avec ranges `1D`, `1W`, `1M`, `3M`, `1Y`, axes, tooltip desktop;
 - APIs assets protegees par session;
 - cache/cooldown 5 min pour assets, search et candles;
 - dark/light theme via CSS variables et `localStorage`;
@@ -37,7 +37,7 @@ Fait:
 A retenir:
 
 - les assets sont caches en DB;
-- search Finnhub et candles Twelve Data ont un cache en memoire;
+- search, watchlist et candles passent par le service `analysis`;
 - la watchlist utilisateur n'est pas encore persistee;
 - Trend/Sentiment sont encore des placeholders.
 
@@ -84,14 +84,12 @@ A retenir:
 
 - `web/src/app/api/profile/route.ts`: read/update profil, upload avatar.
 - `web/src/app/api/assets/watchlist/route.ts`: hydrate des symbols en assets.
-- `web/src/app/api/assets/search/route.ts`: recherche Finnhub.
-- `web/src/app/api/assets/candles/route.ts`: candles Twelve Data.
+- `web/src/app/api/assets/search/route.ts`: recherche de tickers via `analysis`.
+- `web/src/app/api/assets/candles/route.ts`: candles via `analysis`.
 - `web/src/lib/profile.ts`: user courant et profil.
 - `web/src/lib/profile-rules.ts`: validation display name + crop avatar.
 - `web/src/lib/assets.ts`: watchlist defaults, cache DB assets.
-- `web/src/lib/finnhub.ts`: provider Finnhub.
-- `web/src/lib/twelvedata.ts`: provider Twelve Data.
-- `web/src/lib/external-data.ts`: cooldown 5 min provider.
+- `web/src/lib/analysis-data.ts`: client serveur vers le service `analysis`.
 
 ## Todo priorisee
 
@@ -106,7 +104,7 @@ A retenir:
 - [ ] Gerer les erreurs API cote UI.
   - `401`: redirection login ou message session expiree.
   - `429`: message "try again shortly" au lieu de "failed".
-  - provider down: garder l'ancienne data visible quand possible.
+- service analysis indisponible: garder l'ancienne data visible quand possible.
 
 - [ ] Finir les boutons watchlist du profil.
   - Download CSV/JSON.
@@ -127,7 +125,7 @@ A retenir:
   - Login, dashboard, profil, watchlist, chart, erreurs front et legal pages traduits.
 
 - [ ] Advanced search.
-  - Resultats mieux structures: symbol, name, type, exchange.
+  - Resultats mieux structures: symbol, name, prix, variation.
   - Etats loading/empty/error plus precis.
   - Debounce + annulation deja presents, mais messages a ameliorer.
   - Eventuellement filtres stock/crypto.
@@ -175,10 +173,9 @@ A retenir:
 
 ## Notes implementation
 
-- Garder les appels providers cote serveur uniquement.
-- Ne jamais exposer les tokens Finnhub/Twelve Data au client.
-- Toute route asset doit verifier la session avant de fetch externe.
-- Garder 5 min minimum entre deux appels provider pour le meme besoin.
+- Garder les appels `analysis` cote serveur uniquement.
+- Toute route asset doit verifier la session avant de fetch les donnees marche.
+- Garder 5 min minimum entre deux refreshs actifs pour le meme besoin.
 - Si une donnee stale existe, preferer l'afficher plutot que casser l'UI.
 - En dev Docker, si CSS/Next semble stale, recreer le container web:
 

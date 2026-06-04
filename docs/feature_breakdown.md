@@ -174,7 +174,7 @@ A faire:
   watchlists, comments, sources, analysis jobs, reports, notifications, api keys,
   user events.
 - Demarrer simple: `User` + `Analysis` pour commencer, ajouter
-  `Asset` evite de recopier le symbole, le nom et l'exchange dans chaque analyse.
+  `Asset` evite de recopier le symbole et le nom dans chaque analyse.
 - Ajouter migrations propres, eviter `db push --accept-data-loss` hors dev.
 
 Owner: zalemu.
@@ -855,7 +855,7 @@ MVP ORM:
 | Table | Role | Champs importants |
 |---|---|---|
 | `users` | Compte applicatif | `id`, `email`, `passwordHash`, `name`, `role`, `createdAt`, `updatedAt` |
-| `assets` | Action/crypto suivie | `id`, `symbol`, `name`, `exchange`, `currency` |
+| `assets` | Action/crypto suivie | `id`, `symbol`, `name`, `lastPrice`, `dayChangePercent` |
 | `watchlists` | Liste utilisateur | `id`, `userId`, `name`, `createdAt` |
 | `watchlist_items` | Assets dans une watchlist | `id`, `watchlistId`, `assetId`, `createdAt` |
 | `analyses` | Analyse d'un asset pour un user | `id`, `userId`, `assetId`, `status`, `horizon`, `trendLabel`, `recommendation`, `technicalScore`, `emotionScore`, `confidenceScore`, `summary`, `error`, `startedAt`, `completedAt` |
@@ -947,8 +947,7 @@ model Asset {
   id        String   @id @default(uuid())
   symbol    String   @unique
   name      String
-  exchange  String?
-  currency  String?
+  lastPrice Float?
   createdAt DateTime @default(now())
 
   analyses Analysis[]
@@ -1078,4 +1077,3 @@ model UserEvent {
   @@map("user_events")
 }
 ```
-
