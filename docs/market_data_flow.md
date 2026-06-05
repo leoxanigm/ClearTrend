@@ -166,20 +166,20 @@ Frontend chart flow:
 
 Automatic chart refresh:
 
-1. While the tab is visible, `AssetChart` polls
-   `/api/assets/candles/meta?symbol=AAPL&range=1W` on fixed 5 minute
-   boundaries plus 30 seconds.
-2. That meta call only reads `updatedAt`; backend refreshes are handled by the
-   scheduler.
-3. If `updatedAt` is unchanged, the chart keeps the current candles.
-4. If `updatedAt` changed, the chart refetches `/api/assets/candles`.
-5. After a chart refresh, the dashboard compares the selected asset's new
+1. While the tab is visible, `AssetChart` fetches
+   `/api/assets/candles?symbol=AAPL&range=1W` on fixed 5 minute boundaries plus
+   30 seconds.
+2. The chart applies the returned candles directly. Backend refreshes are
+   handled by the scheduler, so this request only reads the cache.
+3. If the cache has not changed yet, the chart retries every 30 seconds until
+   it sees a new `updatedAt`, then returns to the fixed 5 minute schedule.
+4. After a chart refresh, the dashboard compares the selected asset's new
    `lastPrice/dayChangePercent` with the value already loaded in the
    watchlist. It reloads `/api/assets/watchlist` only when that selected asset
    value actually changed.
-6. The selected `symbol` and `range` are mirrored in the dashboard URL, so a
+5. The selected `symbol` and `range` are mirrored in the dashboard URL, so a
    page refresh keeps the same asset and time range.
-7. Polling pauses while the browser tab is hidden and checks once when it
+6. Polling pauses while the browser tab is hidden and checks once when it
    becomes visible again.
 
 Watchlist flow:
