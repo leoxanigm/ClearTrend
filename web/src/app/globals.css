@@ -2107,7 +2107,8 @@ input {
 /* API key settings and docs pages start */
 
 .api-key-page,
-.api-docs-page {
+.api-docs-page,
+.admin-page {
   min-height: 100vh;
   padding: 32px;
   background: var(--app-background);
@@ -2116,14 +2117,17 @@ input {
 
 .api-key-page-header,
 .api-docs-header,
+.admin-page-header,
 .api-key-page-content,
-.api-docs-content {
+.api-docs-content,
+.admin-page-content {
   max-width: 960px;
   margin-inline: auto;
 }
 
 .api-key-page-header,
 .api-docs-header,
+.admin-page-header,
 .api-key-page-actions {
   display: flex;
   align-items: center;
@@ -2132,26 +2136,30 @@ input {
 }
 
 .api-key-page-content,
-.api-docs-content {
+.api-docs-content,
+.admin-page-content {
   margin-top: 48px;
 }
 
 .api-key-page-content h1,
-.api-docs-content h1 {
+.api-docs-content h1,
+.admin-page-content h1 {
   margin-top: 4px;
   font-size: 32px;
   font-weight: 700;
 }
 
 .api-key-page-description,
-.api-docs-description {
+.api-docs-description,
+.admin-page-description {
   max-width: 720px;
   margin-top: 12px;
   color: var(--app-muted);
   line-height: 1.6;
 }
 
-.api-key-panel {
+.api-key-panel,
+.admin-panel {
   margin-top: 24px;
   border: 1px solid var(--app-border);
   border-radius: 8px;
@@ -2159,24 +2167,28 @@ input {
   background: var(--app-surface);
 }
 
-.api-key-metadata {
+.api-key-metadata,
+.admin-metadata {
   display: grid;
   gap: 12px;
   margin: 0 0 20px;
 }
 
-.api-key-metadata div {
+.api-key-metadata div,
+.admin-metadata div {
   display: grid;
   grid-template-columns: minmax(120px, 180px) 1fr;
   gap: 12px;
 }
 
 .api-key-metadata dt,
+.admin-metadata dt,
 .api-docs-auth {
   color: var(--app-muted);
 }
 
-.api-key-metadata dd {
+.api-key-metadata dd,
+.admin-metadata dd {
   margin: 0;
 }
 
@@ -2302,12 +2314,14 @@ input {
 
 @media (max-width: 620px) {
   .api-key-page,
-  .api-docs-page {
+  .api-docs-page,
+  .admin-page {
     padding: 20px;
   }
 
   .api-key-page-header,
-  .api-docs-header {
+  .api-docs-header,
+  .admin-page-header {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -2320,7 +2334,8 @@ input {
     flex: 1;
   }
 
-  .api-key-metadata div {
+  .api-key-metadata div,
+  .admin-metadata div {
     grid-template-columns: 1fr;
     gap: 4px;
   }

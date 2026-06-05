@@ -433,6 +433,12 @@ export function DashboardClient({
                 {t("profileSettings")}
               </button>
 
+              {profile.role === "ADMIN" ? (
+                <a className="user-menu-action" href="/admin">
+                  {t("adminPage")}
+                </a>
+              ) : null}
+
               <a className="user-menu-action" href="/settings/api">
                 {t("apiSettings")}
               </a>

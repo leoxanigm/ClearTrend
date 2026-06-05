@@ -72,6 +72,7 @@
     "openUserMenu": "Open user menu for {name}",
     "openWatchlist": "Open watchlist",
     "overview": "Overview",
+    "adminPage": "Admin",
     "apiDocs": "API documentation",
     "apiSettings": "API key settings",
     "profileSettings": "Profile settings",
@@ -278,6 +279,16 @@
       "watchlistPut": "Replaces the complete current user watchlist.",
       "watchlistDelete": "Removes one symbol. Send no request body to clear the complete watchlist.",
       "search": "Searches assets, analyses, reports, and notifications with filters and pagination."
+    }
+  },
+  "adminPage": {
+    "eyebrow": "Admin area",
+    "title": "Admin",
+    "description": "Restricted workspace for ClearTrend administrators.",
+    "fields": {
+      "account": "Account",
+      "email": "Email",
+      "role": "Role"
     }
   },
   "legal": {

@@ -72,6 +72,7 @@
     "openUserMenu": "Abrir menú de usuario de {name}",
     "openWatchlist": "Abrir watchlist",
     "overview": "Resumen",
+    "adminPage": "Admin",
     "apiDocs": "Documentación de API",
     "apiSettings": "Clave API",
     "profileSettings": "Ajustes del perfil",
@@ -278,6 +279,16 @@
       "watchlistPut": "Reemplaza toda la watchlist del usuario actual.",
       "watchlistDelete": "Elimina un símbolo. Envía la solicitud sin body para vaciar toda la watchlist.",
       "search": "Busca activos, análisis, informes y notificaciones con filtros y paginación."
+    }
+  },
+  "adminPage": {
+    "eyebrow": "Área admin",
+    "title": "Admin",
+    "description": "Espacio restringido para administradores de ClearTrend.",
+    "fields": {
+      "account": "Cuenta",
+      "email": "Email",
+      "role": "Rol"
     }
   },
   "legal": {
