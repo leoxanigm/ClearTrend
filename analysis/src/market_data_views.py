@@ -173,6 +173,58 @@ def snapshot_payloads(tickers: list[str]) -> list[dict]:
     ]
 
 
+def _range_performance_payload(ticker: str, range_name: str) -> dict | None:
+    normalized_range = range_name.upper()
+
+    if normalized_range == "1D":
+        snapshot = _snapshot_payload(ticker)
+
+        return (
+            None
+            if snapshot is None
+            else {
+                "symbol": snapshot["symbol"],
+                "performancePercent": snapshot["dayChangePercent"],
+            }
+        )
+
+    try:
+        candles = get_candles(ticker, range_name=normalized_range)
+    except HTTPException:
+        return None
+
+    closes = [
+        _read_number(candle.get("c"))
+        for candle in candles
+    ]
+    valid_closes = [
+        close
+        for close in closes
+        if close is not None and close > 0
+    ]
+
+    if len(valid_closes) < 2:
+        return None
+
+    first_close = valid_closes[0]
+    last_close = valid_closes[-1]
+
+    return {
+        "symbol": sanitize_ticker(ticker),
+        "performancePercent": ((last_close - first_close) / first_close) * 100,
+    }
+
+
+def performance_payloads(tickers: list[str], range_name: str) -> list[dict]:
+    return [
+        performance
+        for ticker in tickers
+        if (
+            performance := _range_performance_payload(ticker, range_name)
+        ) is not None
+    ]
+
+
 def df_to_candles(df: pd.DataFrame, *, include_time: bool = False) -> list[dict]:
     out: list[dict] = []
 

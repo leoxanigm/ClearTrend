@@ -47,6 +47,16 @@ type AnalysisSnapshotsResponse = {
   snapshots?: unknown;
 };
 
+type AnalysisPerformance = {
+  performancePercent?: unknown;
+  symbol?: unknown;
+  updatedAt?: unknown;
+};
+
+type AnalysisPerformancesResponse = {
+  performances?: unknown;
+};
+
 type AnalysisTickersResponse = {
   tickers?: unknown;
 };
@@ -56,6 +66,12 @@ export type AnalysisAssetSnapshot = {
   dayChangePercent: number | null;
   lastPrice: number | null;
   name: string | null;
+  symbol: string;
+  updatedAt: string | null;
+};
+
+export type AnalysisAssetPerformance = {
+  performancePercent: number | null;
   symbol: string;
   updatedAt: string | null;
 };
@@ -330,6 +346,51 @@ export async function fetchAnalysisAssetSnapshots(
     ? body.snapshots
         .map((value) => normalizeAnalysisSnapshot(value as AnalysisSnapshot))
         .filter((value): value is AnalysisAssetSnapshot => Boolean(value))
+    : [];
+}
+
+function normalizeAnalysisPerformance(
+  value: AnalysisPerformance
+): AnalysisAssetPerformance | null {
+  const symbol = readString(value.symbol);
+
+  if (!symbol) {
+    return null;
+  }
+
+  return {
+    performancePercent: readNumber(value.performancePercent),
+    symbol,
+    updatedAt: readString(value.updatedAt),
+  };
+}
+
+export async function fetchAnalysisAssetPerformances(
+  symbols: string[],
+  range: ChartRange
+) {
+  const normalizedSymbols = symbols
+    .map((symbol) => symbol.trim().toUpperCase())
+    .filter(Boolean);
+
+  if (normalizedSymbols.length === 0) {
+    return [];
+  }
+
+  const body = (await fetchAnalysisJson(
+    "/performances",
+    {
+      range,
+      symbols: normalizedSymbols.join(","),
+    }
+  )) as AnalysisPerformancesResponse;
+
+  return Array.isArray(body.performances)
+    ? body.performances
+        .map((value) =>
+          normalizeAnalysisPerformance(value as AnalysisPerformance)
+        )
+        .filter((value): value is AnalysisAssetPerformance => Boolean(value))
     : [];
 }
 

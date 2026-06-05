@@ -99,6 +99,7 @@ Main endpoints:
 - `GET /tickers`
 - `GET /history/{ticker}/latest`
 - `GET /snapshots?symbols=AAPL,NVDA`
+- `GET /performances?symbols=AAPL,NVDA&range=1D|1W|1M|3M|1Y`
 - `GET /candles/{ticker}?range=1D|1W|1M|3M|1Y`
 - `GET /candles/{ticker}/meta?range=1D|1W|1M|3M|1Y`
 - `GET /candles/{ticker}?start=YYYY-MM-DD&end=YYYY-MM-DD&limit=N`
@@ -195,7 +196,9 @@ Watchlist flow:
    latest daily candles, including the current intraday overlay when present.
 6. `AssetChart` uses the same snapshot payload for the daily percentage, so the
    chart header and watchlist do not drift into different formulas.
-7. Missing symbols are shown as unavailable until backend refresh jobs populate
+7. The watchlist range selector uses `/performances` to switch the displayed
+   percentage without triggering Yahoo calls.
+8. Missing symbols are shown as unavailable until backend refresh jobs populate
    their caches.
 
 Search flow:

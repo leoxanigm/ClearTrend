@@ -106,6 +106,14 @@ export function DashboardClient({
   const [profile, setProfile] = useState(userProfile);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [watchlistAssets, setWatchlistAssets] = useState(initialWatchlistAssets);
+  const [loadedWatchlistPerformanceRange, setLoadedWatchlistPerformanceRange] =
+    useState<ChartRange>("1D");
+  const [watchlistPerformanceBySymbol, setWatchlistPerformanceBySymbol] =
+    useState<Record<string, number | null>>({});
+  const [watchlistPerformanceRefreshKey, setWatchlistPerformanceRefreshKey] =
+    useState(0);
+  const [watchlistPerformanceRange, setWatchlistPerformanceRange] =
+    useState<ChartRange>("1D");
   const watchlistAssetsRef = useRef(initialWatchlistAssets);
   const normalizedInitialSymbol = normalizeInitialSymbol(
     initialSymbol,
@@ -126,6 +134,14 @@ export function DashboardClient({
       null,
     [selectedSymbol, watchlistAssets]
   );
+  const watchlistSymbols = useMemo(
+    () => watchlistAssets.map((asset) => asset.symbol).join(","),
+    [watchlistAssets]
+  );
+  const visibleWatchlistPerformanceBySymbol =
+    loadedWatchlistPerformanceRange === watchlistPerformanceRange
+      ? watchlistPerformanceBySymbol
+      : {};
 
   useEffect(() => {
     watchlistAssetsRef.current = watchlistAssets;
@@ -197,9 +213,13 @@ export function DashboardClient({
 
       if (shouldReloadWatchlist) {
         void loadWatchlistSnapshots();
+
+        if (watchlistPerformanceRange !== "1D") {
+          setWatchlistPerformanceRefreshKey((currentKey) => currentKey + 1);
+        }
       }
     },
-    [loadWatchlistSnapshots]
+    [loadWatchlistSnapshots, watchlistPerformanceRange]
   );
 
   useEffect(() => {
@@ -218,6 +238,63 @@ export function DashboardClient({
       controller.abort();
     };
   }, [loadWatchlistSnapshots]);
+
+  useEffect(() => {
+    if (watchlistPerformanceRange === "1D" || !watchlistSymbols) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadWatchlistPerformance() {
+      try {
+        const response = await fetch(
+          `/api/assets/performance?range=${watchlistPerformanceRange}&symbols=${encodeURIComponent(
+            watchlistSymbols
+          )}`,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+          }
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const body = (await response.json()) as {
+          performances?: Array<{
+            performancePercent: number | null;
+            symbol: string;
+          }>;
+        };
+        const nextPerformanceBySymbol = Object.fromEntries(
+          (body.performances ?? []).map((performance) => [
+            performance.symbol,
+            performance.performancePercent,
+          ])
+        );
+
+        if (!controller.signal.aborted) {
+          setLoadedWatchlistPerformanceRange(watchlistPerformanceRange);
+          setWatchlistPerformanceBySymbol(nextPerformanceBySymbol);
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setLoadedWatchlistPerformanceRange(watchlistPerformanceRange);
+          setWatchlistPerformanceBySymbol({});
+        }
+      }
+    }
+
+    void loadWatchlistPerformance();
+
+    return () => controller.abort();
+  }, [
+    watchlistPerformanceRange,
+    watchlistPerformanceRefreshKey,
+    watchlistSymbols,
+  ]);
 
   function addWatchlistAsset(asset: WatchlistAsset) {
     setWatchlistAssets((currentAssets) => {
@@ -398,7 +475,10 @@ export function DashboardClient({
           assets={watchlistAssets}
           onAssetAdd={addWatchlistAsset}
           onFavoriteChange={updateWatchlistFavorite}
+          onPerformanceRangeChange={setWatchlistPerformanceRange}
           onSelectSymbol={handleSelectSymbol}
+          performanceBySymbol={visibleWatchlistPerformanceBySymbol}
+          performanceRange={watchlistPerformanceRange}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
 
@@ -423,7 +503,10 @@ export function DashboardClient({
           mobile
           onAssetAdd={addWatchlistAsset}
           onFavoriteChange={updateWatchlistFavorite}
+          onPerformanceRangeChange={setWatchlistPerformanceRange}
           onSelectSymbol={handleSelectSymbol}
+          performanceBySymbol={visibleWatchlistPerformanceBySymbol}
+          performanceRange={watchlistPerformanceRange}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
 

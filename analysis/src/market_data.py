@@ -17,6 +17,7 @@ from .market_data_views import (
     get_candles,
     get_data_updated_at,
     latest_payload,
+    performance_payloads,
     snapshot_payloads,
 )
 
@@ -31,6 +32,7 @@ __all__ = [
     "latest_payload",
     "latest_weekly_intraday_source_date",
     "list_cached_tickers",
+    "performance_payloads",
     "refresh_weekly_intraday_from_1d",
     "sanitize_ticker",
     "snapshot_payloads",

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { WatchlistAsset } from '@/lib/assets';
+import { chartRanges, type ChartRange } from '@/lib/analysis-data';
 import { useTranslations } from 'next-intl';
 
 type SortDirection = 'asc' | 'desc';
@@ -20,7 +21,10 @@ type WatchlistNavProps = {
     symbol: string,
     isFavorite: boolean
   ) => Promise<void> | void;
+  onPerformanceRangeChange: (range: ChartRange) => void;
   onSelectSymbol: (symbol: string) => void;
+  performanceBySymbol: Record<string, number | null>;
+  performanceRange: ChartRange;
   selectedSymbol: string | null;
 };
 
@@ -30,7 +34,17 @@ type AssetSearchResult = {
   type: string | null;
 };
 
-function formatDayChangePercent(value: number | null) {
+function getAssetPerformance(
+  asset: WatchlistAsset,
+  performanceBySymbol: Record<string, number | null>,
+  performanceRange: ChartRange
+) {
+  return performanceRange === '1D'
+    ? asset.dayChangePercent
+    : performanceBySymbol[asset.symbol] ?? null;
+}
+
+function formatPerformancePercent(value: number | null) {
   if (value === null) {
     return 'N/A';
   }
@@ -57,21 +71,34 @@ function compareAssetNames(a: WatchlistAsset, b: WatchlistAsset) {
 function compareAssetPerformance(
   a: WatchlistAsset,
   b: WatchlistAsset,
-  direction: 'asc' | 'desc'
+  direction: 'asc' | 'desc',
+  performanceBySymbol: Record<string, number | null>,
+  performanceRange: ChartRange
 ) {
-  if (a.dayChangePercent === null && b.dayChangePercent === null) {
+  const aPerformance = getAssetPerformance(
+    a,
+    performanceBySymbol,
+    performanceRange
+  );
+  const bPerformance = getAssetPerformance(
+    b,
+    performanceBySymbol,
+    performanceRange
+  );
+
+  if (aPerformance === null && bPerformance === null) {
     return compareAssetNames(a, b);
   }
 
-  if (a.dayChangePercent === null) {
+  if (aPerformance === null) {
     return 1;
   }
 
-  if (b.dayChangePercent === null) {
+  if (bPerformance === null) {
     return -1;
   }
 
-  const result = a.dayChangePercent - b.dayChangePercent;
+  const result = aPerformance - bPerformance;
 
   return direction === 'asc' ? result : -result;
 }
@@ -92,7 +119,12 @@ function compareAssetFavorites(
   return a.isFavorite ? 1 : -1;
 }
 
-function sortAssets(assets: WatchlistAsset[], sortState: SortState) {
+function sortAssets(
+  assets: WatchlistAsset[],
+  sortState: SortState,
+  performanceBySymbol: Record<string, number | null>,
+  performanceRange: ChartRange
+) {
   return [...assets].sort((a, b) => {
     const favoriteResult = compareAssetFavorites(
       a,
@@ -105,7 +137,13 @@ function sortAssets(assets: WatchlistAsset[], sortState: SortState) {
     }
 
     if (sortState.key === 'dp') {
-      return compareAssetPerformance(a, b, sortState.direction);
+      return compareAssetPerformance(
+        a,
+        b,
+        sortState.direction,
+        performanceBySymbol,
+        performanceRange
+      );
     }
 
     if (sortState.direction === 'desc' && sortState.key === 'name') {
@@ -131,6 +169,7 @@ function WatchlistItem({
   mobile,
   onFavoriteToggle,
   onSelect,
+  performancePercent,
   selected,
   setItemRef
 }: {
@@ -140,6 +179,7 @@ function WatchlistItem({
   mobile: boolean;
   onFavoriteToggle: (symbol: string, isFavorite: boolean) => void;
   onSelect: (symbol: string) => void;
+  performancePercent: number | null;
   selected: boolean;
   setItemRef: (symbol: string, element: HTMLElement | null) => void;
 }) {
@@ -154,9 +194,9 @@ function WatchlistItem({
       </span>
       <span
         className={`sidebar-performance ${getDayChangeClass(
-          asset.dayChangePercent
+          performancePercent
         )}`}>
-        {formatDayChangePercent(asset.dayChangePercent)}
+        {formatPerformancePercent(performancePercent)}
       </span>
     </>
   );
@@ -196,8 +236,8 @@ function WatchlistItem({
       ref={element => setItemRef(asset.symbol, element)}>
       {favoriteButton}
       <button
-        aria-label={`${asset.name} ${formatDayChangePercent(
-          asset.dayChangePercent
+        aria-label={`${asset.name} ${formatPerformancePercent(
+          performancePercent
         )}`}
         aria-pressed={selected}
         className='sidebar-asset-select'
@@ -214,7 +254,10 @@ export function WatchlistNav({
   mobile = false,
   onAssetAdd,
   onFavoriteChange,
+  onPerformanceRangeChange,
   onSelectSymbol,
+  performanceBySymbol,
+  performanceRange,
   selectedSymbol
 }: WatchlistNavProps) {
   const t = useTranslations('watchlist');
@@ -284,8 +327,14 @@ export function WatchlistNav({
   }, [query, t]);
 
   const sortedAssets = useMemo(
-    () => sortAssets(assets, sortState),
-    [assets, sortState]
+    () =>
+      sortAssets(
+        assets,
+        sortState,
+        performanceBySymbol,
+        performanceRange
+      ),
+    [assets, performanceBySymbol, performanceRange, sortState]
   );
   const searchInputId = mobile ? 'asset-search-mobile' : 'asset-search-desktop';
 
@@ -497,6 +546,19 @@ export function WatchlistNav({
             </span>
           ) : null}
         </button>
+        <select
+          aria-label={t('performanceRange')}
+          className='watchlist-range-select'
+          onChange={event =>
+            onPerformanceRangeChange(event.target.value as ChartRange)
+          }
+          value={performanceRange}>
+          {chartRanges.map(range => (
+            <option key={range} value={range}>
+              {range}
+            </option>
+          ))}
+        </select>
         <button
           aria-label={t('sortDailyPercent')}
           className={`watchlist-sort-button watchlist-sort-button-percent${
@@ -514,24 +576,33 @@ export function WatchlistNav({
       </div>
 
       <nav className='watchlist-nav space-y-2'>
-        {sortedAssets.map(asset => (
-          <WatchlistItem
-            asset={asset}
-            favoriteLabel={t(
-              asset.isFavorite ? 'unfavoriteAsset' : 'favoriteAsset',
-              {
-                symbol: asset.symbol
-              }
-            )}
-            favoritePending={pendingFavorites.has(asset.symbol)}
-            key={asset.symbol}
-            mobile={mobile}
-            onFavoriteToggle={handleFavoriteToggle}
-            onSelect={onSelectSymbol}
-            selected={asset.symbol === selectedSymbol}
-            setItemRef={setItemRef}
-          />
-        ))}
+        {sortedAssets.map(asset => {
+          const performancePercent = getAssetPerformance(
+            asset,
+            performanceBySymbol,
+            performanceRange
+          );
+
+          return (
+            <WatchlistItem
+              asset={asset}
+              favoriteLabel={t(
+                asset.isFavorite ? 'unfavoriteAsset' : 'favoriteAsset',
+                {
+                  symbol: asset.symbol
+                }
+              )}
+              favoritePending={pendingFavorites.has(asset.symbol)}
+              key={asset.symbol}
+              mobile={mobile}
+              onFavoriteToggle={handleFavoriteToggle}
+              onSelect={onSelectSymbol}
+              performancePercent={performancePercent}
+              selected={asset.symbol === selectedSymbol}
+              setItemRef={setItemRef}
+            />
+          );
+        })}
       </nav>
     </div>
   );
