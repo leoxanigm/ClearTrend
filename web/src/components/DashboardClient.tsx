@@ -36,6 +36,45 @@ type AssetSnapshotUpdate = {
   symbol: string;
 };
 
+const marketValueTolerance = 0.000001;
+
+function assetSnapshotChanged(
+  asset: WatchlistAsset | undefined,
+  snapshot: AssetSnapshotUpdate
+) {
+  if (!asset || asset.isStale) {
+    return false;
+  }
+
+  const changed = (currentValue: number | null, nextValue: number | null) =>
+    nextValue !== null &&
+    currentValue !== null &&
+    Math.abs(currentValue - nextValue) > marketValueTolerance;
+
+  return changed(asset.lastPrice, snapshot.lastPrice) ||
+    changed(asset.dayChangePercent, snapshot.dayChangePercent);
+}
+
+function mergeSnapshotIntoAssets(
+  assets: WatchlistAsset[],
+  snapshot: AssetSnapshotUpdate
+) {
+  return assets.map((asset) =>
+    asset.symbol === snapshot.symbol
+      ? {
+          ...asset,
+          dayChangePercent:
+            snapshot.dayChangePercent ?? asset.dayChangePercent,
+          isStale:
+            snapshot.lastPrice !== null || snapshot.dayChangePercent !== null
+              ? false
+              : asset.isStale,
+          lastPrice: snapshot.lastPrice ?? asset.lastPrice,
+        }
+      : asset
+  );
+}
+
 function normalizeInitialRange(value: string | null | undefined): ChartRange {
   const normalizedValue = value?.trim().toUpperCase() ?? "";
 
@@ -62,13 +101,12 @@ export function DashboardClient({
   const t = useTranslations("dashboard");
   const commonT = useTranslations("common");
   const userMenuRef = useRef<HTMLDetailsElement>(null);
-  const watchlistRefreshInFlightRef = useRef(false);
-  const lastWatchlistRefreshAtRef = useRef(0);
   const { notifyAfterNavigation } = useNotifications();
   const { notify } = useNotifications();
   const [profile, setProfile] = useState(userProfile);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [watchlistAssets, setWatchlistAssets] = useState(initialWatchlistAssets);
+  const watchlistAssetsRef = useRef(initialWatchlistAssets);
   const normalizedInitialSymbol = normalizeInitialSymbol(
     initialSymbol,
     initialWatchlistAssets
@@ -88,6 +126,10 @@ export function DashboardClient({
       null,
     [selectedSymbol, watchlistAssets]
   );
+
+  useEffect(() => {
+    watchlistAssetsRef.current = watchlistAssets;
+  }, [watchlistAssets]);
 
   function replaceDashboardUrl(symbol: string | null, range: ChartRange) {
     const params = new URLSearchParams(window.location.search);
@@ -115,20 +157,9 @@ export function DashboardClient({
   }
 
   const loadWatchlistSnapshots = useCallback(async (signal?: AbortSignal) => {
-    const now = Date.now();
-
-    if (
-      watchlistRefreshInFlightRef.current ||
-      now - lastWatchlistRefreshAtRef.current < 30_000
-    ) {
-      return;
-    }
-
-    watchlistRefreshInFlightRef.current = true;
-    lastWatchlistRefreshAtRef.current = now;
-
     try {
       const response = await fetch("/api/assets/watchlist", {
+        cache: "no-store",
         signal,
       });
 
@@ -141,30 +172,32 @@ export function DashboardClient({
       };
 
       if (!signal?.aborted && body.assets) {
+        watchlistAssetsRef.current = body.assets;
         setWatchlistAssets(body.assets);
       }
     } catch {
       // Keep the symbol list visible; the chart can still load independently.
-    } finally {
-      watchlistRefreshInFlightRef.current = false;
     }
   }, []);
 
   const updateWatchlistSnapshot = useCallback(
     (snapshot: AssetSnapshotUpdate) => {
-      setWatchlistAssets((currentAssets) =>
-        currentAssets.map((asset) =>
-          asset.symbol === snapshot.symbol
-            ? {
-                ...asset,
-                dayChangePercent:
-                  snapshot.dayChangePercent ?? asset.dayChangePercent,
-                lastPrice: snapshot.lastPrice ?? asset.lastPrice,
-              }
-            : asset
-        )
+      const currentAssets = watchlistAssetsRef.current;
+      const currentAsset = currentAssets.find(
+        (asset) => asset.symbol === snapshot.symbol
       );
-      void loadWatchlistSnapshots();
+      const shouldReloadWatchlist = assetSnapshotChanged(
+        currentAsset,
+        snapshot
+      );
+      const nextAssets = mergeSnapshotIntoAssets(currentAssets, snapshot);
+
+      watchlistAssetsRef.current = nextAssets;
+      setWatchlistAssets(nextAssets);
+
+      if (shouldReloadWatchlist) {
+        void loadWatchlistSnapshots();
+      }
     },
     [loadWatchlistSnapshots]
   );
@@ -194,7 +227,11 @@ export function DashboardClient({
         return currentAssets;
       }
 
-      return [...currentAssets, asset];
+      const nextAssets = [...currentAssets, asset];
+
+      watchlistAssetsRef.current = nextAssets;
+
+      return nextAssets;
     });
   }
 

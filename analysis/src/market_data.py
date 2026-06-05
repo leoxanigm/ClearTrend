@@ -5,7 +5,6 @@ from .market_data_history import (
     build_daily_history,
     build_intraday_history,
     build_weekly_intraday_history,
-    refresh_active_ticker_if_stale,
     refresh_weekly_intraday_from_1d,
 )
 from .market_data_storage import (
@@ -32,7 +31,6 @@ __all__ = [
     "latest_payload",
     "latest_weekly_intraday_source_date",
     "list_cached_tickers",
-    "refresh_active_ticker_if_stale",
     "refresh_weekly_intraday_from_1d",
     "sanitize_ticker",
     "snapshot_payloads",

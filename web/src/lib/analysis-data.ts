@@ -1,3 +1,5 @@
+import { getAssetDisplayName } from "@/lib/asset-labels";
+
 export const chartRanges = ["1D", "1W", "1M", "3M", "1Y"] as const;
 
 export type ChartRange = (typeof chartRanges)[number];
@@ -180,7 +182,10 @@ function normalizeAnalysisCandle(value: AnalysisCandle): ChartCandle | null {
   };
 }
 
-async function fetchAnalysisJson(path: string, params?: Record<string, string>) {
+async function fetchAnalysisJson(
+  path: string,
+  params?: Record<string, string>
+) {
   const url = getAnalysisUrl(path);
 
   for (const [key, value] of Object.entries(params ?? {})) {
@@ -226,30 +231,22 @@ async function fetchAnalysisCandlesByParams(
   };
 }
 
-function getDailyChange(candles: ChartCandle[]): AnalysisDailyChange {
-  const latest = candles[candles.length - 1] ?? null;
-  const previous = candles.length > 1 ? candles[candles.length - 2] : null;
-  const dayChange = latest && previous ? latest.close - previous.close : null;
-  const dayChangePercent =
-    dayChange !== null && previous?.close
-      ? (dayChange / previous.close) * 100
-      : null;
-
-  return {
-    dayChange,
-    dayChangePercent,
-    lastPrice: latest?.close ?? null,
-  };
-}
-
 async function fetchDailyChange(symbol: string) {
   // Yahoo-style daily movement needs the previous daily close, even when the
-  // visible 1D chart itself is built from 5 minute candles.
-  const data = await fetchAnalysisCandlesByParams(symbol, {
-    limit: "2",
-  });
+  // visible chart uses intraday candles or a longer range window.
+  try {
+    const [snapshot] = await fetchAnalysisAssetSnapshots([symbol]);
 
-  return getDailyChange(data.candles);
+    return snapshot
+      ? {
+          dayChange: snapshot.dayChange,
+          dayChangePercent: snapshot.dayChangePercent,
+          lastPrice: snapshot.lastPrice,
+        }
+      : emptyDailyChange;
+  } catch {
+    return emptyDailyChange;
+  }
 }
 
 export async function fetchAnalysisCandles(symbol: string, range: ChartRange) {
@@ -259,8 +256,7 @@ export async function fetchAnalysisCandles(symbol: string, range: ChartRange) {
   const data = await fetchAnalysisCandlesByParams(symbol, {
     range,
   });
-  const dailyChange =
-    range === "1D" ? await fetchDailyChange(symbol) : emptyDailyChange;
+  const dailyChange = await fetchDailyChange(symbol);
 
   return {
     candles: data.candles,
@@ -312,7 +308,9 @@ function normalizeAnalysisSnapshot(
   };
 }
 
-export async function fetchAnalysisAssetSnapshots(symbols: string[]) {
+export async function fetchAnalysisAssetSnapshots(
+  symbols: string[]
+) {
   const normalizedSymbols = symbols
     .map((symbol) => symbol.trim().toUpperCase())
     .filter(Boolean);
@@ -321,9 +319,12 @@ export async function fetchAnalysisAssetSnapshots(symbols: string[]) {
     return [];
   }
 
-  const body = (await fetchAnalysisJson("/snapshots", {
-    symbols: normalizedSymbols.join(","),
-  })) as AnalysisSnapshotsResponse;
+  const body = (await fetchAnalysisJson(
+    "/snapshots",
+    {
+      symbols: normalizedSymbols.join(","),
+    }
+  )) as AnalysisSnapshotsResponse;
 
   return Array.isArray(body.snapshots)
     ? body.snapshots
@@ -368,7 +369,7 @@ export async function searchAnalysisTickers(query: string, limit = 8) {
     .filter((ticker) => ticker.includes(normalizedQuery))
     .slice(0, limit)
     .map((ticker) => ({
-      name: ticker,
+      name: getAssetDisplayName(ticker),
       symbol: ticker,
       type: "Analysis",
     }));

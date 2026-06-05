@@ -8,7 +8,6 @@ from .market_data import (
     get_data_updated_at,
     latest_payload,
     list_cached_tickers,
-    refresh_active_ticker_if_stale,
     sanitize_ticker,
     snapshot_payloads,
 )
@@ -73,7 +72,6 @@ def candles_meta(
     ticker: str,
     range_name: str | None = Query(None, alias="range"),
 ) -> dict:
-    refresh_active_ticker_if_stale(ticker, range_name=range_name)
     updated_at = get_data_updated_at(ticker, range_name=range_name)
 
     return {

@@ -108,6 +108,7 @@ async function fetchChartCandles(
   const response = await fetch(
     `/api/assets/candles?symbol=${encodeURIComponent(symbol)}&range=${range}`,
     {
+      cache: "no-store",
       signal,
     }
   );
@@ -129,6 +130,7 @@ async function fetchChartMeta(
       symbol
     )}&range=${range}`,
     {
+      cache: "no-store",
       signal,
     }
   );
@@ -495,14 +497,6 @@ export function AssetChart({
       setHoveredPoint(null);
 
       try {
-        try {
-          await fetchChartMeta(requestedSymbol, range, controller.signal);
-        } catch {
-          if (controller.signal.aborted) {
-            return;
-          }
-        }
-
         const body = await fetchChartCandles(
           requestedSymbol,
           range,
@@ -520,13 +514,11 @@ export function AssetChart({
         setInterval(body.interval ?? null);
         setSource(body.source ?? null);
         setUpdatedAt(body.updatedAt ?? null);
-        if (range === "1D") {
-          onAssetSnapshotChange?.({
-            dayChangePercent: body.dayChangePercent ?? null,
-            lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
-            symbol: body.symbol ?? requestedSymbol,
-          });
-        }
+        onAssetSnapshotChange?.({
+          dayChangePercent: body.dayChangePercent ?? null,
+          lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
+          symbol: body.symbol ?? requestedSymbol,
+        });
       } catch {
         if (!controller.signal.aborted) {
           setCandles([]);
@@ -599,13 +591,11 @@ export function AssetChart({
         setUpdatedAt(body.updatedAt ?? meta.updatedAt);
         setHoveredPoint(null);
         setError(null);
-        if (range === "1D") {
-          onAssetSnapshotChange?.({
-            dayChangePercent: body.dayChangePercent ?? null,
-            lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
-            symbol: body.symbol ?? requestedSymbol,
-          });
-        }
+        onAssetSnapshotChange?.({
+          dayChangePercent: body.dayChangePercent ?? null,
+          lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
+          symbol: body.symbol ?? requestedSymbol,
+        });
       } catch {
         // Background polling should never replace visible chart data with an
         // error state. The next interval can try again.

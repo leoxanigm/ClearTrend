@@ -123,27 +123,32 @@ def _read_number(value) -> float | None:
     return number if math.isfinite(number) else None
 
 
+def _latest_and_previous_daily_close(ticker: str) -> tuple[float | None, float | None]:
+    df = load_daily_history_with_latest(ticker).sort_index()
+
+    if "Close" not in df.columns or len(df) < 1:
+        return None, None
+
+    last_price = _read_number(df["Close"].iloc[-1])
+    previous_close = _read_number(df["Close"].iloc[-2]) if len(df) > 1 else None
+
+    return last_price, previous_close
+
+
 def _snapshot_payload(ticker: str) -> dict | None:
     try:
-        df = load_daily_history_with_latest(ticker)
+        last_price, previous_close = _latest_and_previous_daily_close(ticker)
     except HTTPException:
         return None
 
-    if "Close" not in df.columns:
+    if last_price is None:
         return None
 
-    closes = df.dropna(subset=["Close"])
-
-    if len(closes) < 2:
-        return None
-
-    last_price = _read_number(closes["Close"].iloc[-1])
-    previous_close = _read_number(closes["Close"].iloc[-2])
-
-    if last_price is None or previous_close is None or previous_close <= 0:
-        return None
-
-    day_change = last_price - previous_close
+    day_change = (
+        last_price - previous_close
+        if previous_close is not None and previous_close > 0
+        else None
+    )
     updated_at = get_data_updated_at(ticker)
 
     return {
@@ -151,7 +156,11 @@ def _snapshot_payload(ticker: str) -> dict | None:
         "name": sanitize_ticker(ticker),
         "lastPrice": last_price,
         "dayChange": day_change,
-        "dayChangePercent": (day_change / previous_close) * 100,
+        "dayChangePercent": (
+            (day_change / previous_close) * 100
+            if day_change is not None and previous_close
+            else None
+        ),
         "updatedAt": updated_at.isoformat() if updated_at else None,
     }
 

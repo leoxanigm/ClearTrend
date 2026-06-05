@@ -249,6 +249,7 @@ export function WatchlistNav({
         const response = await fetch(
           `/api/assets/search?q=${encodeURIComponent(trimmedQuery)}`,
           {
+            cache: 'no-store',
             signal: controller.signal
           }
         );
@@ -392,7 +393,10 @@ export function WatchlistNav({
 
     try {
       const response = await fetch(
-        `/api/assets/watchlist?symbols=${encodeURIComponent(normalizedSymbol)}`
+        `/api/assets/watchlist?symbols=${encodeURIComponent(normalizedSymbol)}`,
+        {
+          cache: 'no-store'
+        }
       );
 
       if (!response.ok) {
