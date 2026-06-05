@@ -71,7 +71,7 @@ Current cadence:
 | Dataset | Yahoo query | Refresh rule | Used by |
 | --- | --- | --- | --- |
 | Daily | `1d` candles, `1y` or `5y` period | Once per calendar day, or if missing | `1M`, `3M`, `1Y`, watchlist latest |
-| 1D intraday | `period=1d`, `interval=5m` | Global scheduler every hour; active ticker on-demand when older than 5 minutes | `1D`, latest daily overlay |
+| 1D intraday | `period=1d`, `interval=5m` | Global scheduler every hour; active ticker on-demand from `/candles/{ticker}/meta` when older than 5 minutes | `1D`, latest daily overlay |
 | 1W hourly | `period=30d`, `interval=1h` | Base yfinance cache once per day, then hourly merge from `1D` | `1W` |
 
 The hourly merge works like this:
@@ -85,11 +85,11 @@ This means `1W` keeps the hourly values on disk instead of only displaying a
 temporary overlay. When the daily official close is available, the 1D-derived
 hourly merge uses that corrected close for the final hourly candle too.
 
-When the dashboard asks for `/candles` or `/candles/{ticker}/meta`, `analysis`
-checks the active ticker's `1D` cache. If that ticker cache is older than 5
-minutes, only that ticker is refreshed from yfinance before the response is
-returned. This keeps the visible chart fresher without refreshing the full
-market universe every 5 minutes.
+`/candles` returns the latest cached data immediately. When the dashboard asks
+for `/candles/{ticker}/meta`, `analysis` checks the active ticker's `1D` cache.
+If that ticker cache is older than 5 minutes, only that ticker is refreshed from
+yfinance before the meta response is returned. This keeps the visible chart
+fresher without blocking the main chart payload on a Yahoo refresh.
 
 ## Analysis API
 

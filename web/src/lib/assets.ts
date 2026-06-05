@@ -404,7 +404,11 @@ async function getOrSyncAsset(symbol: string) {
     return toWatchlistAsset(existingAsset);
   }
 
-  if (existingAsset && wasRecentlyAttempted(existingAsset)) {
+  if (
+    existingAsset &&
+    !existingAsset.dataFetchedAt &&
+    wasRecentlyAttempted(existingAsset)
+  ) {
     return toWatchlistAsset(existingAsset, true);
   }
 

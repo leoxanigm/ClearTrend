@@ -78,7 +78,6 @@ def candles(
     range_name: str | None = Query(None, alias="range"),
     start: str | None = Query(None),
 ) -> dict:
-    refresh_active_ticker_if_stale(ticker, range_name=range_name)
     updated_at = get_data_updated_at(ticker, range_name=range_name)
 
     # Keep endpoint behavior thin; range selection, intraday overlay, and CSV

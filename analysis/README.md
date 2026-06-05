@@ -12,9 +12,9 @@ candle is updated from the latest intraday cache when possible.
 
 **Refresh cadence** : daily and 1W yfinance history are refreshed once per
 calendar day when missing/stale. The 1D cache is refreshed hourly and then
-merged into the persisted 1W hourly cache. Requests for `/candles` or
-`/candles/{ticker}/meta` also refresh the active ticker from yfinance when its
-1D cache is older than 5 minutes.
+merged into the persisted 1W hourly cache. Requests for `/candles/{ticker}/meta`
+also refresh the active ticker from yfinance when its 1D cache is older than 5
+minutes. `/candles/{ticker}` returns the latest cached payload immediately.
 
 **Candle keys** : `t` date/time, `o` open, `h` high, `l` low, `c` close, `v` volume
 
