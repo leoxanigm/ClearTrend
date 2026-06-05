@@ -10,6 +10,7 @@ from .market_data import (
     list_cached_tickers,
     refresh_active_ticker_if_stale,
     sanitize_ticker,
+    snapshot_payloads,
 )
 from .scheduler import run_market_data_scheduler
 
@@ -54,6 +55,17 @@ def tickers() -> dict[str, list[str]]:
 @app.get("/history/{ticker}/latest")
 def latest(ticker: str) -> dict:
     return latest_payload(ticker)
+
+
+@app.get("/snapshots")
+def snapshots(symbols: str = Query("")) -> dict[str, list[dict]]:
+    tickers = [
+        symbol.strip()
+        for symbol in symbols.split(",")
+        if symbol.strip()
+    ][:999]
+
+    return {"snapshots": snapshot_payloads(tickers)}
 
 
 @app.get("/candles/{ticker}/meta")

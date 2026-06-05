@@ -62,6 +62,8 @@ export function DashboardClient({
   const t = useTranslations("dashboard");
   const commonT = useTranslations("common");
   const userMenuRef = useRef<HTMLDetailsElement>(null);
+  const watchlistRefreshInFlightRef = useRef(false);
+  const lastWatchlistRefreshAtRef = useRef(0);
   const { notifyAfterNavigation } = useNotifications();
   const { notify } = useNotifications();
   const [profile, setProfile] = useState(userProfile);
@@ -112,6 +114,42 @@ export function DashboardClient({
     replaceDashboardUrl(symbol, range);
   }
 
+  const loadWatchlistSnapshots = useCallback(async (signal?: AbortSignal) => {
+    const now = Date.now();
+
+    if (
+      watchlistRefreshInFlightRef.current ||
+      now - lastWatchlistRefreshAtRef.current < 30_000
+    ) {
+      return;
+    }
+
+    watchlistRefreshInFlightRef.current = true;
+    lastWatchlistRefreshAtRef.current = now;
+
+    try {
+      const response = await fetch("/api/assets/watchlist", {
+        signal,
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const body = (await response.json()) as {
+        assets?: WatchlistAsset[];
+      };
+
+      if (!signal?.aborted && body.assets) {
+        setWatchlistAssets(body.assets);
+      }
+    } catch {
+      // Keep the symbol list visible; the chart can still load independently.
+    } finally {
+      watchlistRefreshInFlightRef.current = false;
+    }
+  }, []);
+
   const updateWatchlistSnapshot = useCallback(
     (snapshot: AssetSnapshotUpdate) => {
       setWatchlistAssets((currentAssets) =>
@@ -126,13 +164,27 @@ export function DashboardClient({
             : asset
         )
       );
+      void loadWatchlistSnapshots();
     },
-    []
+    [loadWatchlistSnapshots]
   );
 
   useEffect(() => {
     replaceDashboardUrl(selectedAsset?.symbol ?? selectedSymbol, chartRange);
   }, [chartRange, selectedAsset?.symbol, selectedSymbol]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      void loadWatchlistSnapshots(controller.signal);
+    }, 0);
+
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [loadWatchlistSnapshots]);
 
   function addWatchlistAsset(asset: WatchlistAsset) {
     setWatchlistAssets((currentAssets) => {

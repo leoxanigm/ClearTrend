@@ -1,4 +1,5 @@
 from datetime import datetime
+import math
 
 import pandas as pd
 from fastapi import HTTPException
@@ -111,6 +112,56 @@ def latest_payload(ticker: str) -> dict:
         "date": pd.Timestamp(df.index[-1]).strftime("%Y-%m-%d"),
         "data": {k: (None if pd.isna(v) else float(v)) for k, v in last.items()},
     }
+
+
+def _read_number(value) -> float | None:
+    if pd.isna(value):
+        return None
+
+    number = float(value)
+
+    return number if math.isfinite(number) else None
+
+
+def _snapshot_payload(ticker: str) -> dict | None:
+    try:
+        df = load_daily_history_with_latest(ticker)
+    except HTTPException:
+        return None
+
+    if "Close" not in df.columns:
+        return None
+
+    closes = df.dropna(subset=["Close"])
+
+    if len(closes) < 2:
+        return None
+
+    last_price = _read_number(closes["Close"].iloc[-1])
+    previous_close = _read_number(closes["Close"].iloc[-2])
+
+    if last_price is None or previous_close is None or previous_close <= 0:
+        return None
+
+    day_change = last_price - previous_close
+    updated_at = get_data_updated_at(ticker)
+
+    return {
+        "symbol": sanitize_ticker(ticker),
+        "name": sanitize_ticker(ticker),
+        "lastPrice": last_price,
+        "dayChange": day_change,
+        "dayChangePercent": (day_change / previous_close) * 100,
+        "updatedAt": updated_at.isoformat() if updated_at else None,
+    }
+
+
+def snapshot_payloads(tickers: list[str]) -> list[dict]:
+    return [
+        snapshot
+        for ticker in tickers
+        if (snapshot := _snapshot_payload(ticker)) is not None
+    ]
 
 
 def df_to_candles(df: pd.DataFrame, *, include_time: bool = False) -> list[dict]:

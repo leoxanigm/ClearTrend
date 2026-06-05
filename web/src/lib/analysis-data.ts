@@ -32,6 +32,19 @@ type AnalysisCandlesMetaResponse = {
   updatedAt?: unknown;
 };
 
+type AnalysisSnapshot = {
+  dayChange?: unknown;
+  dayChangePercent?: unknown;
+  lastPrice?: unknown;
+  name?: unknown;
+  symbol?: unknown;
+  updatedAt?: unknown;
+};
+
+type AnalysisSnapshotsResponse = {
+  snapshots?: unknown;
+};
+
 type AnalysisTickersResponse = {
   tickers?: unknown;
 };
@@ -42,6 +55,7 @@ export type AnalysisAssetSnapshot = {
   lastPrice: number | null;
   name: string | null;
   symbol: string;
+  updatedAt: string | null;
 };
 
 type AnalysisDailyChange = {
@@ -279,23 +293,43 @@ export async function fetchAnalysisCandlesMeta(
   };
 }
 
-export async function fetchAnalysisAssetSnapshot(
-  symbol: string
-): Promise<AnalysisAssetSnapshot> {
-  // Watchlist movement is based on the two latest daily candles returned by
-  // analysis; the newest candle may include the intraday overlay.
-  const data = await fetchAnalysisCandlesByParams(symbol, {
-    limit: "2",
-  });
-  const dailyChange = getDailyChange(data.candles);
+function normalizeAnalysisSnapshot(
+  value: AnalysisSnapshot
+): AnalysisAssetSnapshot | null {
+  const symbol = readString(value.symbol);
+
+  if (!symbol) {
+    return null;
+  }
 
   return {
-    dayChange: dailyChange.dayChange,
-    dayChangePercent: dailyChange.dayChangePercent,
-    lastPrice: dailyChange.lastPrice,
-    name: data.symbol,
-    symbol: data.symbol,
+    dayChange: readNumber(value.dayChange),
+    dayChangePercent: readNumber(value.dayChangePercent),
+    lastPrice: readNumber(value.lastPrice),
+    name: readString(value.name),
+    symbol,
+    updatedAt: readString(value.updatedAt),
   };
+}
+
+export async function fetchAnalysisAssetSnapshots(symbols: string[]) {
+  const normalizedSymbols = symbols
+    .map((symbol) => symbol.trim().toUpperCase())
+    .filter(Boolean);
+
+  if (normalizedSymbols.length === 0) {
+    return [];
+  }
+
+  const body = (await fetchAnalysisJson("/snapshots", {
+    symbols: normalizedSymbols.join(","),
+  })) as AnalysisSnapshotsResponse;
+
+  return Array.isArray(body.snapshots)
+    ? body.snapshots
+        .map((value) => normalizeAnalysisSnapshot(value as AnalysisSnapshot))
+        .filter((value): value is AnalysisAssetSnapshot => Boolean(value))
+    : [];
 }
 
 export async function fetchAnalysisTickers() {

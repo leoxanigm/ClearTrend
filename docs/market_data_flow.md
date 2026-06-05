@@ -7,7 +7,7 @@ the dashboard.
 
 - Market data comes from the local FastAPI `analysis` service.
 - `analysis` uses the `yfinance` Python package to download Yahoo Finance data.
-- The frontend uses `analysis` for the active watchlist, search, and dashboard
+- The frontend uses `analysis` for search, watchlist snapshots, and dashboard
   chart paths.
 - There is currently no provider fallback: if `analysis` cannot serve a ticker,
   the frontend treats the data as unavailable.
@@ -70,8 +70,8 @@ Current cadence:
 
 | Dataset | Yahoo query | Refresh rule | Used by |
 | --- | --- | --- | --- |
-| Daily | `1d` candles, `1y` or `5y` period | Once per calendar day, or if missing | `1M`, `3M`, `1Y`, watchlist latest |
-| 1D intraday | `period=1d`, `interval=5m` | Global scheduler every hour; active ticker on-demand from `/candles/{ticker}/meta` when older than 5 minutes | `1D`, latest daily overlay |
+| Daily | `1d` candles, `1y` or `5y` period | Once per calendar day, or if missing | `1M`, `3M`, `1Y`, watchlist snapshots |
+| 1D intraday | `period=1d`, `interval=5m` | Global scheduler every hour; active ticker on-demand from `/candles/{ticker}/meta` when the next fixed 5 minute candle boundary is due plus 30 seconds | `1D`, latest daily overlay |
 | 1W hourly | `period=30d`, `interval=1h` | Base yfinance cache once per day, then hourly merge from `1D` | `1W` |
 
 The hourly merge works like this:
@@ -87,9 +87,10 @@ hourly merge uses that corrected close for the final hourly candle too.
 
 `/candles` returns the latest cached data immediately. When the dashboard asks
 for `/candles/{ticker}/meta`, `analysis` checks the active ticker's `1D` cache.
-If that ticker cache is older than 5 minutes, only that ticker is refreshed from
-yfinance before the meta response is returned. This keeps the visible chart
-fresher without blocking the main chart payload on a Yahoo refresh.
+If there is no intraday cache, only that ticker is refreshed immediately. If a
+cache exists, refresh checks are pinned to fixed 5 minute clock boundaries plus
+30 seconds, for example `15:00:30`, `15:05:30`, `15:10:30`. This keeps the
+visible chart fresher without letting the 30 second delay drift over time.
 
 ## Analysis API
 
@@ -98,6 +99,7 @@ Main endpoints:
 - `GET /health`
 - `GET /tickers`
 - `GET /history/{ticker}/latest`
+- `GET /snapshots?symbols=AAPL,NVDA`
 - `GET /candles/{ticker}?range=1D|1W|1M|3M|1Y`
 - `GET /candles/{ticker}/meta?range=1D|1W|1M|3M|1Y`
 - `GET /candles/{ticker}?start=YYYY-MM-DD&end=YYYY-MM-DD&limit=N`
@@ -139,11 +141,9 @@ The `1D` percentage uses the market-standard daily formula:
 ranges keep using the displayed range formula:
 `(last displayed close - first displayed close) / first displayed close`.
 
-Yahoo intraday candles are timestamped at the start of their interval. For
-example, the final regular US 5 minute candle is stored at `21:55` in Paris
-during daylight saving time, but its close represents the `21:55 -> 22:00`
-interval. The dashboard plots `1D` and `1W` candles at the end of their display
-interval, so final points appear at market close instead of one candle early.
+Yahoo intraday candles are stored and displayed with the timestamp returned by
+Yahoo/analysis. The frontend does not shift intraday points forward, so a
+candle timestamped `16:10` is displayed at `16:10`, never at `16:15`.
 
 During an open session, the current day is approximated from the latest `1D`
 intraday candle. Once a complete regular session is detected, the active ticker
@@ -166,9 +166,10 @@ Frontend chart flow:
 Automatic chart refresh:
 
 1. While the tab is visible, `AssetChart` polls
-   `/api/assets/candles/meta?symbol=AAPL&range=1W` every 5 minutes.
-2. That meta call can trigger a 5 minute on-demand refresh for the active
-   ticker.
+   `/api/assets/candles/meta?symbol=AAPL&range=1W` on fixed 5 minute
+   boundaries plus 30 seconds.
+2. That meta call can trigger an on-demand refresh for the active ticker when a
+   fixed 5 minute candle boundary is due plus 30 seconds.
 3. If `updatedAt` is unchanged, the chart keeps the current candles.
 4. If `updatedAt` changed, the chart refetches `/api/assets/candles`.
 5. The selected `symbol` and `range` are mirrored in the dashboard URL, so a
@@ -178,11 +179,17 @@ Automatic chart refresh:
 
 Watchlist flow:
 
-1. `web/src/lib/assets.ts` calls `fetchAnalysisAssetSnapshot(symbol)`.
-2. That reads the two latest daily candles from `analysis`.
-3. `lastPrice`, `dayChange`, and `dayChangePercent` are calculated from those
-   candles.
-4. The result is persisted in the existing `assets` table for UI caching.
+1. The dashboard server render sends the symbol list first, without waiting for
+   market values.
+2. After mount, `DashboardClient` fetches `/api/assets/watchlist`.
+3. `web/src/lib/assets.ts` sends one batch request to
+   `/snapshots?symbols=AAPL,NVDA,...`.
+4. `analysis` reads local CSV caches only; it does not call Yahoo from this
+   endpoint.
+5. `lastPrice`, `dayChange`, and `dayChangePercent` are calculated from the two
+   latest daily candles, including the current intraday overlay when present.
+6. Missing symbols are shown as unavailable until backend refresh jobs populate
+   their caches.
 
 Search flow:
 

@@ -84,8 +84,7 @@ const compactChartSize: ChartSize = {
 };
 
 const chartMetaPollIntervalMs = 5 * 60 * 1000;
-const intradayCandleMs = 5 * 60 * 1000;
-const hourlyCandleMs = 60 * 60 * 1000;
+const chartMetaPollOffsetMs = 30 * 1000;
 const regularStockSessionMs = 6.5 * 60 * 60 * 1000;
 
 function ChartFooterMetric({ label, tooltip }: ChartFooterMetricProps) {
@@ -139,6 +138,18 @@ async function fetchChartMeta(
   }
 
   return (await response.json()) as ChartMetaResponse;
+}
+
+function getNextChartMetaPollDelayMs(now = Date.now()) {
+  const currentSlot =
+    Math.floor(now / chartMetaPollIntervalMs) * chartMetaPollIntervalMs;
+  const nextSlotWithOffset = currentSlot + chartMetaPollOffsetMs;
+  const nextPoll =
+    nextSlotWithOffset > now
+      ? nextSlotWithOffset
+      : nextSlotWithOffset + chartMetaPollIntervalMs;
+
+  return Math.max(nextPoll - now, 1000);
 }
 
 function formatPrice(
@@ -328,10 +339,7 @@ function buildChartData(
   const usableHeight = height - padding.top - padding.bottom;
   const lastIndex = Math.max(candles.length - 1, 1);
   const firstTimestamp = candles[0].timestamp;
-  const lastTimestamp =
-    range === "1D"
-      ? candles[candles.length - 1].timestamp + intradayCandleMs
-      : candles[candles.length - 1].timestamp;
+  const lastTimestamp = candles[candles.length - 1].timestamp;
   // Keep the 1D chart on a fixed regular-session window. The coordinates use
   // absolute timestamps; labels are rendered in the browser/system timezone.
   const isFixedOneDayWindow =
@@ -348,21 +356,9 @@ function buildChartData(
     new Set([0, Math.floor(lastIndex / 2), lastIndex])
   );
 
-  function getDisplayTimestamp(candle: ChartCandle) {
-    if (range === "1D") {
-      return candle.timestamp + intradayCandleMs;
-    }
-
-    if (range === "1W") {
-      return candle.timestamp + hourlyCandleMs;
-    }
-
-    return candle.timestamp;
-  }
-
   function getX(index: number) {
     if (isFixedOneDayWindow) {
-      const timestamp = getDisplayTimestamp(candles[index]);
+      const timestamp = candles[index].timestamp;
 
       return padding.left + ((timestamp - xMin) / xDomain) * usableWidth;
     }
@@ -384,7 +380,7 @@ function buildChartData(
       candle,
       tooltipDateLabel: formatTooltipDate(
         candle,
-        getDisplayTimestamp(candle),
+        candle.timestamp,
         range,
         locale
       ),
@@ -499,6 +495,14 @@ export function AssetChart({
       setHoveredPoint(null);
 
       try {
+        try {
+          await fetchChartMeta(requestedSymbol, range, controller.signal);
+        } catch {
+          if (controller.signal.aborted) {
+            return;
+          }
+        }
+
         const body = await fetchChartCandles(
           requestedSymbol,
           range,
@@ -554,6 +558,7 @@ export function AssetChart({
     const requestedSymbol = symbol;
     let activeController: AbortController | null = null;
     let isDisposed = false;
+    let timeoutId: number | null = null;
 
     async function refreshCandlesIfNeeded() {
       if (document.hidden) {
@@ -607,16 +612,27 @@ export function AssetChart({
       }
     }
 
-    const intervalId = window.setInterval(
-      () => {
-        void refreshCandlesIfNeeded();
-      },
-      chartMetaPollIntervalMs
-    );
+    function scheduleNextRefresh() {
+      if (isDisposed) {
+        return;
+      }
+
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+
+      timeoutId = window.setTimeout(() => {
+        timeoutId = null;
+        void refreshCandlesIfNeeded().finally(scheduleNextRefresh);
+      }, getNextChartMetaPollDelayMs());
+    }
+
+    scheduleNextRefresh();
 
     function handleVisibilityChange() {
       if (!document.hidden) {
         void refreshCandlesIfNeeded();
+        scheduleNextRefresh();
       }
     }
 
@@ -625,7 +641,9 @@ export function AssetChart({
     return () => {
       isDisposed = true;
       activeController?.abort();
-      window.clearInterval(intervalId);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [asset?.symbol, onAssetSnapshotChange, range, updatedAt]);

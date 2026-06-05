@@ -13,8 +13,9 @@ candle is updated from the latest intraday cache when possible.
 **Refresh cadence** : daily and 1W yfinance history are refreshed once per
 calendar day when missing/stale. The 1D cache is refreshed hourly and then
 merged into the persisted 1W hourly cache. Requests for `/candles/{ticker}/meta`
-also refresh the active ticker from yfinance when its 1D cache is older than 5
-minutes. `/candles/{ticker}` returns the latest cached payload immediately.
+also refresh the active ticker from yfinance when its next fixed 5 minute candle
+boundary is due plus 30 seconds. `/candles/{ticker}` returns the latest cached
+payload immediately.
 
 **Candle keys** : `t` date/time, `o` open, `h` high, `l` low, `c` close, `v` volume
 
@@ -22,7 +23,8 @@ minutes. `/candles/{ticker}` returns the latest cached payload immediately.
 file used for the selected range.
 
 `/candles/{ticker}/meta` returns only `ticker` and `updatedAt` for lightweight
-refresh checks.
+refresh checks. `/snapshots` returns batch watchlist values from cached data
+without calling Yahoo.
 
 ## Code layout
 
@@ -34,7 +36,8 @@ refresh checks.
 - `market_data_fetcher.py`: Yahoo/yfinance downloads and S&P 500 ticker source.
 - `market_data_history.py`: cache warmup, intraday/daily merge rules, official
   close correction.
-- `market_data_views.py`: API payloads for candles, latest, and `updatedAt`.
+- `market_data_views.py`: API payloads for candles, snapshots, latest, and
+  `updatedAt`.
 
 ## Health
 
@@ -64,6 +67,19 @@ curl http://localhost:8000/history/NVDA/latest
   "ticker": "NVDA",
   "date": "2026-05-13",
   "data": {"Open": 224.93, "High": 227.84, "Low": 221.57, "Close": 225.83, "Adj Close": 225.83, "Volume": 149316500.0}
+}
+```
+
+## Snapshots
+
+```bash
+curl "http://localhost:8000/snapshots?symbols=NVDA,AAPL"
+```
+```json
+{
+  "snapshots": [
+    {"symbol": "NVDA", "name": "NVDA", "lastPrice": 218.66, "dayChange": 3.91, "dayChangePercent": 1.82, "updatedAt": "2026-06-05T13:04:46+00:00"}
+  ]
 }
 ```
 

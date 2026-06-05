@@ -20,7 +20,13 @@ export default async function DashboardPage({
   }
 
   const params = (await searchParams) ?? {};
-  const watchlistAssets = await getUserWatchlistAssets(userProfile.id);
+  const watchlistAssets = await getUserWatchlistAssets(
+    userProfile.id,
+    undefined,
+    {
+      loadSnapshots: false,
+    }
+  );
 
   return (
     <DashboardClient

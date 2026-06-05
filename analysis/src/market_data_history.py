@@ -4,7 +4,8 @@ import pandas as pd
 from fastapi import HTTPException
 
 from .market_data_config import (
-    ACTIVE_INTRADAY_MAX_AGE,
+    ACTIVE_INTRADAY_REFRESH_DELAY,
+    ACTIVE_INTRADAY_RETRY_COOLDOWN,
     DAILY_BATCH_PAUSE_SECONDS,
     DAILY_BATCH_SIZE,
     DATA_DIR,
@@ -35,13 +36,14 @@ from .market_data_fetcher import (
 )
 from .market_data_storage import (
     latest_file,
-    latest_file_age,
     latest_file_mtime,
     list_cached_tickers,
     read_csv,
     save_frame,
     write_refresh_marker,
 )
+
+_active_intraday_attempts: dict[tuple[str, datetime], datetime] = {}
 
 
 def build_daily_history(
@@ -173,6 +175,31 @@ def _timestamp_to_utc_datetime(value: pd.Timestamp) -> datetime:
         timestamp = timestamp.tz_convert(timezone.utc)
 
     return timestamp.to_pydatetime()
+
+
+def _floor_datetime(value: datetime, step: timedelta) -> datetime:
+    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+    value_utc = value.astimezone(timezone.utc)
+    elapsed_seconds = int((value_utc - epoch).total_seconds())
+    step_seconds = int(step.total_seconds())
+
+    return epoch + timedelta(
+        seconds=(elapsed_seconds // step_seconds) * step_seconds,
+    )
+
+
+def _expected_intraday_slot(
+    now: datetime | None = None,
+) -> datetime:
+    # Refresh checks are pinned to wall-clock 5 minute marks plus a fixed
+    # publication delay. The delay does not accumulate between checks.
+    now_utc = now.astimezone(timezone.utc) if now else datetime.now(timezone.utc)
+    slot = _floor_datetime(now_utc, INTRADAY_CANDLE_DURATION)
+
+    if now_utc < slot + ACTIVE_INTRADAY_REFRESH_DELAY:
+        slot -= INTRADAY_CANDLE_DURATION
+
+    return slot
 
 
 def _latest_complete_intraday_session_close(
@@ -494,15 +521,79 @@ def load_daily_history_with_latest(ticker: str) -> pd.DataFrame:
     return out.sort_index()
 
 
+def _is_provisional_intraday_row(row: pd.Series) -> bool:
+    volume = row.get("Volume")
+
+    return bool(volume is not None and not pd.isna(volume) and float(volume) <= 0)
+
+
+def _latest_intraday_candle(ticker: str) -> tuple[datetime, pd.Series] | None:
+    try:
+        intraday = load_intraday_history(ticker)
+    except HTTPException:
+        return None
+
+    if intraday.empty:
+        return None
+
+    return (
+        _timestamp_to_utc_datetime(pd.Timestamp(intraday.index[-1])),
+        intraday.iloc[-1],
+    )
+
+
+def _recently_attempted_intraday_refresh(
+    ticker: str,
+    slot: datetime,
+    now: datetime,
+) -> bool:
+    key = (sanitize_ticker(ticker), slot)
+    last_attempt = _active_intraday_attempts.get(key)
+
+    return bool(
+        last_attempt and now - last_attempt < ACTIVE_INTRADAY_RETRY_COOLDOWN
+    )
+
+
+def _remember_intraday_refresh_attempt(
+    ticker: str,
+    slot: datetime,
+    now: datetime,
+) -> None:
+    key = (sanitize_ticker(ticker), slot)
+    _active_intraday_attempts[key] = now
+
+    # Keep the in-memory guard tiny; only recent slots can still be retried.
+    cutoff = now - INTRADAY_CANDLE_DURATION
+
+    for attempt_key, attempted_at in list(_active_intraday_attempts.items()):
+        if attempted_at < cutoff:
+            del _active_intraday_attempts[attempt_key]
+
+
+def _active_intraday_refresh_due(ticker: str, expected_slot: datetime) -> bool:
+    latest_candle = _latest_intraday_candle(ticker)
+
+    if latest_candle is None:
+        return True
+
+    latest_timestamp, latest_row = latest_candle
+
+    if _is_provisional_intraday_row(latest_row):
+        return True
+
+    return latest_timestamp < expected_slot
+
+
 def refresh_active_ticker_if_stale(
     ticker: str,
     *,
-    max_age: timedelta = ACTIVE_INTRADAY_MAX_AGE,
     range_name: str | None = None,
 ) -> bool:
     safe = sanitize_ticker(ticker)
     normalized_range = range_name.upper() if range_name else None
     refreshed = False
+    now = datetime.now(timezone.utc)
 
     if normalized_range == "1W" and latest_file(
         WEEKLY_INTRADAY_DATA_DIR,
@@ -511,12 +602,13 @@ def refresh_active_ticker_if_stale(
         build_weekly_intraday_history([source_ticker(ticker)])
         refreshed = True
 
-    intraday_age = latest_file_age(
-        INTRADAY_DATA_DIR,
-        f"{safe}_{INTRADAY_INTERVAL}",
-    )
+    expected_slot = _expected_intraday_slot(now)
 
-    if intraday_age is None or intraday_age >= max_age:
+    if (
+        _active_intraday_refresh_due(ticker, expected_slot)
+        and not _recently_attempted_intraday_refresh(ticker, expected_slot, now)
+    ):
+        _remember_intraday_refresh_attempt(ticker, expected_slot, now)
         build_intraday_history([source_ticker(ticker)])
         refresh_weekly_intraday_from_1d([ticker])
         refreshed = True

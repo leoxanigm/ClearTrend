@@ -1,9 +1,8 @@
 import {
-  fetchAnalysisAssetSnapshot,
+  fetchAnalysisAssetSnapshots,
   type AnalysisAssetSnapshot,
 } from "@/lib/analysis-data";
 import { getPrisma } from "@/lib/prisma";
-import { randomUUID } from "crypto";
 
 /* ADD WATCHLIST SYMBOLS HERE */
 export const defaultWatchlistSymbols = [ // list of 150 main assets of S&P500
@@ -163,8 +162,6 @@ export const defaultWatchlistSymbols = [ // list of 150 main assets of S&P500
   "BINANCE:AVAXUSDT"
 ];
 
-const assetCacheTtlMs = 5 * 60 * 1000;  // Time keeping asset in cache = 5 min
-const assetAttemptCooldownMs = 5 * 60 * 1000;
 const symbolPattern = /^[A-Z0-9.-]{1,15}$/;
 
 export type WatchlistAsset = {
@@ -176,18 +173,13 @@ export type WatchlistAsset = {
   symbol: string;
 };
 
-type StoredAsset = {
-  dataFetchedAt: Date | null;
-  dayChangePercent: number | null;
-  fetchAttemptedAt: Date | null;
-  lastPrice: number | null;
-  name: string | null;
-  symbol: string;
-  updatedAt: Date;
-};
-
 type FavoriteSymbolsRow = {
   favoriteSymbols: string[] | null;
+};
+
+type WatchlistLoadOptions = {
+  includeSavedFavorites?: boolean;
+  loadSnapshots?: boolean;
 };
 
 export function normalizeWatchlistSymbols(symbols: string[]) {
@@ -211,18 +203,12 @@ export function parseWatchlistSymbols(value: string | null) {
 }
 
 function toWatchlistAsset(
-  asset: {
-    dayChangePercent: number | null;
-    lastPrice: number | null;
-    name: string | null;
-    symbol: string;
-  },
-  isStale = false
+  asset: AnalysisAssetSnapshot
 ): WatchlistAsset {
   return {
     dayChangePercent: asset.dayChangePercent,
     isFavorite: false,
-    isStale,
+    isStale: false,
     lastPrice: asset.lastPrice,
     name: asset.name ?? asset.symbol,
     symbol: asset.symbol,
@@ -284,162 +270,36 @@ export async function setUserFavoriteSymbol(
   return normalizeWatchlistSymbols(rows[0]?.favoriteSymbols ?? []);
 }
 
-function isFresh(asset: StoredAsset) {
-  return Boolean(
-    asset.dataFetchedAt &&
-      Date.now() - asset.dataFetchedAt.getTime() < assetCacheTtlMs
-  );
-}
-
-function wasRecentlyAttempted(asset: StoredAsset) {
-  return Boolean(
-    asset.fetchAttemptedAt &&
-      Date.now() - asset.fetchAttemptedAt.getTime() < assetAttemptCooldownMs
-  );
-}
-
-async function findStoredAsset(symbol: string) {
-  const prisma = getPrisma();
-  const rows = await prisma.$queryRaw<StoredAsset[]>`
-    SELECT
-      symbol,
-      name,
-      "lastPrice",
-      "dayChangePercent",
-      "dataFetchedAt",
-      "fetchAttemptedAt",
-      "updatedAt"
-    FROM assets
-    WHERE symbol = ${symbol}
-    LIMIT 1
-  `;
-
-  return rows[0] ?? null;
-}
-
-async function markAssetFetchAttempt(symbol: string) {
-  const prisma = getPrisma();
-  const rows = await prisma.$queryRaw<StoredAsset[]>`
-    INSERT INTO assets (
-      id,
-      symbol,
-      "fetchAttemptedAt",
-      "createdAt",
-      "updatedAt"
-    )
-    VALUES (
-      ${randomUUID()},
-      ${symbol},
-      now(),
-      now(),
-      now()
-    )
-    ON CONFLICT (symbol) DO UPDATE SET
-      "fetchAttemptedAt" = now()
-    RETURNING
-      symbol,
-      name,
-      "lastPrice",
-      "dayChangePercent",
-      "dataFetchedAt",
-      "fetchAttemptedAt",
-      "updatedAt"
-  `;
-
-  return rows[0] ?? null;
-}
-
-async function upsertStoredAsset(asset: AnalysisAssetSnapshot) {
-  const prisma = getPrisma();
-  const rows = await prisma.$queryRaw<StoredAsset[]>`
-    INSERT INTO assets (
-      id,
-      symbol,
-      name,
-      "lastPrice",
-      "dayChange",
-      "dayChangePercent",
-      "dataFetchedAt",
-      "fetchAttemptedAt",
-      "createdAt",
-      "updatedAt"
-    )
-    VALUES (
-      ${randomUUID()},
-      ${asset.symbol},
-      ${asset.name},
-      ${asset.lastPrice},
-      ${asset.dayChange},
-      ${asset.dayChangePercent},
-      now(),
-      now(),
-      now(),
-      now()
-    )
-    ON CONFLICT (symbol) DO UPDATE SET
-      name = EXCLUDED.name,
-      "lastPrice" = EXCLUDED."lastPrice",
-      "dayChange" = EXCLUDED."dayChange",
-      "dayChangePercent" = EXCLUDED."dayChangePercent",
-      "dataFetchedAt" = now(),
-      "fetchAttemptedAt" = now(),
-      "updatedAt" = now()
-    RETURNING
-      symbol,
-      name,
-      "lastPrice",
-      "dayChangePercent",
-      "dataFetchedAt",
-      "fetchAttemptedAt",
-      "updatedAt"
-  `;
-
-  return rows[0];
-}
-
-async function getOrSyncAsset(symbol: string) {
-  const existingAsset = await findStoredAsset(symbol);
-
-  if (existingAsset && isFresh(existingAsset)) {
-    return toWatchlistAsset(existingAsset);
-  }
-
-  if (
-    existingAsset &&
-    !existingAsset.dataFetchedAt &&
-    wasRecentlyAttempted(existingAsset)
-  ) {
-    return toWatchlistAsset(existingAsset, true);
-  }
-
-  await markAssetFetchAttempt(symbol);
-
-  try {
-    // Analysis is the only market data source; stale DB values are only kept
-    // to avoid breaking the UI after a temporary refresh failure.
-    const asset = await fetchAnalysisAssetSnapshot(symbol);
-    const savedAsset = await upsertStoredAsset(asset);
-
-    return toWatchlistAsset(savedAsset);
-  } catch {
-    if (existingAsset) {
-      return toWatchlistAsset(existingAsset, true);
-    }
-
-    return fallbackAsset(symbol);
-  }
-}
-
-export async function getWatchlistAssets(symbols = defaultWatchlistSymbols) {
+export async function getWatchlistAssets(
+  symbols = defaultWatchlistSymbols,
+  options: { loadSnapshots?: boolean } = {}
+) {
   const normalizedSymbols = normalizeWatchlistSymbols(symbols);
 
-  return Promise.all(normalizedSymbols.map((symbol) => getOrSyncAsset(symbol)));
+  if (options.loadSnapshots === false) {
+    return normalizedSymbols.map(fallbackAsset);
+  }
+
+  try {
+    const snapshots = await fetchAnalysisAssetSnapshots(normalizedSymbols);
+    const snapshotBySymbol = new Map(
+      snapshots.map((snapshot) => [snapshot.symbol, snapshot])
+    );
+
+    return normalizedSymbols.map((symbol) => {
+      const snapshot = snapshotBySymbol.get(symbol);
+
+      return snapshot ? toWatchlistAsset(snapshot) : fallbackAsset(symbol);
+    });
+  } catch {
+    return normalizedSymbols.map(fallbackAsset);
+  }
 }
 
 export async function getUserWatchlistAssets(
   userId: string,
   symbols = defaultWatchlistSymbols,
-  options: { includeSavedFavorites?: boolean } = {}
+  options: WatchlistLoadOptions = {}
 ) {
   const favoriteSymbols = await getUserFavoriteSymbols(userId);
   const symbolsToLoad =
@@ -447,7 +307,9 @@ export async function getUserWatchlistAssets(
       ? normalizeWatchlistSymbols(symbols)
       : normalizeWatchlistSymbols([...favoriteSymbols, ...symbols]);
   const favoriteSet = new Set(favoriteSymbols);
-  const assets = await getWatchlistAssets(symbolsToLoad);
+  const assets = await getWatchlistAssets(symbolsToLoad, {
+    loadSnapshots: options.loadSnapshots,
+  });
 
   return assets.map((asset) => ({
     ...asset,
