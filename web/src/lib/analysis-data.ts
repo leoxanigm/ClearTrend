@@ -137,10 +137,14 @@ function normalizeAnalysisCandle(value: AnalysisCandle): ChartCandle | null {
 
   if (
     close === null ||
+    close <= 0 ||
     !datetime ||
     high === null ||
+    high <= 0 ||
     low === null ||
-    open === null
+    low <= 0 ||
+    open === null ||
+    open <= 0
   ) {
     return null;
   }

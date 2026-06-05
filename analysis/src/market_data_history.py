@@ -221,6 +221,14 @@ def _has_official_daily_close(
     )
 
 
+def _has_valid_latest_daily_close(daily: pd.DataFrame) -> bool:
+    return bool(
+        not daily.empty
+        and "Close" in daily.columns
+        and not pd.isna(daily["Close"].iloc[-1])
+    )
+
+
 def _refresh_official_daily_close_if_ready(ticker: str) -> bool:
     try:
         intraday = load_intraday_history(ticker)
@@ -471,6 +479,7 @@ def load_daily_history_with_latest(ticker: str) -> pd.DataFrame:
     if (
         latest_day.name.date() == latest_daily_day
         and _has_official_daily_close(ticker, intraday)
+        and _has_valid_latest_daily_close(daily)
     ):
         return daily
 
