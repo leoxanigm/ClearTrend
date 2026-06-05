@@ -85,6 +85,7 @@ const compactChartSize: ChartSize = {
 
 const chartMetaPollIntervalMs = 5 * 60 * 1000;
 const intradayCandleMs = 5 * 60 * 1000;
+const hourlyCandleMs = 60 * 60 * 1000;
 const regularStockSessionMs = 6.5 * 60 * 60 * 1000;
 
 function ChartFooterMetric({ label, tooltip }: ChartFooterMetricProps) {
@@ -279,12 +280,8 @@ function formatTooltipDate(
   range: ChartRange,
   locale: string
 ) {
-  if (range === "1D") {
+  if (range === "1D" || range === "1W") {
     return formatTimestampDate(displayTimestamp, range, locale);
-  }
-
-  if (range === "1W") {
-    return formatTimestampDate(candle.timestamp, range, locale);
   }
 
   return formatCalendarDate(candle.datetime, range, locale);
@@ -352,9 +349,15 @@ function buildChartData(
   );
 
   function getDisplayTimestamp(candle: ChartCandle) {
-    return range === "1D"
-      ? candle.timestamp + intradayCandleMs
-      : candle.timestamp;
+    if (range === "1D") {
+      return candle.timestamp + intradayCandleMs;
+    }
+
+    if (range === "1W") {
+      return candle.timestamp + hourlyCandleMs;
+    }
+
+    return candle.timestamp;
   }
 
   function getX(index: number) {
@@ -438,6 +441,7 @@ function buildChartData(
         }),
     yTicks: yTickValues.map((value) => ({
       label: formatAxisPrice(value, locale),
+      value,
       y: getY(value),
     })),
   };
@@ -770,7 +774,7 @@ export function AssetChart({
             {chartData.yTicks.map((tick) => (
               <text
                 className="asset-chart-axis-label asset-chart-y-label"
-                key={tick.label}
+                key={`${tick.value}-${tick.y}`}
                 x={chartSize.padding.left - 6}
                 y={tick.y}
               >

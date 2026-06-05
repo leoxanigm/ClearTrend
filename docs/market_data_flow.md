@@ -82,7 +82,8 @@ The hourly merge works like this:
 4. Save the merged file, keeping the latest 30 days in cache.
 
 This means `1W` keeps the hourly values on disk instead of only displaying a
-temporary overlay.
+temporary overlay. When the daily official close is available, the 1D-derived
+hourly merge uses that corrected close for the final hourly candle too.
 
 When the dashboard asks for `/candles` or `/candles/{ticker}/meta`, `analysis`
 checks the active ticker's `1D` cache. If that ticker cache is older than 5
@@ -139,10 +140,10 @@ ranges keep using the displayed range formula:
 `(last displayed close - first displayed close) / first displayed close`.
 
 Yahoo intraday candles are timestamped at the start of their interval. For
-example, the final regular US candle is stored at `21:55` in Paris during
-daylight saving time, but its close represents the `21:55 -> 22:00` interval.
-The dashboard plots `1D` candles at the end of their 5 minute interval so the
-final point appears at market close.
+example, the final regular US 5 minute candle is stored at `21:55` in Paris
+during daylight saving time, but its close represents the `21:55 -> 22:00`
+interval. The dashboard plots `1D` and `1W` candles at the end of their display
+interval, so final points appear at market close instead of one candle early.
 
 During an open session, the current day is approximated from the latest `1D`
 intraday candle. Once a complete regular session is detected, the active ticker

@@ -376,7 +376,7 @@ def refresh_weekly_intraday_from_1d(tickers: list[str] | None = None) -> int:
     for ticker in target_tickers:
         try:
             hourly_from_1d = _aggregate_intraday_to_hourly(
-                load_intraday_history(ticker),
+                load_intraday_history_with_official_close(ticker),
             )
         except HTTPException:
             continue
