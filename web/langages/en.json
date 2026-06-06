@@ -291,12 +291,38 @@
       "email": "Email",
       "role": "Role"
     },
+    "refreshRate": {
+      "label": "Finance refresh rate",
+      "ariaLabel": "Choose finance refresh rate",
+      "options": {
+        "60": "1 minute",
+        "300": "5 minutes",
+        "900": "15 minutes"
+      }
+    },
     "users": {
       "title": "User management",
       "description": "Every registered ClearTrend account is listed here.",
       "total": "{count, plural, =0 {No users} =1 {# user} other {# users}}",
       "unnamed": "Unnamed user",
+      "watchlistCount": "{count, plural, =0 {0 symbols} =1 {# symbol} other {# symbols}}",
+      "watchlistEmpty": "No saved symbols",
       "passwordProvider": "Password",
+      "search": {
+        "label": "Search users",
+        "placeholder": "Username or email",
+        "submit": "Search",
+        "clear": "Clear"
+      },
+      "sort": {
+        "button": "Sort",
+        "options": {
+          "username": "Username",
+          "email": "Email",
+          "banned": "Activity",
+          "admin": "Role"
+        }
+      },
       "columns": {
         "user": "User",
         "role": "Role",

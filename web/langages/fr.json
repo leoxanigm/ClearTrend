@@ -291,12 +291,38 @@
       "email": "Email",
       "role": "Rôle"
     },
+    "refreshRate": {
+      "label": "Fréquence de rafraîchissement finance",
+      "ariaLabel": "Choisir la fréquence de rafraîchissement finance",
+      "options": {
+        "60": "1 minute",
+        "300": "5 minutes",
+        "900": "15 minutes"
+      }
+    },
     "users": {
       "title": "Gestion des utilisateurs",
       "description": "Tous les comptes ClearTrend inscrits sont listés ici.",
       "total": "{count, plural, =0 {Aucun utilisateur} =1 {# utilisateur} other {# utilisateurs}}",
       "unnamed": "Utilisateur sans nom",
+      "watchlistCount": "{count, plural, =0 {0 symbole} =1 {# symbole} other {# symboles}}",
+      "watchlistEmpty": "Aucun symbole enregistré",
       "passwordProvider": "Mot de passe",
+      "search": {
+        "label": "Rechercher des utilisateurs",
+        "placeholder": "Nom d'utilisateur ou email",
+        "submit": "Rechercher",
+        "clear": "Effacer"
+      },
+      "sort": {
+        "button": "Trier",
+        "options": {
+          "username": "Nom d'utilisateur",
+          "email": "Email",
+          "banned": "Activité",
+          "admin": "Rôle"
+        }
+      },
       "columns": {
         "user": "Utilisateur",
         "role": "Rôle",

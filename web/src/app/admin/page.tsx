@@ -3,9 +3,64 @@ import { FooterLinks } from "@/components/FooterLinks";
 import { LanguageSelect } from "@/components/ui/LanguageSelect";
 import { getPrisma } from "@/lib/prisma";
 import { getCurrentUserProfile } from "@/lib/profile";
+import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
+
+const adminSortOptions = ["username", "email", "banned", "admin"] as const;
+
+type AdminSortOption = (typeof adminSortOptions)[number];
+
+type AdminPageProps = {
+  searchParams?: Promise<{
+    dir?: string;
+    q?: string;
+    sort?: string;
+  }>;
+};
+
+function getAdminSortOption(value: string | undefined): AdminSortOption {
+  return adminSortOptions.includes(value as AdminSortOption)
+    ? (value as AdminSortOption)
+    : "username";
+}
+
+function getSortDirection(value: string | undefined) {
+  return value === "desc" ? "desc" : "asc";
+}
+
+function getDefaultSortDirection(option: AdminSortOption) {
+  return option === "banned" || option === "admin" ? "desc" : "asc";
+}
+
+function getSearchQuery(value: string | undefined) {
+  return value?.trim() ?? "";
+}
+
+function getSortHref(
+  option: AdminSortOption,
+  currentSort: AdminSortOption,
+  currentDir: string,
+  query: string
+) {
+  const nextDir =
+    option === currentSort
+      ? currentDir === "asc"
+        ? "desc"
+        : "asc"
+      : getDefaultSortDirection(option);
+  const params = new URLSearchParams({
+    dir: nextDir,
+    sort: option,
+  });
+
+  if (query) {
+    params.set("q", query);
+  }
+
+  return `/admin?${params.toString()}`;
+}
 
 async function toggleUserBan(formData: FormData) {
   "use server";
@@ -45,7 +100,7 @@ async function toggleUserBan(formData: FormData) {
   revalidatePath("/admin");
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: AdminPageProps) {
   const profile = await getCurrentUserProfile();
 
   if (!profile) {
@@ -59,6 +114,10 @@ export default async function AdminPage() {
   const t = await getTranslations("adminPage");
   const dashboardT = await getTranslations("dashboard");
   const commonT = await getTranslations("common");
+  const params = (await searchParams) ?? {};
+  const currentSort = getAdminSortOption(params.sort);
+  const currentDir = getSortDirection(params.dir);
+  const query = getSearchQuery(params.q);
   const locale = await getLocale();
   const prisma = getPrisma();
   const users = await prisma.user.findMany({
@@ -67,8 +126,26 @@ export default async function AdminPage() {
         oauthProvider: "credentials",
         passwordHash: null,
       },
+      ...(query
+        ? {
+            OR: [
+              {
+                displayName: {
+                  contains: query,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                email: {
+                  contains: query,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
+          }
+        : {}),
     },
-    orderBy: [{ role: "asc" }, { createdAt: "desc" }],
+    orderBy: [{ createdAt: "desc" }],
     select: {
       id: true,
       email: true,
@@ -81,9 +158,7 @@ export default async function AdminPage() {
       updatedAt: true,
       _count: {
         select: {
-          analyses: true,
           apiKeys: true,
-          reports: true,
         },
       },
     },
@@ -91,6 +166,27 @@ export default async function AdminPage() {
   const dateFormatter = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
+  });
+  const sortedUsers = users.toSorted((a, b) => {
+    const byUsername =
+      (a.displayName ?? "").localeCompare(b.displayName ?? "", locale, {
+        sensitivity: "base",
+      }) || a.email.localeCompare(b.email, locale, { sensitivity: "base" });
+
+    let result = byUsername;
+
+    if (currentSort === "email") {
+      result =
+        a.email.localeCompare(b.email, locale, { sensitivity: "base" }) ||
+        byUsername;
+    } else if (currentSort === "banned") {
+      result =
+        Number(Boolean(b.bannedAt)) - Number(Boolean(a.bannedAt)) || byUsername;
+    } else if (currentSort === "admin") {
+      result = Number(b.role === "ADMIN") - Number(a.role === "ADMIN") || byUsername;
+    }
+
+    return currentDir === "desc" ? -result : result;
   });
 
   return (
@@ -109,121 +205,180 @@ export default async function AdminPage() {
 
       <section className="admin-page-content">
         <div>
-          <p className="app-eyebrow">{t("eyebrow")}</p>
           <h1>{t("title")}</h1>
-          <p className="admin-page-description">{t("description")}</p>
+        </div>
+
+        <div className="admin-refresh-rate-row">
+          <label className="language-select admin-refresh-rate-select">
+            <span className="language-select-label">
+              {t("refreshRate.label")}
+            </span>
+            <select
+              aria-label={t("refreshRate.ariaLabel")}
+              className="language-select-control"
+              defaultValue="60"
+            >
+              <option value="60">{t("refreshRate.options.60")}</option>
+              <option value="300">{t("refreshRate.options.300")}</option>
+              <option value="900">{t("refreshRate.options.900")}</option>
+            </select>
+          </label>
         </div>
 
         <div className="admin-panel">
           <div className="admin-panel-heading">
             <div>
-              <h2>{t("users.title")}</h2>
-              <p>{t("users.description")}</p>
+              <h2>
+                {t("users.title")}
+                <span className="admin-user-count">
+                  {t("users.total", {
+                    count: sortedUsers.length,
+                  })}
+                </span>
+              </h2>
             </div>
-            <strong>
-              {t("users.total", {
-                count: users.length,
-              })}
-            </strong>
+            <div className="admin-panel-actions">
+              <div
+                aria-label={t("users.sort.button")}
+                className="admin-sort-bar"
+                role="group"
+              >
+                {adminSortOptions.map((option) => (
+                  <Link
+                    aria-current={currentSort === option ? "page" : undefined}
+                    className={`admin-sort-button${
+                      currentSort === option ? " admin-sort-button-active" : ""
+                    }`}
+                    href={getSortHref(option, currentSort, currentDir, query)}
+                    key={option}
+                  >
+                    <span>{t(`users.sort.options.${option}`)}</span>
+                    {currentSort === option ? (
+                      <span className="admin-sort-arrow" aria-hidden="true">
+                        {currentDir === "asc" ? "↑" : "↓"}
+                      </span>
+                    ) : null}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <dl className="admin-metadata">
-            <div>
-              <dt>{t("fields.account")}</dt>
-              <dd>{profile.displayName}</dd>
-            </div>
-            <div>
-              <dt>{t("fields.email")}</dt>
-              <dd>{profile.email}</dd>
-            </div>
-            <div>
-              <dt>{t("fields.role")}</dt>
-              <dd>{profile.role}</dd>
-            </div>
-          </dl>
+          <form action="/admin" className="admin-user-search" method="GET">
+            <input name="sort" type="hidden" value={currentSort} />
+            <input name="dir" type="hidden" value={currentDir} />
+            <label>
+              <span>{t("users.search.label")}</span>
+              <input
+                defaultValue={query}
+                name="q"
+                placeholder={t("users.search.placeholder")}
+                type="search"
+              />
+            </label>
+            <button type="submit">{t("users.search.submit")}</button>
+            {query ? (
+              <Link className="admin-user-search-reset" href="/admin">
+                {t("users.search.clear")}
+              </Link>
+            ) : null}
+          </form>
 
-          <div className="admin-users-table-wrap">
-            <table className="admin-users-table">
-              <thead>
-                <tr>
-                  <th scope="col">{t("users.columns.user")}</th>
-                  <th scope="col">{t("users.columns.role")}</th>
-                  <th scope="col">{t("users.columns.status")}</th>
-                  <th scope="col">{t("users.columns.provider")}</th>
-                  <th scope="col">{t("users.columns.watchlists")}</th>
-                  <th scope="col">{t("users.columns.analyses")}</th>
-                  <th scope="col">{t("users.columns.reports")}</th>
-                  <th scope="col">{t("users.columns.apiKeys")}</th>
-                  <th scope="col">{t("users.columns.created")}</th>
-                  <th scope="col">{t("users.columns.updated")}</th>
-                  <th scope="col">{t("users.columns.actions")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td>
-                      <div className="admin-user-identity">
-                        <strong>
-                          {user.displayName?.trim() || t("users.unnamed")}
-                        </strong>
-                        <span>{user.email}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        className={`admin-role-badge admin-role-badge-${user.role.toLowerCase()}`}
-                      >
-                        {user.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`admin-status-badge ${
-                          user.bannedAt
-                            ? "admin-status-badge-banned"
-                            : "admin-status-badge-active"
-                        }`}
-                      >
-                        {user.bannedAt
-                          ? t("users.status.banned")
-                          : t("users.status.active")}
-                      </span>
-                    </td>
-                    <td>{user.oauthProvider || t("users.passwordProvider")}</td>
-                    <td>{user.favoriteSymbols.length}</td>
-                    <td>{user._count.analyses}</td>
-                    <td>{user._count.reports}</td>
-                    <td>{user._count.apiKeys}</td>
-                    <td>{dateFormatter.format(user.createdAt)}</td>
-                    <td>{dateFormatter.format(user.updatedAt)}</td>
-                    <td>
-                      <form action={toggleUserBan}>
-                        <input name="userId" type="hidden" value={user.id} />
-                        <input
-                          name="banAction"
-                          type="hidden"
-                          value={user.bannedAt ? "unban" : "ban"}
-                        />
-                        <button
-                          className={
-                            user.bannedAt
-                              ? "admin-user-action-button"
-                              : "admin-user-action-button admin-user-action-button-danger"
-                          }
-                          disabled={user.id === profile.id}
-                          type="submit"
-                        >
-                          {user.bannedAt
-                            ? t("users.actions.unban")
-                            : t("users.actions.ban")}
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="admin-users-list">
+            {sortedUsers.map((user) => (
+              <details className="admin-user-row" key={user.id}>
+                <summary className="admin-user-summary">
+                  <div className="admin-user-identity">
+                    <strong>
+                      {user.displayName?.trim() || t("users.unnamed")}
+                    </strong>
+                    <span>{user.email}</span>
+                  </div>
+
+                  <span className="admin-user-badges">
+                    <span
+                      className={`admin-role-badge admin-role-badge-${user.role.toLowerCase()}`}
+                    >
+                      {user.role}
+                    </span>
+
+                    <span
+                      className={`admin-status-badge ${
+                        user.bannedAt
+                          ? "admin-status-badge-banned"
+                          : "admin-status-badge-active"
+                      }`}
+                    >
+                      {user.bannedAt
+                        ? t("users.status.banned")
+                        : t("users.status.active")}
+                    </span>
+                  </span>
+                </summary>
+
+                <div className="admin-user-details">
+                  <dl className="admin-user-detail-grid">
+                    <div>
+                      <dt>{t("users.columns.provider")}</dt>
+                      <dd>
+                        {user.oauthProvider || t("users.passwordProvider")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{t("users.columns.watchlists")}</dt>
+                      <dd>
+                        <details className="admin-watchlist-details">
+                          <summary>
+                            {t("users.watchlistCount", {
+                              count: user.favoriteSymbols.length,
+                            })}
+                          </summary>
+                          <p>
+                            {user.favoriteSymbols.length > 0
+                              ? user.favoriteSymbols.join(", ")
+                              : t("users.watchlistEmpty")}
+                          </p>
+                        </details>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{t("users.columns.apiKeys")}</dt>
+                      <dd>{user._count.apiKeys}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("users.columns.created")}</dt>
+                      <dd>{dateFormatter.format(user.createdAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("users.columns.updated")}</dt>
+                      <dd>{dateFormatter.format(user.updatedAt)}</dd>
+                    </div>
+                  </dl>
+
+                  <form action={toggleUserBan} className="admin-user-actions">
+                    <input name="userId" type="hidden" value={user.id} />
+                    <input
+                      name="banAction"
+                      type="hidden"
+                      value={user.bannedAt ? "unban" : "ban"}
+                    />
+                    <button
+                      className={
+                        user.bannedAt
+                          ? "admin-user-action-button"
+                          : "admin-user-action-button admin-user-action-button-danger"
+                      }
+                      disabled={user.id === profile.id}
+                      type="submit"
+                    >
+                      {user.bannedAt
+                        ? t("users.actions.unban")
+                        : t("users.actions.ban")}
+                    </button>
+                  </form>
+                </div>
+              </details>
+            ))}
           </div>
         </div>
       </section>
