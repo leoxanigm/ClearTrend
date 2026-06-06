@@ -10,7 +10,7 @@ from .market_data import (
     refresh_weekly_intraday_from_1d,
 )
 
-INTRADAY_MAX_AGE = timedelta(hours=1)
+INTRADAY_MAX_AGE = timedelta(minutes=5)
 
 
 def _refreshed_today(refresh_date: date | None) -> bool:

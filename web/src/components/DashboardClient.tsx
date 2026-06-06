@@ -36,6 +36,45 @@ type AssetSnapshotUpdate = {
   symbol: string;
 };
 
+const marketValueTolerance = 0.000001;
+
+function assetSnapshotChanged(
+  asset: WatchlistAsset | undefined,
+  snapshot: AssetSnapshotUpdate
+) {
+  if (!asset || asset.isStale) {
+    return false;
+  }
+
+  const changed = (currentValue: number | null, nextValue: number | null) =>
+    nextValue !== null &&
+    currentValue !== null &&
+    Math.abs(currentValue - nextValue) > marketValueTolerance;
+
+  return changed(asset.lastPrice, snapshot.lastPrice) ||
+    changed(asset.dayChangePercent, snapshot.dayChangePercent);
+}
+
+function mergeSnapshotIntoAssets(
+  assets: WatchlistAsset[],
+  snapshot: AssetSnapshotUpdate
+) {
+  return assets.map((asset) =>
+    asset.symbol === snapshot.symbol
+      ? {
+          ...asset,
+          dayChangePercent:
+            snapshot.dayChangePercent ?? asset.dayChangePercent,
+          isStale:
+            snapshot.lastPrice !== null || snapshot.dayChangePercent !== null
+              ? false
+              : asset.isStale,
+          lastPrice: snapshot.lastPrice ?? asset.lastPrice,
+        }
+      : asset
+  );
+}
+
 function normalizeInitialRange(value: string | null | undefined): ChartRange {
   const normalizedValue = value?.trim().toUpperCase() ?? "";
 
@@ -62,13 +101,20 @@ export function DashboardClient({
   const t = useTranslations("dashboard");
   const commonT = useTranslations("common");
   const userMenuRef = useRef<HTMLDetailsElement>(null);
-  const watchlistRefreshInFlightRef = useRef(false);
-  const lastWatchlistRefreshAtRef = useRef(0);
   const { notifyAfterNavigation } = useNotifications();
   const { notify } = useNotifications();
   const [profile, setProfile] = useState(userProfile);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [watchlistAssets, setWatchlistAssets] = useState(initialWatchlistAssets);
+  const [loadedWatchlistPerformanceRange, setLoadedWatchlistPerformanceRange] =
+    useState<ChartRange>("1D");
+  const [watchlistPerformanceBySymbol, setWatchlistPerformanceBySymbol] =
+    useState<Record<string, number | null>>({});
+  const [watchlistPerformanceRefreshKey, setWatchlistPerformanceRefreshKey] =
+    useState(0);
+  const [watchlistPerformanceRange, setWatchlistPerformanceRange] =
+    useState<ChartRange>("1D");
+  const watchlistAssetsRef = useRef(initialWatchlistAssets);
   const normalizedInitialSymbol = normalizeInitialSymbol(
     initialSymbol,
     initialWatchlistAssets
@@ -88,6 +134,18 @@ export function DashboardClient({
       null,
     [selectedSymbol, watchlistAssets]
   );
+  const watchlistSymbols = useMemo(
+    () => watchlistAssets.map((asset) => asset.symbol).join(","),
+    [watchlistAssets]
+  );
+  const visibleWatchlistPerformanceBySymbol =
+    loadedWatchlistPerformanceRange === watchlistPerformanceRange
+      ? watchlistPerformanceBySymbol
+      : {};
+
+  useEffect(() => {
+    watchlistAssetsRef.current = watchlistAssets;
+  }, [watchlistAssets]);
 
   function replaceDashboardUrl(symbol: string | null, range: ChartRange) {
     const params = new URLSearchParams(window.location.search);
@@ -127,20 +185,9 @@ export function DashboardClient({
   }, [notifyAfterNavigation]);
 
   const loadWatchlistSnapshots = useCallback(async (signal?: AbortSignal) => {
-    const now = Date.now();
-
-    if (
-      watchlistRefreshInFlightRef.current ||
-      now - lastWatchlistRefreshAtRef.current < 30_000
-    ) {
-      return;
-    }
-
-    watchlistRefreshInFlightRef.current = true;
-    lastWatchlistRefreshAtRef.current = now;
-
     try {
       const response = await fetch("/api/assets/watchlist", {
+        cache: "no-store",
         signal,
       });
 
@@ -158,32 +205,38 @@ export function DashboardClient({
       };
 
       if (!signal?.aborted && body.assets) {
+        watchlistAssetsRef.current = body.assets;
         setWatchlistAssets(body.assets);
       }
     } catch {
       // Keep the symbol list visible; the chart can still load independently.
-    } finally {
-      watchlistRefreshInFlightRef.current = false;
     }
   }, [signOutUnauthorizedSession]);
 
   const updateWatchlistSnapshot = useCallback(
     (snapshot: AssetSnapshotUpdate) => {
-      setWatchlistAssets((currentAssets) =>
-        currentAssets.map((asset) =>
-          asset.symbol === snapshot.symbol
-            ? {
-                ...asset,
-                dayChangePercent:
-                  snapshot.dayChangePercent ?? asset.dayChangePercent,
-                lastPrice: snapshot.lastPrice ?? asset.lastPrice,
-              }
-            : asset
-        )
+      const currentAssets = watchlistAssetsRef.current;
+      const currentAsset = currentAssets.find(
+        (asset) => asset.symbol === snapshot.symbol
       );
-      void loadWatchlistSnapshots();
+      const shouldReloadWatchlist = assetSnapshotChanged(
+        currentAsset,
+        snapshot
+      );
+      const nextAssets = mergeSnapshotIntoAssets(currentAssets, snapshot);
+
+      watchlistAssetsRef.current = nextAssets;
+      setWatchlistAssets(nextAssets);
+
+      if (shouldReloadWatchlist) {
+        void loadWatchlistSnapshots();
+
+        if (watchlistPerformanceRange !== "1D") {
+          setWatchlistPerformanceRefreshKey((currentKey) => currentKey + 1);
+        }
+      }
     },
-    [loadWatchlistSnapshots]
+    [loadWatchlistSnapshots, watchlistPerformanceRange]
   );
 
   useEffect(() => {
@@ -203,6 +256,63 @@ export function DashboardClient({
     };
   }, [loadWatchlistSnapshots]);
 
+  useEffect(() => {
+    if (watchlistPerformanceRange === "1D" || !watchlistSymbols) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadWatchlistPerformance() {
+      try {
+        const response = await fetch(
+          `/api/assets/performance?range=${watchlistPerformanceRange}&symbols=${encodeURIComponent(
+            watchlistSymbols
+          )}`,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+          }
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const body = (await response.json()) as {
+          performances?: Array<{
+            performancePercent: number | null;
+            symbol: string;
+          }>;
+        };
+        const nextPerformanceBySymbol = Object.fromEntries(
+          (body.performances ?? []).map((performance) => [
+            performance.symbol,
+            performance.performancePercent,
+          ])
+        );
+
+        if (!controller.signal.aborted) {
+          setLoadedWatchlistPerformanceRange(watchlistPerformanceRange);
+          setWatchlistPerformanceBySymbol(nextPerformanceBySymbol);
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setLoadedWatchlistPerformanceRange(watchlistPerformanceRange);
+          setWatchlistPerformanceBySymbol({});
+        }
+      }
+    }
+
+    void loadWatchlistPerformance();
+
+    return () => controller.abort();
+  }, [
+    watchlistPerformanceRange,
+    watchlistPerformanceRefreshKey,
+    watchlistSymbols,
+  ]);
+
   function addWatchlistAsset(asset: WatchlistAsset) {
     setWatchlistAssets((currentAssets) => {
       if (
@@ -211,7 +321,11 @@ export function DashboardClient({
         return currentAssets;
       }
 
-      return [...currentAssets, asset];
+      const nextAssets = [...currentAssets, asset];
+
+      watchlistAssetsRef.current = nextAssets;
+
+      return nextAssets;
     });
   }
 
@@ -383,7 +497,10 @@ export function DashboardClient({
           assets={watchlistAssets}
           onAssetAdd={addWatchlistAsset}
           onFavoriteChange={updateWatchlistFavorite}
+          onPerformanceRangeChange={setWatchlistPerformanceRange}
           onSelectSymbol={handleSelectSymbol}
+          performanceBySymbol={visibleWatchlistPerformanceBySymbol}
+          performanceRange={watchlistPerformanceRange}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
 
@@ -408,7 +525,10 @@ export function DashboardClient({
           mobile
           onAssetAdd={addWatchlistAsset}
           onFavoriteChange={updateWatchlistFavorite}
+          onPerformanceRangeChange={setWatchlistPerformanceRange}
           onSelectSymbol={handleSelectSymbol}
+          performanceBySymbol={visibleWatchlistPerformanceBySymbol}
+          performanceRange={watchlistPerformanceRange}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
 

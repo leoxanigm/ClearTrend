@@ -1,27 +1,45 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
+from .market_data_config import (
+    ACTIVE_INTRADAY_REFRESH_DELAY,
+    INTRADAY_CANDLE_DURATION,
+)
 from .market_data import (
     build_daily_history,
     build_intraday_history,
     build_weekly_intraday_history,
     latest_daily_csv_date,
-    latest_intraday_csv_age,
     latest_weekly_intraday_source_date,
     refresh_weekly_intraday_from_1d,
 )
 
 logger = logging.getLogger(__name__)
 
-# Daily and weekly yfinance refreshes are heavy, so they run once per calendar
-# day. The 1D/5m cache is the frequent feed and completes the 1W/1h cache.
-INTRADAY_REFRESH_INTERVAL = timedelta(hours=1)
-SCHEDULER_POLL_INTERVAL = timedelta(hours=1)
-
 
 def _refreshed_today(refresh_date) -> bool:
     return refresh_date is not None and refresh_date == datetime.now().date()
+
+
+def _floor_datetime(value: datetime, step: timedelta) -> datetime:
+    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+    value_utc = value.astimezone(timezone.utc)
+    elapsed = int((value_utc - epoch).total_seconds())
+    step_seconds = int(step.total_seconds())
+
+    return epoch + timedelta(seconds=(elapsed // step_seconds) * step_seconds)
+
+
+def seconds_until_next_intraday_refresh(now: datetime | None = None) -> float:
+    now_utc = now.astimezone(timezone.utc) if now else datetime.now(timezone.utc)
+    slot = _floor_datetime(now_utc, INTRADAY_CANDLE_DURATION)
+    next_refresh = slot + ACTIVE_INTRADAY_REFRESH_DELAY
+
+    if next_refresh <= now_utc:
+        next_refresh += INTRADAY_CANDLE_DURATION
+
+    return max((next_refresh - now_utc).total_seconds(), 1)
 
 
 async def refresh_daily_history_if_needed() -> bool:
@@ -50,38 +68,25 @@ async def refresh_weekly_intraday_history_if_needed() -> bool:
     return True
 
 
-async def refresh_intraday_history_if_needed(
-    max_age: timedelta = INTRADAY_REFRESH_INTERVAL,
-) -> bool:
-    age = latest_intraday_csv_age()
-
-    if age is not None and age < max_age:
-        logger.info("Intraday history refresh skipped; newest CSV age is %s.", age)
-        return False
-
+async def refresh_intraday_history() -> bool:
     logger.info("Intraday history refresh started.")
     await asyncio.to_thread(build_intraday_history)
     logger.info("Intraday history refresh completed.")
     return True
 
 
-async def run_market_data_scheduler(
-    interval: timedelta = SCHEDULER_POLL_INTERVAL,
-) -> None:
+async def run_market_data_scheduler() -> None:
     while True:
+        await asyncio.sleep(seconds_until_next_intraday_refresh())
+
         try:
             await refresh_daily_history_if_needed()
             weekly_refreshed = await refresh_weekly_intraday_history_if_needed()
-            intraday_refreshed = await refresh_intraday_history_if_needed()
+            intraday_refreshed = await refresh_intraday_history()
 
-            # Persist 1D-derived hourly candles into 1W after either source
-            # changes, so the chart keeps those points instead of overlaying
-            # them transiently.
             if weekly_refreshed or intraday_refreshed:
                 await asyncio.to_thread(refresh_weekly_intraday_from_1d)
         except asyncio.CancelledError:
             raise
         except Exception:
             logger.exception("Market data refresh failed.")
-
-        await asyncio.sleep(interval.total_seconds())

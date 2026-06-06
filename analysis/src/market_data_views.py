@@ -123,27 +123,32 @@ def _read_number(value) -> float | None:
     return number if math.isfinite(number) else None
 
 
+def _latest_and_previous_daily_close(ticker: str) -> tuple[float | None, float | None]:
+    df = load_daily_history_with_latest(ticker).sort_index()
+
+    if "Close" not in df.columns or len(df) < 1:
+        return None, None
+
+    last_price = _read_number(df["Close"].iloc[-1])
+    previous_close = _read_number(df["Close"].iloc[-2]) if len(df) > 1 else None
+
+    return last_price, previous_close
+
+
 def _snapshot_payload(ticker: str) -> dict | None:
     try:
-        df = load_daily_history_with_latest(ticker)
+        last_price, previous_close = _latest_and_previous_daily_close(ticker)
     except HTTPException:
         return None
 
-    if "Close" not in df.columns:
+    if last_price is None:
         return None
 
-    closes = df.dropna(subset=["Close"])
-
-    if len(closes) < 2:
-        return None
-
-    last_price = _read_number(closes["Close"].iloc[-1])
-    previous_close = _read_number(closes["Close"].iloc[-2])
-
-    if last_price is None or previous_close is None or previous_close <= 0:
-        return None
-
-    day_change = last_price - previous_close
+    day_change = (
+        last_price - previous_close
+        if previous_close is not None and previous_close > 0
+        else None
+    )
     updated_at = get_data_updated_at(ticker)
 
     return {
@@ -151,7 +156,11 @@ def _snapshot_payload(ticker: str) -> dict | None:
         "name": sanitize_ticker(ticker),
         "lastPrice": last_price,
         "dayChange": day_change,
-        "dayChangePercent": (day_change / previous_close) * 100,
+        "dayChangePercent": (
+            (day_change / previous_close) * 100
+            if day_change is not None and previous_close
+            else None
+        ),
         "updatedAt": updated_at.isoformat() if updated_at else None,
     }
 
@@ -161,6 +170,58 @@ def snapshot_payloads(tickers: list[str]) -> list[dict]:
         snapshot
         for ticker in tickers
         if (snapshot := _snapshot_payload(ticker)) is not None
+    ]
+
+
+def _range_performance_payload(ticker: str, range_name: str) -> dict | None:
+    normalized_range = range_name.upper()
+
+    if normalized_range == "1D":
+        snapshot = _snapshot_payload(ticker)
+
+        return (
+            None
+            if snapshot is None
+            else {
+                "symbol": snapshot["symbol"],
+                "performancePercent": snapshot["dayChangePercent"],
+            }
+        )
+
+    try:
+        candles = get_candles(ticker, range_name=normalized_range)
+    except HTTPException:
+        return None
+
+    closes = [
+        _read_number(candle.get("c"))
+        for candle in candles
+    ]
+    valid_closes = [
+        close
+        for close in closes
+        if close is not None and close > 0
+    ]
+
+    if len(valid_closes) < 2:
+        return None
+
+    first_close = valid_closes[0]
+    last_close = valid_closes[-1]
+
+    return {
+        "symbol": sanitize_ticker(ticker),
+        "performancePercent": ((last_close - first_close) / first_close) * 100,
+    }
+
+
+def performance_payloads(tickers: list[str], range_name: str) -> list[dict]:
+    return [
+        performance
+        for ticker in tickers
+        if (
+            performance := _range_performance_payload(ticker, range_name)
+        ) is not None
     ]
 
 

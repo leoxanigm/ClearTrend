@@ -96,8 +96,9 @@
     "searchFailed": "Recherche échouée",
     "searchPlaceholder": "Apple, TSLA...",
     "searching": "Recherche...",
+    "performanceRange": "Période du pourcentage",
     "sort": "Tri",
-    "sortDailyPercent": "Trier par pourcentage journalier",
+    "sortDailyPercent": "Trier par pourcentage affiché",
     "sortFavorites": "Trier les favoris",
     "sortName": "Trier par nom d'asset",
     "sortOptions": {

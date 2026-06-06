@@ -470,14 +470,10 @@ input {
     transform: translate(-50%, -50%) rotate(90deg);
 }
 
-.profile-avatar-actions,
-.profile-watchlist-actions {
+.profile-avatar-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-}
-
-.profile-avatar-actions {
     justify-content: center;
 }
 
@@ -670,6 +666,7 @@ input {
 .profile-watchlist-actions {
     display: grid;
     grid-template-columns: repeat(3, max-content);
+    gap: 0.5rem;
 }
 
 .profile-dialog-footer {
@@ -1179,9 +1176,9 @@ input {
 
 .watchlist-sort-bar {
     display: grid;
-    grid-template-columns: 2rem minmax(0, 1fr) 3.75rem;
+    grid-template-columns: 2rem minmax(0, 1fr) 2.75rem 0.125rem;
     align-items: center;
-    gap: 0.5rem;
+    column-gap: 0.375rem;
     margin-bottom: 0.5rem;
     padding: 0 0.5rem;
 }
@@ -1214,7 +1211,26 @@ input {
 }
 
 .watchlist-sort-button-percent {
-    justify-content: flex-end;
+    justify-content: flex-start;
+}
+
+.watchlist-range-select {
+    width: 2.6rem;
+    min-width: 0;
+    border: 1px solid var(--app-border);
+    border-radius: 0.375rem;
+    background: var(--app-surface);
+    color: var(--app-text);
+    cursor: pointer;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0.25rem 0.375rem;
+}
+
+.watchlist-range-select:focus {
+    border-color: var(--app-accent);
+    outline: none;
 }
 
 .watchlist-sort-arrow {
@@ -1327,17 +1343,6 @@ input {
 }
 
 .asset-performance-muted {
-    color: var(--app-muted);
-}
-
-.chart-placeholder {
-    display: flex;
-    min-height: 24rem;
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    border: 1px dashed var(--app-border);
-    border-radius: 0.375rem;
     color: var(--app-muted);
 }
 
@@ -1786,8 +1791,6 @@ input {
   }
 
   .profile-dialog-footer {
-    display: flex;
-    justify-content: center;
     gap: 0.625rem;
     background: var(--app-surface);
     padding: 0.875rem;
@@ -1798,10 +1801,6 @@ input {
     width: auto;
     max-width: 9.5rem;
     min-width: 0;
-  }
-
-  .chart-placeholder {
-    min-height: 18rem;
   }
 
   .asset-chart {

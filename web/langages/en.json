@@ -96,8 +96,9 @@
     "searchFailed": "Search failed",
     "searchPlaceholder": "Apple, TSLA...",
     "searching": "Searching...",
+    "performanceRange": "Performance range",
     "sort": "Sort",
-    "sortDailyPercent": "Sort by daily percentage",
+    "sortDailyPercent": "Sort by displayed percentage",
     "sortFavorites": "Sort favorites",
     "sortName": "Sort by asset name",
     "sortOptions": {

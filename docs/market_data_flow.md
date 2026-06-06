@@ -53,7 +53,7 @@ older ones for the same ticker and interval.
     correction.
 - `market_data_views.py`
   - API payload shaping for `/candles`, `/history/{ticker}/latest`, and
-    `updatedAt`.
+    `/snapshots`, including `updatedAt`.
 
 ## Refresh
 
@@ -71,7 +71,7 @@ Current cadence:
 | Dataset | Yahoo query | Refresh rule | Used by |
 | --- | --- | --- | --- |
 | Daily | `1d` candles, `1y` or `5y` period | Once per calendar day, or if missing | `1M`, `3M`, `1Y`, watchlist snapshots |
-| 1D intraday | `period=1d`, `interval=5m` | Global scheduler every hour; active ticker on-demand from `/candles/{ticker}/meta` when the next fixed 5 minute candle boundary is due plus 30 seconds | `1D`, latest daily overlay |
+| 1D intraday | `period=1d`, `interval=5m` | Global scheduler on fixed 5 minute boundaries plus 30 seconds | `1D`, latest daily overlay |
 | 1W hourly | `period=30d`, `interval=1h` | Base yfinance cache once per day, then hourly merge from `1D` | `1W` |
 
 The hourly merge works like this:
@@ -85,12 +85,11 @@ This means `1W` keeps the hourly values on disk instead of only displaying a
 temporary overlay. When the daily official close is available, the 1D-derived
 hourly merge uses that corrected close for the final hourly candle too.
 
-`/candles` returns the latest cached data immediately. When the dashboard asks
-for `/candles/{ticker}/meta`, `analysis` checks the active ticker's `1D` cache.
-If there is no intraday cache, only that ticker is refreshed immediately. If a
-cache exists, refresh checks are pinned to fixed 5 minute clock boundaries plus
-30 seconds, for example `15:00:30`, `15:05:30`, `15:10:30`. This keeps the
-visible chart fresher without letting the 30 second delay drift over time.
+`/candles`, `/candles/{ticker}/meta`, and `/snapshots` read the local CSV cache;
+they do not call Yahoo. Refreshes are owned by startup warmup and the background
+scheduler. Intraday refreshes are pinned to fixed 5 minute clock boundaries plus
+30 seconds, for example `15:00:30`, `15:05:30`, `15:10:30`; the 30 second delay
+does not drift over time.
 
 ## Analysis API
 
@@ -100,6 +99,7 @@ Main endpoints:
 - `GET /tickers`
 - `GET /history/{ticker}/latest`
 - `GET /snapshots?symbols=AAPL,NVDA`
+- `GET /performances?symbols=AAPL,NVDA&range=1D|1W|1M|3M|1Y`
 - `GET /candles/{ticker}?range=1D|1W|1M|3M|1Y`
 - `GET /candles/{ticker}/meta?range=1D|1W|1M|3M|1Y`
 - `GET /candles/{ticker}?start=YYYY-MM-DD&end=YYYY-MM-DD&limit=N`
@@ -140,16 +140,18 @@ The `1D` percentage uses the market-standard daily formula:
 `(latest close - previous daily close) / previous daily close`. Longer chart
 ranges keep using the displayed range formula:
 `(last displayed close - first displayed close) / first displayed close`.
+If the immediate previous daily close is missing, the percentage is returned as
+unavailable instead of silently comparing against an older session.
 
 Yahoo intraday candles are stored and displayed with the timestamp returned by
 Yahoo/analysis. The frontend does not shift intraday points forward, so a
 candle timestamped `16:10` is displayed at `16:10`, never at `16:15`.
 
 During an open session, the current day is approximated from the latest `1D`
-intraday candle. Once a complete regular session is detected, the active ticker
-also refreshes its daily Yahoo candle and the official daily close replaces the
-last intraday close. This handles cases where the closing auction/daily close
-differs slightly from the last 5 minute candle.
+intraday candle. Once a complete regular session is detected, the daily Yahoo
+candle can replace the last intraday close with the official close. This handles
+cases where the closing auction/daily close differs slightly from the last 5
+minute candle.
 
 ## Dashboard Link
 
@@ -165,13 +167,17 @@ Frontend chart flow:
 
 Automatic chart refresh:
 
-1. While the tab is visible, `AssetChart` polls
-   `/api/assets/candles/meta?symbol=AAPL&range=1W` on fixed 5 minute
-   boundaries plus 30 seconds.
-2. That meta call can trigger an on-demand refresh for the active ticker when a
-   fixed 5 minute candle boundary is due plus 30 seconds.
-3. If `updatedAt` is unchanged, the chart keeps the current candles.
-4. If `updatedAt` changed, the chart refetches `/api/assets/candles`.
+1. While the tab is visible, `AssetChart` fetches
+   `/api/assets/candles?symbol=AAPL&range=1W` on fixed 5 minute boundaries plus
+   30 seconds.
+2. The chart applies the returned candles directly. Backend refreshes are
+   handled by the scheduler, so this request only reads the cache.
+3. If the cache has not changed yet, the chart retries every 30 seconds until
+   it sees a new `updatedAt`, then returns to the fixed 5 minute schedule.
+4. After a chart refresh, the dashboard compares the selected asset's new
+   `lastPrice/dayChangePercent` with the value already loaded in the
+   watchlist. It reloads `/api/assets/watchlist` only when that selected asset
+   value actually changed.
 5. The selected `symbol` and `range` are mirrored in the dashboard URL, so a
    page refresh keeps the same asset and time range.
 6. Polling pauses while the browser tab is hidden and checks once when it
@@ -184,11 +190,15 @@ Watchlist flow:
 2. After mount, `DashboardClient` fetches `/api/assets/watchlist`.
 3. `web/src/lib/assets.ts` sends one batch request to
    `/snapshots?symbols=AAPL,NVDA,...`.
-4. `analysis` reads local CSV caches only; it does not call Yahoo from this
-   endpoint.
+4. The analysis endpoint reads local CSV caches only; yfinance is not called
+   from the watchlist path.
 5. `lastPrice`, `dayChange`, and `dayChangePercent` are calculated from the two
    latest daily candles, including the current intraday overlay when present.
-6. Missing symbols are shown as unavailable until backend refresh jobs populate
+6. `AssetChart` uses the same snapshot payload for the daily percentage, so the
+   chart header and watchlist do not drift into different formulas.
+7. The watchlist range selector uses `/performances` to switch the displayed
+   percentage without triggering Yahoo calls.
+8. Missing symbols are shown as unavailable until backend refresh jobs populate
    their caches.
 
 Search flow:

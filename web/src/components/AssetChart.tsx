@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
 import type { WatchlistAsset } from "@/lib/assets";
 import {
   chartRanges,
@@ -23,11 +30,6 @@ type ChartResponse = {
   interval?: string;
   lastPrice?: number | null;
   source?: string | null;
-  symbol?: string;
-  updatedAt?: string | null;
-};
-
-type ChartMetaResponse = {
   symbol?: string;
   updatedAt?: string | null;
 };
@@ -85,6 +87,7 @@ const compactChartSize: ChartSize = {
 
 const chartMetaPollIntervalMs = 5 * 60 * 1000;
 const chartMetaPollOffsetMs = 30 * 1000;
+const chartRetryPollMs = 30 * 1000;
 const regularStockSessionMs = 6.5 * 60 * 60 * 1000;
 
 function ChartFooterMetric({ label, tooltip }: ChartFooterMetricProps) {
@@ -108,6 +111,7 @@ async function fetchChartCandles(
   const response = await fetch(
     `/api/assets/candles?symbol=${encodeURIComponent(symbol)}&range=${range}`,
     {
+      cache: "no-store",
       signal,
     }
   );
@@ -119,28 +123,7 @@ async function fetchChartCandles(
   return (await response.json()) as ChartResponse;
 }
 
-async function fetchChartMeta(
-  symbol: string,
-  range: ChartRange,
-  signal?: AbortSignal
-) {
-  const response = await fetch(
-    `/api/assets/candles/meta?symbol=${encodeURIComponent(
-      symbol
-    )}&range=${range}`,
-    {
-      signal,
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error("Chart metadata request failed");
-  }
-
-  return (await response.json()) as ChartMetaResponse;
-}
-
-function getNextChartMetaPollDelayMs(now = Date.now()) {
+function getNextChartPollDelayMs(now = Date.now()) {
   const currentSlot =
     Math.floor(now / chartMetaPollIntervalMs) * chartMetaPollIntervalMs;
   const nextSlotWithOffset = currentSlot + chartMetaPollOffsetMs;
@@ -462,6 +445,36 @@ export function AssetChart({
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const updatedAtRef = useRef<string | null>(null);
+
+  const applyChartResponse = useCallback(
+    (
+      body: ChartResponse,
+      requestedSymbol: string
+    ) => {
+      const nextCandles = body.candles ?? [];
+
+      if (nextCandles.length === 0) {
+        throw new Error("No chart data");
+      }
+
+      setCandles(nextCandles);
+      setCurrency(body.currency ?? null);
+      setDayChangePercent(body.dayChangePercent ?? null);
+      setInterval(body.interval ?? null);
+      setSource(body.source ?? null);
+      updatedAtRef.current = body.updatedAt ?? null;
+      setUpdatedAt(body.updatedAt ?? null);
+      setHoveredPoint(null);
+      setError(null);
+      onAssetSnapshotChange?.({
+        dayChangePercent: body.dayChangePercent ?? null,
+        lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
+        symbol: body.symbol ?? requestedSymbol,
+      });
+    },
+    [onAssetSnapshotChange]
+  );
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 600px)");
@@ -495,42 +508,18 @@ export function AssetChart({
       setHoveredPoint(null);
 
       try {
-        try {
-          await fetchChartMeta(requestedSymbol, range, controller.signal);
-        } catch {
-          if (controller.signal.aborted) {
-            return;
-          }
-        }
-
         const body = await fetchChartCandles(
           requestedSymbol,
           range,
           controller.signal
         );
-        const nextCandles = body.candles ?? [];
 
-        if (nextCandles.length === 0) {
-          throw new Error("No chart data");
-        }
-
-        setCandles(nextCandles);
-        setCurrency(body.currency ?? null);
-        setDayChangePercent(body.dayChangePercent ?? null);
-        setInterval(body.interval ?? null);
-        setSource(body.source ?? null);
-        setUpdatedAt(body.updatedAt ?? null);
-        if (range === "1D") {
-          onAssetSnapshotChange?.({
-            dayChangePercent: body.dayChangePercent ?? null,
-            lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
-            symbol: body.symbol ?? requestedSymbol,
-          });
-        }
+        applyChartResponse(body, requestedSymbol);
       } catch {
         if (!controller.signal.aborted) {
           setCandles([]);
           setDayChangePercent(null);
+          updatedAtRef.current = null;
           setUpdatedAt(null);
           setError(t("unavailable"));
         }
@@ -546,7 +535,7 @@ export function AssetChart({
     return () => {
       controller.abort();
     };
-  }, [asset?.symbol, onAssetSnapshotChange, range, t]);
+  }, [applyChartResponse, asset?.symbol, range, t]);
 
   useEffect(() => {
     const symbol = asset?.symbol;
@@ -562,7 +551,7 @@ export function AssetChart({
 
     async function refreshCandlesIfNeeded() {
       if (document.hidden) {
-        return;
+        return true;
       }
 
       activeController?.abort();
@@ -570,49 +559,27 @@ export function AssetChart({
       activeController = controller;
 
       try {
-        const meta = await fetchChartMeta(
-          requestedSymbol,
-          range,
-          controller.signal
-        );
-
-        if (!meta.updatedAt || meta.updatedAt === updatedAt) {
-          return;
-        }
-
         const body = await fetchChartCandles(
           requestedSymbol,
           range,
           controller.signal
         );
-        const nextCandles = body.candles ?? [];
-
-        if (nextCandles.length === 0 || isDisposed) {
-          return;
+        if (isDisposed) {
+          return true;
         }
 
-        setCandles(nextCandles);
-        setCurrency(body.currency ?? null);
-        setDayChangePercent(body.dayChangePercent ?? null);
-        setInterval(body.interval ?? null);
-        setSource(body.source ?? null);
-        setUpdatedAt(body.updatedAt ?? meta.updatedAt);
-        setHoveredPoint(null);
-        setError(null);
-        if (range === "1D") {
-          onAssetSnapshotChange?.({
-            dayChangePercent: body.dayChangePercent ?? null,
-            lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
-            symbol: body.symbol ?? requestedSymbol,
-          });
-        }
+        const previousUpdatedAt = updatedAtRef.current;
+        applyChartResponse(body, requestedSymbol);
+
+        return Boolean(body.updatedAt && body.updatedAt !== previousUpdatedAt);
       } catch {
         // Background polling should never replace visible chart data with an
         // error state. The next interval can try again.
+        return false;
       }
     }
 
-    function scheduleNextRefresh() {
+    function scheduleNextRefresh(delayMs = getNextChartPollDelayMs()) {
       if (isDisposed) {
         return;
       }
@@ -623,8 +590,12 @@ export function AssetChart({
 
       timeoutId = window.setTimeout(() => {
         timeoutId = null;
-        void refreshCandlesIfNeeded().finally(scheduleNextRefresh);
-      }, getNextChartMetaPollDelayMs());
+        void refreshCandlesIfNeeded().then((changed) => {
+          scheduleNextRefresh(
+            changed ? getNextChartPollDelayMs() : chartRetryPollMs
+          );
+        });
+      }, delayMs);
     }
 
     scheduleNextRefresh();
@@ -646,7 +617,7 @@ export function AssetChart({
       }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [asset?.symbol, onAssetSnapshotChange, range, updatedAt]);
+  }, [applyChartResponse, asset?.symbol, range]);
 
   const chartSize = isCompactChart ? compactChartSize : desktopChartSize;
   const chartData = useMemo(

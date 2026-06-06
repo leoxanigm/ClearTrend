@@ -8,7 +8,7 @@ from .market_data import (
     get_data_updated_at,
     latest_payload,
     list_cached_tickers,
-    refresh_active_ticker_if_stale,
+    performance_payloads,
     sanitize_ticker,
     snapshot_payloads,
 )
@@ -68,12 +68,27 @@ def snapshots(symbols: str = Query("")) -> dict[str, list[dict]]:
     return {"snapshots": snapshot_payloads(tickers)}
 
 
+@app.get("/performances")
+def performances(
+    range_name: str = Query("1D", alias="range"),
+    symbols: str = Query(""),
+) -> dict[str, list[dict]]:
+    tickers = [
+        symbol.strip()
+        for symbol in symbols.split(",")
+        if symbol.strip()
+    ][:999]
+
+    return {
+        "performances": performance_payloads(tickers, range_name),
+    }
+
+
 @app.get("/candles/{ticker}/meta")
 def candles_meta(
     ticker: str,
     range_name: str | None = Query(None, alias="range"),
 ) -> dict:
-    refresh_active_ticker_if_stale(ticker, range_name=range_name)
     updated_at = get_data_updated_at(ticker, range_name=range_name)
 
     return {
