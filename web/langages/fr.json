@@ -41,6 +41,7 @@
       "loggedIn": "Connecté.",
       "loginFailed": "Connexion échouée.",
       "missingFields": "Champs manquants.",
+      "banned": "Ce compte a été banni.",
       "passwordMismatch": "Les mots de passe ne correspondent pas.",
       "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
       "registrationFailed": "Inscription échouée.",
@@ -72,6 +73,7 @@
     "openUserMenu": "Ouvrir le menu utilisateur de {name}",
     "openWatchlist": "Ouvrir la watchlist",
     "overview": "Vue d'ensemble",
+    "adminPage": "Admin",
     "apiDocs": "Documentation API",
     "apiSettings": "Clé API",
     "profileSettings": "Paramètres du profil",
@@ -279,6 +281,70 @@
       "watchlistPut": "Remplace toute la watchlist de l'utilisateur courant.",
       "watchlistDelete": "Supprime un symbole. Envoie une requête sans body pour vider toute la watchlist.",
       "search": "Recherche des actifs, analyses, rapports et notifications avec filtres et pagination."
+    }
+  },
+  "adminPage": {
+    "eyebrow": "Espace admin",
+    "title": "Admin",
+    "description": "Espace réservé aux administrateurs ClearTrend.",
+    "fields": {
+      "account": "Compte",
+      "email": "Email",
+      "role": "Rôle"
+    },
+    "refreshRate": {
+      "label": "Fréquence de rafraîchissement finance",
+      "ariaLabel": "Choisir la fréquence de rafraîchissement finance",
+      "options": {
+        "60": "1 minute",
+        "300": "5 minutes",
+        "900": "15 minutes"
+      }
+    },
+    "users": {
+      "title": "Gestion des utilisateurs",
+      "description": "Tous les comptes ClearTrend inscrits sont listés ici.",
+      "total": "{count, plural, =0 {Aucun utilisateur} =1 {# utilisateur} other {# utilisateurs}}",
+      "unnamed": "Utilisateur sans nom",
+      "watchlistCount": "{count, plural, =0 {0 symbole} =1 {# symbole} other {# symboles}}",
+      "watchlistEmpty": "Aucun symbole enregistré",
+      "passwordProvider": "Mot de passe",
+      "search": {
+        "label": "Rechercher des utilisateurs",
+        "placeholder": "Nom d'utilisateur ou email",
+        "submit": "Rechercher",
+        "clear": "Effacer"
+      },
+      "sort": {
+        "button": "Trier",
+        "options": {
+          "username": "Nom d'utilisateur",
+          "email": "Email",
+          "banned": "Activité",
+          "admin": "Rôle"
+        }
+      },
+      "columns": {
+        "user": "Utilisateur",
+        "role": "Rôle",
+        "status": "Statut",
+        "provider": "Fournisseur",
+        "watchlists": "Watchlist",
+        "analyses": "Analyses",
+        "reports": "Rapports",
+        "apiKeys": "Clés API",
+        "created": "Créé",
+        "updated": "Mis à jour",
+        "actions": "Actions"
+      },
+      "status": {
+        "active": "Actif",
+        "banned": "Banni"
+      },
+      "actions": {
+        "ban": "Bannir",
+        "unban": "Débannir"
+      }
     }
   },
   "legal": {

@@ -38,11 +38,16 @@ export async function getApiIdentity(
       },
       select: {
         id: true,
-        userId: true
+        userId: true,
+        user: {
+          select: {
+            bannedAt: true
+          }
+        }
       }
     });
 
-    if (!row) {
+    if (!row || row.user.bannedAt) {
       return null;
     }
 

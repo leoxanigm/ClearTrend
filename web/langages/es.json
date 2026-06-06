@@ -41,6 +41,7 @@
       "loggedIn": "Sesión iniciada.",
       "loginFailed": "No se pudo iniciar sesión.",
       "missingFields": "Faltan campos.",
+      "banned": "Esta cuenta ha sido baneada.",
       "passwordMismatch": "Las contraseñas no coinciden.",
       "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
       "registrationFailed": "No se pudo crear la cuenta.",
@@ -72,6 +73,7 @@
     "openUserMenu": "Abrir menú de usuario de {name}",
     "openWatchlist": "Abrir watchlist",
     "overview": "Resumen",
+    "adminPage": "Admin",
     "apiDocs": "Documentación de API",
     "apiSettings": "Clave API",
     "profileSettings": "Ajustes del perfil",
@@ -279,6 +281,70 @@
       "watchlistPut": "Reemplaza toda la watchlist del usuario actual.",
       "watchlistDelete": "Elimina un símbolo. Envía la solicitud sin body para vaciar toda la watchlist.",
       "search": "Busca activos, análisis, informes y notificaciones con filtros y paginación."
+    }
+  },
+  "adminPage": {
+    "eyebrow": "Área admin",
+    "title": "Admin",
+    "description": "Espacio restringido para administradores de ClearTrend.",
+    "fields": {
+      "account": "Cuenta",
+      "email": "Email",
+      "role": "Rol"
+    },
+    "refreshRate": {
+      "label": "Frecuencia de actualización financiera",
+      "ariaLabel": "Elegir frecuencia de actualización financiera",
+      "options": {
+        "60": "1 minuto",
+        "300": "5 minutos",
+        "900": "15 minutos"
+      }
+    },
+    "users": {
+      "title": "Gestión de usuarios",
+      "description": "Todas las cuentas registradas de ClearTrend aparecen aquí.",
+      "total": "{count, plural, =0 {Sin usuarios} =1 {# usuario} other {# usuarios}}",
+      "unnamed": "Usuario sin nombre",
+      "watchlistCount": "{count, plural, =0 {0 símbolos} =1 {# símbolo} other {# símbolos}}",
+      "watchlistEmpty": "Sin símbolos guardados",
+      "passwordProvider": "Contraseña",
+      "search": {
+        "label": "Buscar usuarios",
+        "placeholder": "Usuario o email",
+        "submit": "Buscar",
+        "clear": "Limpiar"
+      },
+      "sort": {
+        "button": "Ordenar",
+        "options": {
+          "username": "Usuario",
+          "email": "Email",
+          "banned": "Actividad",
+          "admin": "Rol"
+        }
+      },
+      "columns": {
+        "user": "Usuario",
+        "role": "Rol",
+        "status": "Estado",
+        "provider": "Proveedor",
+        "watchlists": "Watchlist",
+        "analyses": "Análisis",
+        "reports": "Informes",
+        "apiKeys": "Claves API",
+        "created": "Creado",
+        "updated": "Actualizado",
+        "actions": "Acciones"
+      },
+      "status": {
+        "active": "Activo",
+        "banned": "Baneado"
+      },
+      "actions": {
+        "ban": "Banear",
+        "unban": "Desbanear"
+      }
     }
   },
   "legal": {

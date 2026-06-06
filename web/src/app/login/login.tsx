@@ -52,6 +52,21 @@ export function useLoginPage() {
     redirectIfAuthenticated();
   }, [router]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("error") === "BANNED") {
+      const timeoutId = window.setTimeout(() => {
+        setMessage({
+          type: "error",
+          text: t("banned"),
+        });
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, [t]);
+
   // Switch between login and register modes
   function selectMode(nextMode: FormMode) {
     setMode(nextMode);
@@ -105,6 +120,14 @@ export function useLoginPage() {
             setMessage({
               type: "error",
               text: "Too many login attempts. Please try again later.",
+            });
+            return;
+          }
+
+          if (result.error === "BANNED") {
+            setMessage({
+              type: "error",
+              text: t("banned"),
             });
             return;
           }

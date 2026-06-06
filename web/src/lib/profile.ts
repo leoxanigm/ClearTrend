@@ -102,7 +102,7 @@ export async function readUserProfileById(id: string) {
       "avatarOffsetX",
       "avatarOffsetY"
     FROM users
-    WHERE id = ${id}
+    WHERE id = ${id} AND "bannedAt" IS NULL
     LIMIT 1
   `;
 
@@ -124,7 +124,7 @@ async function readUserProfileByEmail(email: string) {
       "avatarOffsetX",
       "avatarOffsetY"
     FROM users
-    WHERE email = ${email}
+    WHERE email = ${email} AND "bannedAt" IS NULL
     LIMIT 1
   `;
 
@@ -152,10 +152,31 @@ async function readUserProfileByOauth(
     WHERE
       "oauthProvider" = ${oauthProvider}
       AND "oauthProviderAccountId" = ${oauthProviderAccountId}
+      AND "bannedAt" IS NULL
     LIMIT 1
   `;
 
   return rows[0] ? toProfile(rows[0]) : null;
+}
+
+async function readOauthAccountExists(
+  oauthProvider: string,
+  oauthProviderAccountId: string
+) {
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: {
+      oauthProvider_oauthProviderAccountId: {
+        oauthProvider,
+        oauthProviderAccountId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return Boolean(user);
 }
 
 function getInitialDisplayName(name: string | null, email: string) {
@@ -185,6 +206,10 @@ export async function getCurrentUserProfile() {
     }
   }
 
+  if (identity.oauthProvider === "credentials") {
+    return null;
+  }
+
   const existingProfile =
     identity.oauthProvider && identity.oauthProviderAccountId
       ? await readUserProfileByOauth(
@@ -195,6 +220,17 @@ export async function getCurrentUserProfile() {
 
   if (existingProfile) {
     return existingProfile;
+  }
+
+  if (
+    identity.oauthProvider &&
+    identity.oauthProviderAccountId &&
+    (await readOauthAccountExists(
+      identity.oauthProvider,
+      identity.oauthProviderAccountId
+    ))
+  ) {
+    return null;
   }
 
   const prisma = getPrisma();

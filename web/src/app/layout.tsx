@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { getLocale, getMessages } from "next-intl/server";
 import { NextIntlClientProvider } from "next-intl";
+import Script from "next/script";
 import Providers from "./providers";
 
 const themeInitScript = `
@@ -31,7 +32,11 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <Script
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+          id="theme-init"
+          strategy="beforeInteractive"
+        />
       </head>
       <body>
         <NextIntlClientProvider messages={messages}>

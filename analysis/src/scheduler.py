@@ -6,6 +6,7 @@ from .market_data_config import (
     ACTIVE_INTRADAY_REFRESH_DELAY,
     INTRADAY_CANDLE_DURATION,
 )
+from .app_settings import get_finance_refresh_rate_duration
 from .market_data import (
     build_daily_history,
     build_intraday_history,
@@ -31,13 +32,17 @@ def _floor_datetime(value: datetime, step: timedelta) -> datetime:
     return epoch + timedelta(seconds=(elapsed // step_seconds) * step_seconds)
 
 
-def seconds_until_next_intraday_refresh(now: datetime | None = None) -> float:
+def seconds_until_next_intraday_refresh(
+    now: datetime | None = None,
+    refresh_duration: timedelta | None = None,
+) -> float:
     now_utc = now.astimezone(timezone.utc) if now else datetime.now(timezone.utc)
-    slot = _floor_datetime(now_utc, INTRADAY_CANDLE_DURATION)
+    duration = refresh_duration or INTRADAY_CANDLE_DURATION
+    slot = _floor_datetime(now_utc, duration)
     next_refresh = slot + ACTIVE_INTRADAY_REFRESH_DELAY
 
     if next_refresh <= now_utc:
-        next_refresh += INTRADAY_CANDLE_DURATION
+        next_refresh += duration
 
     return max((next_refresh - now_utc).total_seconds(), 1)
 
@@ -77,7 +82,18 @@ async def refresh_intraday_history() -> bool:
 
 async def run_market_data_scheduler() -> None:
     while True:
-        await asyncio.sleep(seconds_until_next_intraday_refresh())
+        refresh_duration = await asyncio.to_thread(
+            get_finance_refresh_rate_duration
+        )
+        logger.info(
+            "Next intraday refresh cadence: %s seconds.",
+            int(refresh_duration.total_seconds()),
+        )
+        await asyncio.sleep(
+            seconds_until_next_intraday_refresh(
+                refresh_duration=refresh_duration
+            )
+        )
 
         try:
             await refresh_daily_history_if_needed()

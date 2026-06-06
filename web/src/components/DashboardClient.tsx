@@ -24,6 +24,7 @@ import { useTranslations } from "next-intl";
 import { signOut } from "next-auth/react";
 
 type DashboardClientProps = {
+  financeRefreshRateSeconds: number;
   initialRange?: string | null;
   initialSymbol?: string | null;
   userProfile: UserProfile;
@@ -93,6 +94,7 @@ function normalizeInitialSymbol(
 }
 
 export function DashboardClient({
+  financeRefreshRateSeconds,
   initialRange,
   initialSymbol,
   userProfile,
@@ -172,12 +174,29 @@ export function DashboardClient({
     replaceDashboardUrl(symbol, range);
   }
 
+  const signOutUnauthorizedSession = useCallback(() => {
+    notifyAfterNavigation({
+      title: "Session ended",
+      tone: "error",
+    });
+
+    void signOut({
+      callbackUrl: "/login?error=BANNED",
+      redirect: true,
+    });
+  }, [notifyAfterNavigation]);
+
   const loadWatchlistSnapshots = useCallback(async (signal?: AbortSignal) => {
     try {
       const response = await fetch("/api/assets/watchlist", {
         cache: "no-store",
         signal,
       });
+
+      if (response.status === 401 || response.status === 403) {
+        signOutUnauthorizedSession();
+        return;
+      }
 
       if (!response.ok) {
         return;
@@ -194,7 +213,7 @@ export function DashboardClient({
     } catch {
       // Keep the symbol list visible; the chart can still load independently.
     }
-  }, []);
+  }, [signOutUnauthorizedSession]);
 
   const updateWatchlistSnapshot = useCallback(
     (snapshot: AssetSnapshotUpdate) => {
@@ -344,6 +363,11 @@ export function DashboardClient({
         },
         method: "PATCH",
       });
+
+      if (response.status === 401 || response.status === 403) {
+        signOutUnauthorizedSession();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Favorite update failed");
@@ -553,6 +577,12 @@ export function DashboardClient({
                 {t("profileSettings")}
               </button>
 
+              {profile.role === "ADMIN" ? (
+                <a className="user-menu-action" href="/admin">
+                  {t("adminPage")}
+                </a>
+              ) : null}
+
               <a className="user-menu-action" href="/settings/api">
                 {t("apiSettings")}
               </a>
@@ -596,6 +626,7 @@ export function DashboardClient({
         <div className="dashboard-grid mt-8 grid flex-1 gap-6">
           <AssetChart
             asset={selectedAsset}
+            financeRefreshRateSeconds={financeRefreshRateSeconds}
             onAssetSnapshotChange={updateWatchlistSnapshot}
             onRangeChange={handleRangeChange}
             range={chartRange}
