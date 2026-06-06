@@ -18,6 +18,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 type AssetChartProps = {
   asset: WatchlistAsset | null;
+  financeRefreshRateSeconds: number;
   onAssetSnapshotChange?: (snapshot: AssetSnapshotUpdate) => void;
   onRangeChange: (range: ChartRange) => void;
   range: ChartRange;
@@ -123,14 +124,17 @@ async function fetchChartCandles(
   return (await response.json()) as ChartResponse;
 }
 
-function getNextChartPollDelayMs(now = Date.now()) {
+function getNextChartPollDelayMs(
+  intervalMs = chartMetaPollIntervalMs,
+  now = Date.now()
+) {
   const currentSlot =
-    Math.floor(now / chartMetaPollIntervalMs) * chartMetaPollIntervalMs;
+    Math.floor(now / intervalMs) * intervalMs;
   const nextSlotWithOffset = currentSlot + chartMetaPollOffsetMs;
   const nextPoll =
     nextSlotWithOffset > now
       ? nextSlotWithOffset
-      : nextSlotWithOffset + chartMetaPollIntervalMs;
+      : nextSlotWithOffset + intervalMs;
 
   return Math.max(nextPoll - now, 1000);
 }
@@ -428,6 +432,7 @@ function buildChartData(
 
 export function AssetChart({
   asset,
+  financeRefreshRateSeconds,
   onAssetSnapshotChange,
   onRangeChange,
   range,
@@ -446,6 +451,7 @@ export function AssetChart({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const updatedAtRef = useRef<string | null>(null);
+  const chartPollIntervalMs = Math.max(financeRefreshRateSeconds * 1000, 60_000);
 
   const applyChartResponse = useCallback(
     (
@@ -579,7 +585,9 @@ export function AssetChart({
       }
     }
 
-    function scheduleNextRefresh(delayMs = getNextChartPollDelayMs()) {
+    function scheduleNextRefresh(
+      delayMs = getNextChartPollDelayMs(chartPollIntervalMs)
+    ) {
       if (isDisposed) {
         return;
       }
@@ -592,7 +600,7 @@ export function AssetChart({
         timeoutId = null;
         void refreshCandlesIfNeeded().then((changed) => {
           scheduleNextRefresh(
-            changed ? getNextChartPollDelayMs() : chartRetryPollMs
+            changed ? getNextChartPollDelayMs(chartPollIntervalMs) : chartRetryPollMs
           );
         });
       }, delayMs);
@@ -617,7 +625,7 @@ export function AssetChart({
       }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [applyChartResponse, asset?.symbol, range]);
+  }, [applyChartResponse, asset?.symbol, chartPollIntervalMs, range]);
 
   const chartSize = isCompactChart ? compactChartSize : desktopChartSize;
   const chartData = useMemo(

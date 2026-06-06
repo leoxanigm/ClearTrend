@@ -1,6 +1,8 @@
+import { AdminFinanceRefreshRateSelect } from "@/components/AdminFinanceRefreshRateSelect";
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
 import { LanguageSelect } from "@/components/ui/LanguageSelect";
+import { getFinanceRefreshRateSeconds } from "@/lib/app-settings";
 import { getPrisma } from "@/lib/prisma";
 import { getCurrentUserProfile } from "@/lib/profile";
 import Link from "next/link";
@@ -118,6 +120,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const currentSort = getAdminSortOption(params.sort);
   const currentDir = getSortDirection(params.dir);
   const query = getSearchQuery(params.q);
+  const financeRefreshRateSeconds = await getFinanceRefreshRateSeconds();
   const locale = await getLocale();
   const prisma = getPrisma();
   const users = await prisma.user.findMany({
@@ -209,20 +212,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </div>
 
         <div className="admin-refresh-rate-row">
-          <label className="language-select admin-refresh-rate-select">
-            <span className="language-select-label">
-              {t("refreshRate.label")}
-            </span>
-            <select
-              aria-label={t("refreshRate.ariaLabel")}
-              className="language-select-control"
-              defaultValue="60"
-            >
-              <option value="60">{t("refreshRate.options.60")}</option>
-              <option value="300">{t("refreshRate.options.300")}</option>
-              <option value="900">{t("refreshRate.options.900")}</option>
-            </select>
-          </label>
+          <AdminFinanceRefreshRateSelect
+            ariaLabel={t("refreshRate.ariaLabel")}
+            initialValue={financeRefreshRateSeconds}
+            label={t("refreshRate.label")}
+            options={[
+              {
+                label: t("refreshRate.options.60"),
+                value: 60,
+              },
+              {
+                label: t("refreshRate.options.300"),
+                value: 300,
+              },
+              {
+                label: t("refreshRate.options.900"),
+                value: 900,
+              },
+            ]}
+          />
         </div>
 
         <div className="admin-panel">

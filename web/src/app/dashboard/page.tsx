@@ -1,5 +1,6 @@
 import { DashboardClient } from "@/components/DashboardClient";
 import { getUserWatchlistAssets } from "@/lib/assets";
+import { getFinanceRefreshRateSeconds } from "@/lib/app-settings";
 import { getCurrentUserProfile } from "@/lib/profile";
 import { redirect } from "next/navigation";
 
@@ -20,6 +21,7 @@ export default async function DashboardPage({
   }
 
   const params = (await searchParams) ?? {};
+  const financeRefreshRateSeconds = await getFinanceRefreshRateSeconds();
   const watchlistAssets = await getUserWatchlistAssets(
     userProfile.id,
     undefined,
@@ -32,6 +34,7 @@ export default async function DashboardPage({
     <DashboardClient
       initialRange={params.range ?? null}
       initialSymbol={params.symbol ?? null}
+      financeRefreshRateSeconds={financeRefreshRateSeconds}
       userProfile={userProfile}
       watchlistAssets={watchlistAssets}
     />

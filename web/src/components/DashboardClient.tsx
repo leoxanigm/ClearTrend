@@ -24,6 +24,7 @@ import { useTranslations } from "next-intl";
 import { signOut } from "next-auth/react";
 
 type DashboardClientProps = {
+  financeRefreshRateSeconds: number;
   initialRange?: string | null;
   initialSymbol?: string | null;
   userProfile: UserProfile;
@@ -93,6 +94,7 @@ function normalizeInitialSymbol(
 }
 
 export function DashboardClient({
+  financeRefreshRateSeconds,
   initialRange,
   initialSymbol,
   userProfile,
@@ -624,6 +626,7 @@ export function DashboardClient({
         <div className="dashboard-grid mt-8 grid flex-1 gap-6">
           <AssetChart
             asset={selectedAsset}
+            financeRefreshRateSeconds={financeRefreshRateSeconds}
             onAssetSnapshotChange={updateWatchlistSnapshot}
             onRangeChange={handleRangeChange}
             range={chartRange}
