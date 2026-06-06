@@ -114,6 +114,18 @@ export function DashboardClient({
     replaceDashboardUrl(symbol, range);
   }
 
+  const signOutUnauthorizedSession = useCallback(() => {
+    notifyAfterNavigation({
+      title: "Session ended",
+      tone: "error",
+    });
+
+    void signOut({
+      callbackUrl: "/login?error=BANNED",
+      redirect: true,
+    });
+  }, [notifyAfterNavigation]);
+
   const loadWatchlistSnapshots = useCallback(async (signal?: AbortSignal) => {
     const now = Date.now();
 
@@ -132,6 +144,11 @@ export function DashboardClient({
         signal,
       });
 
+      if (response.status === 401 || response.status === 403) {
+        signOutUnauthorizedSession();
+        return;
+      }
+
       if (!response.ok) {
         return;
       }
@@ -148,7 +165,7 @@ export function DashboardClient({
     } finally {
       watchlistRefreshInFlightRef.current = false;
     }
-  }, []);
+  }, [signOutUnauthorizedSession]);
 
   const updateWatchlistSnapshot = useCallback(
     (snapshot: AssetSnapshotUpdate) => {
@@ -230,6 +247,11 @@ export function DashboardClient({
         },
         method: "PATCH",
       });
+
+      if (response.status === 401 || response.status === 403) {
+        signOutUnauthorizedSession();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Favorite update failed");

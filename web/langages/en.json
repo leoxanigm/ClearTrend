@@ -41,6 +41,7 @@
       "loggedIn": "Logged in.",
       "loginFailed": "Login failed.",
       "missingFields": "Missing fields.",
+      "banned": "This account has been banned.",
       "passwordMismatch": "Passwords do not match.",
       "passwordTooShort": "Password must be at least 8 characters.",
       "registrationFailed": "Registration failed.",
@@ -289,6 +290,34 @@
       "account": "Account",
       "email": "Email",
       "role": "Role"
+    },
+    "users": {
+      "title": "User management",
+      "description": "Every registered ClearTrend account is listed here.",
+      "total": "{count, plural, =0 {No users} =1 {# user} other {# users}}",
+      "unnamed": "Unnamed user",
+      "passwordProvider": "Password",
+      "columns": {
+        "user": "User",
+        "role": "Role",
+        "status": "Status",
+        "provider": "Provider",
+        "watchlists": "Watchlist",
+        "analyses": "Analyses",
+        "reports": "Reports",
+        "apiKeys": "API keys",
+        "created": "Created",
+        "updated": "Updated",
+        "actions": "Actions"
+      },
+      "status": {
+        "active": "Active",
+        "banned": "Banned"
+      },
+      "actions": {
+        "ban": "Ban",
+        "unban": "Unban"
+      }
     }
   },
   "legal": {

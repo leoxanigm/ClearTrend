@@ -41,6 +41,7 @@
       "loggedIn": "Sesión iniciada.",
       "loginFailed": "No se pudo iniciar sesión.",
       "missingFields": "Faltan campos.",
+      "banned": "Esta cuenta ha sido baneada.",
       "passwordMismatch": "Las contraseñas no coinciden.",
       "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
       "registrationFailed": "No se pudo crear la cuenta.",
@@ -289,6 +290,34 @@
       "account": "Cuenta",
       "email": "Email",
       "role": "Rol"
+    },
+    "users": {
+      "title": "Gestión de usuarios",
+      "description": "Todas las cuentas registradas de ClearTrend aparecen aquí.",
+      "total": "{count, plural, =0 {Sin usuarios} =1 {# usuario} other {# usuarios}}",
+      "unnamed": "Usuario sin nombre",
+      "passwordProvider": "Contraseña",
+      "columns": {
+        "user": "Usuario",
+        "role": "Rol",
+        "status": "Estado",
+        "provider": "Proveedor",
+        "watchlists": "Watchlist",
+        "analyses": "Análisis",
+        "reports": "Informes",
+        "apiKeys": "Claves API",
+        "created": "Creado",
+        "updated": "Actualizado",
+        "actions": "Acciones"
+      },
+      "status": {
+        "active": "Activo",
+        "banned": "Baneado"
+      },
+      "actions": {
+        "ban": "Banear",
+        "unban": "Desbanear"
+      }
     }
   },
   "legal": {

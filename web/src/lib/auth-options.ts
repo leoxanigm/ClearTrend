@@ -92,6 +92,10 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        if (user.bannedAt) {
+          throw new Error("BANNED");
+        }
+
         const valid = await bcrypt.compare(password, user.passwordHash);
 
         if (!valid) {
@@ -124,7 +128,24 @@ export const authOptions: NextAuthOptions = {
       const prisma = getPrisma();
 
       try {
-        await prisma.user.upsert({
+        const bannedUser = await prisma.user.findFirst({
+          where: {
+            bannedAt: {
+              not: null,
+            },
+            oauthProvider,
+            oauthProviderAccountId,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (bannedUser) {
+          return "/login?error=BANNED";
+        }
+
+        const dbUser = await prisma.user.upsert({
           where: {
             oauthProvider_oauthProviderAccountId: {
               oauthProvider,
@@ -141,7 +162,11 @@ export const authOptions: NextAuthOptions = {
             oauthProvider,
             oauthProviderAccountId,
           },
+          select: {
+            id: true,
+          },
         });
+        user.id = dbUser.id;
       } catch (error) {
         console.error("Failed to create/update user during OAuth sign in:", error);
         return false;
@@ -160,6 +185,29 @@ export const authOptions: NextAuthOptions = {
 
       if (account?.providerAccountId) {
         token.oauthProviderAccountId = account.providerAccountId;
+      }
+
+      if (
+        account?.provider &&
+        account.provider !== "credentials" &&
+        account.providerAccountId
+      ) {
+        const prisma = getPrisma();
+        const dbUser = await prisma.user.findUnique({
+          where: {
+            oauthProvider_oauthProviderAccountId: {
+              oauthProvider: account.provider,
+              oauthProviderAccountId: account.providerAccountId,
+            },
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (dbUser) {
+          token.userId = dbUser.id;
+        }
       }
 
       return token;
