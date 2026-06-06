@@ -1,7 +1,6 @@
 import { AdminFinanceRefreshRateSelect } from "@/components/AdminFinanceRefreshRateSelect";
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
-import { LanguageSelect } from "@/components/ui/LanguageSelect";
 import { getFinanceRefreshRateSeconds } from "@/lib/app-settings";
 import { getPrisma } from "@/lib/prisma";
 import { getCurrentUserProfile } from "@/lib/profile";
@@ -392,7 +391,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </section>
 
       <div className="admin-page-footer">
-        <LanguageSelect className="language-select language-select-admin" />
         <FooterLinks className="footer-links admin-footer-links" />
       </div>
     </main>

@@ -776,10 +776,6 @@ input {
     justify-items: center;
 }
 
-.language-select-admin {
-    justify-items: center;
-}
-
 .language-select-menu {
     width: 100%;
 }
@@ -2127,9 +2123,10 @@ input {
 
 .admin-page {
   display: grid;
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100svh;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .api-key-page-header,
@@ -2168,7 +2165,7 @@ input {
   grid-template-rows: auto auto minmax(0, 1fr);
   align-content: start;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .admin-refresh-rate-row {
@@ -2200,18 +2197,6 @@ input {
   gap: 8px;
   justify-items: center;
   margin: 24px auto 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--app-border);
-}
-
-.admin-page-footer .language-select-label,
-.admin-page-footer .language-select-control {
-  font-size: 0.75rem;
-}
-
-.admin-page-footer .language-select-control {
-  min-width: 7.5rem;
-  padding: 0.25rem 0.375rem;
 }
 
 .api-key-page-content h1,
@@ -2246,6 +2231,7 @@ input {
   grid-template-rows: auto auto auto;
   align-self: start;
   max-height: 100%;
+  border: 0;
   overflow: visible;
 }
 
@@ -2409,7 +2395,7 @@ input {
   align-self: start;
   gap: 8px;
   width: 100%;
-  max-height: calc(100vh - 360px);
+  max-height: clamp(10rem, calc(100svh - 360px), 32rem);
   border: 1px solid var(--app-border);
   border-radius: 8px;
   overflow-y: auto;
@@ -2786,7 +2772,7 @@ input {
   }
 
   .admin-users-list {
-    max-height: calc(100vh - 390px);
+    max-height: clamp(10rem, calc(100svh - 390px), 32rem);
   }
 
   .api-key-page-actions {
