@@ -7,6 +7,9 @@ services:
       - .env
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
+      AVATAR_UPLOAD_DIR: /app/uploads/avatars
+    volumes:
+      - avatar_uploads:/app/uploads/avatars
     depends_on:
       db:
         condition: service_healthy
@@ -99,6 +102,7 @@ services:
 volumes:
   postgres_data:
   analysis_data:
+  avatar_uploads:
 
 networks:
   transcendence:

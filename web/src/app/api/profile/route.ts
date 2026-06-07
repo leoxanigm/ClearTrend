@@ -1,24 +1,26 @@
 import { getCurrentUserProfile, readUserProfileById } from "@/lib/profile";
 import { getPrisma } from "@/lib/prisma";
 import {
+  AvatarImageError,
+  processAvatarImage,
+} from "@/lib/avatar-images";
+import {
+  deleteStoredAvatar,
+  ensureAvatarDirectory,
+  privateAvatarUrlPrefix,
+} from "@/lib/avatar-storage";
+import {
   avatarUploadRules,
   clampAvatarOffsetForScale,
   clampAvatarScale,
   validateDisplayName,
 } from "@/lib/profile-rules";
 import { randomUUID } from "crypto";
-import { mkdir, unlink, writeFile } from "fs/promises";
-import { basename, join, resolve } from "path";
+import { writeFile } from "fs/promises";
+import { join } from "path";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-
-const avatarUploadPath = "/uploads/avatars";
-const allowedAvatarTypes = new Map([
-  ["image/jpeg", "jpg"],
-  ["image/png", "png"],
-  ["image/webp", "webp"],
-]);
 
 type AvatarUpload = {
   mimeType: string;
@@ -42,67 +44,11 @@ function isFileEntry(value: FormDataEntryValue | null): value is File {
   return typeof File !== "undefined" && value instanceof File;
 }
 
-function hasValidImageSignature(mimeType: string, buffer: Buffer) {
-  if (mimeType === "image/jpeg") {
-    return (
-      buffer.length >= 3 &&
-      buffer[0] === 0xff &&
-      buffer[1] === 0xd8 &&
-      buffer[2] === 0xff
-    );
-  }
-
-  if (mimeType === "image/png") {
-    return (
-      buffer.length >= 8 &&
-      buffer[0] === 0x89 &&
-      buffer[1] === 0x50 &&
-      buffer[2] === 0x4e &&
-      buffer[3] === 0x47 &&
-      buffer[4] === 0x0d &&
-      buffer[5] === 0x0a &&
-      buffer[6] === 0x1a &&
-      buffer[7] === 0x0a
-    );
-  }
-
-  if (mimeType === "image/webp") {
-    return (
-      buffer.length >= 12 &&
-      buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
-      buffer.subarray(8, 12).toString("ascii") === "WEBP"
-    );
-  }
-
-  return false;
-}
-
-function getAvatarDirectory() {
-  return join(process.cwd(), "public", "uploads", "avatars");
-}
-
-async function deleteLocalAvatar(url: string | null) {
-  if (!url?.startsWith(`${avatarUploadPath}/`)) {
-    return;
-  }
-
-  const avatarDirectory = resolve(getAvatarDirectory());
-  const avatarPath = resolve(avatarDirectory, basename(url));
-
-  if (!avatarPath.startsWith(`${avatarDirectory}/`)) {
-    return;
-  }
-
-  await unlink(avatarPath).catch(() => null);
-}
-
 async function saveAvatar(
   file: File,
   userId: string
 ): Promise<AvatarUpload | { error: string }> {
-  const extension = allowedAvatarTypes.get(file.type);
-
-  if (!extension) {
+  if (!avatarUploadRules.allowedMimeTypes.includes(file.type)) {
     return {
       error: "Avatar must be a JPEG, PNG, or WebP image.",
     };
@@ -121,24 +67,31 @@ async function saveAvatar(
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+  let processedImage;
 
-  if (!hasValidImageSignature(file.type, buffer)) {
+  try {
+    processedImage = await processAvatarImage(buffer, file.type);
+  } catch (error) {
     return {
-      error: "Avatar file content does not match its image type.",
+      error: error instanceof AvatarImageError
+        ? error.message
+        : "Avatar image could not be processed.",
     };
   }
 
-  const avatarDirectory = getAvatarDirectory();
-  const fileName = `${userId}-${randomUUID()}.${extension}`;
+  const avatarDirectory = await ensureAvatarDirectory();
+  const fileName = `${userId}-${randomUUID()}.webp`;
   const filePath = join(avatarDirectory, fileName);
 
-  await mkdir(avatarDirectory, { recursive: true });
-  await writeFile(filePath, buffer, { flag: "wx" });
+  await writeFile(filePath, processedImage.buffer, {
+    flag: "wx",
+    mode: 0o600,
+  });
 
   return {
-    mimeType: file.type,
-    size: file.size,
-    url: `${avatarUploadPath}/${fileName}`,
+    mimeType: processedImage.mimeType,
+    size: processedImage.size,
+    url: `${privateAvatarUrlPrefix}${fileName}`,
   };
 }
 
@@ -233,7 +186,7 @@ export async function PATCH(req: Request) {
       WHERE id = ${profile.id}
     `;
   } catch {
-    await deleteLocalAvatar(uploadedAvatarUrl);
+    await deleteStoredAvatar(uploadedAvatarUrl);
 
     return jsonError("Profile could not be saved.", 500);
   }
@@ -242,7 +195,7 @@ export async function PATCH(req: Request) {
     (uploadedAvatarUrl || removeAvatar) &&
     profile.avatarUrl !== nextAvatarUrl
   ) {
-    await deleteLocalAvatar(profile.avatarUrl);
+    await deleteStoredAvatar(profile.avatarUrl);
   }
 
   const updatedProfile = await readUserProfileById(profile.id);

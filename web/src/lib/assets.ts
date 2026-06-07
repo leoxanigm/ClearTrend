@@ -114,6 +114,28 @@ export async function setUserFavoriteSymbol(
   return normalizeWatchlistSymbols(rows[0]?.favoriteSymbols ?? []);
 }
 
+export async function mergeUserFavoriteSymbols(
+  userId: string,
+  symbols: string[]
+) {
+  const currentSymbols = await getUserFavoriteSymbols(userId);
+  const favoriteSymbols = normalizeWatchlistSymbols([
+    ...currentSymbols,
+    ...symbols,
+  ]);
+  const prisma = getPrisma();
+  const rows = await prisma.$queryRaw<FavoriteSymbolsRow[]>`
+    UPDATE users
+    SET
+      "favoriteSymbols" = ${favoriteSymbols},
+      "updatedAt" = now()
+    WHERE id = ${userId}
+    RETURNING "favoriteSymbols"
+  `;
+
+  return normalizeWatchlistSymbols(rows[0]?.favoriteSymbols ?? []);
+}
+
 export async function getWatchlistAssets(
   symbols = defaultWatchlistSymbols,
   options: { loadSnapshots?: boolean } = {}

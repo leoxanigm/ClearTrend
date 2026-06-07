@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:avatar-images": "TEST_WEB_ROOT=/app node --no-warnings --experimental-strip-types /tests/scripts/test-avatar-images.mjs",
+    "test:avatar-upload": "TEST_WEB_ROOT=/app node /tests/scripts/test-avatar-upload.mjs",
+    "test:watchlist-file": "TEST_WEB_ROOT=/app node /tests/scripts/test-watchlist-file.mjs",
+    "test:chart-export": "TEST_WEB_ROOT=/app node --no-warnings --experimental-strip-types /tests/scripts/test-chart-export.mjs",
     "prisma:generate": "prisma generate",
     "db:push": "prisma db push --accept-data-loss",
     "db:studio": "prisma studio",
@@ -22,7 +26,8 @@
     "next-intl": "^4.11.2",
     "pg": "^8.20.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

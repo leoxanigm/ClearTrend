@@ -274,7 +274,7 @@ input {
 
 .profile-dialog {
     display: flex;
-    width: fit-content;
+    width: min(100%, 27rem);
     max-width: calc(100vw - 2rem);
     max-height: min(44rem, calc(100vh - 2rem));
     flex-direction: column;
@@ -356,8 +356,9 @@ input {
 
 .profile-dialog-body {
     display: grid;
-    width: max-content;
-    max-width: calc(100vw - 4rem);
+    width: 100%;
+    max-width: none;
+    align-self: center;
     gap: 1rem;
     overflow: auto;
     padding: 1rem;
@@ -481,6 +482,11 @@ input {
 .profile-avatar-actions .profile-inline-button {
     padding: 0.4rem 0.75rem;
     line-height: 1.15;
+}
+
+.profile-upload-progress {
+    width: min(100%, 12rem);
+    accent-color: var(--app-accent);
 }
 
 .profile-inline-button {
@@ -666,8 +672,45 @@ input {
 
 .profile-watchlist-actions {
     display: grid;
-    grid-template-columns: repeat(3, max-content);
+    grid-template-columns: repeat(2, max-content);
+    justify-content: center;
     gap: 0.5rem;
+}
+
+.profile-watchlist-preview {
+    display: grid;
+    gap: 0.625rem;
+    margin-top: 0.75rem;
+    border: 1px solid var(--app-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    background: var(--app-panel);
+    font-size: 0.8125rem;
+}
+
+.profile-watchlist-preview code {
+    max-width: 28rem;
+    overflow-wrap: anywhere;
+    color: var(--app-muted);
+}
+
+.profile-watchlist-note {
+    color: var(--app-muted);
+}
+
+.profile-watchlist-preview progress {
+    width: 100%;
+    accent-color: var(--app-accent);
+}
+
+.profile-watchlist-preview-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.profile-watchlist-preview-actions button {
+    width: auto;
 }
 
 .profile-dialog-footer {
@@ -1381,6 +1424,7 @@ input {
 
 .asset-chart-ranges {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.375rem;
     margin-top: 1rem;
 }
@@ -1401,6 +1445,82 @@ input {
     border-color: color-mix(in srgb, var(--app-accent) 42%, var(--app-border));
     background: color-mix(in srgb, var(--app-accent) 12%, transparent);
     color: var(--app-text);
+}
+
+.asset-chart-date-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.asset-chart-date-filters label {
+    display: grid;
+    gap: 0.25rem;
+    color: var(--app-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.asset-chart-date-filters input {
+    min-width: 9.5rem;
+    border: 1px solid var(--app-border);
+    border-radius: 0.375rem;
+    background: var(--app-background);
+    color: var(--app-text);
+    padding: 0.375rem 0.5rem;
+    outline: none;
+}
+
+.asset-chart-date-filters input:focus {
+    border-color: var(--app-accent);
+}
+
+.asset-chart-date-reset {
+    width: auto;
+    min-height: 2rem;
+    color: var(--app-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.asset-chart-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.asset-chart-toolbar .tab-list {
+    grid-template-columns: repeat(2, max-content);
+    background: transparent;
+    border: 1px solid var(--app-border);
+    padding: 0.1875rem;
+}
+
+.asset-chart-toolbar .tab-button {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.asset-chart-export-actions {
+    display: flex;
+    gap: 0.375rem;
+}
+
+.asset-chart-export-actions button {
+    width: auto;
+    padding: 0.375rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.asset-chart-export-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
 }
 
 .asset-chart-body {
@@ -1462,6 +1582,14 @@ input {
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 3;
+}
+
+.asset-chart-volume-bar {
+    fill: color-mix(in srgb, var(--app-secondary) 74%, var(--app-accent));
+}
+
+.asset-chart-volume-bar:hover {
+    fill: var(--app-secondary);
 }
 
 .asset-chart-hover {
@@ -1782,6 +1910,40 @@ input {
 
   .asset-chart {
     padding: 0.875rem;
+  }
+
+  .asset-chart-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .asset-chart-date-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .asset-chart-date-filters label,
+  .asset-chart-date-filters input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .asset-chart-date-reset {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .asset-chart-toolbar .tab-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .asset-chart-export-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .asset-chart-export-actions button {
+    width: 100%;
   }
 
   .asset-chart-body {

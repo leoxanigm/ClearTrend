@@ -630,6 +630,7 @@ export function DashboardClient({
           <AssetChart
             asset={selectedAsset}
             financeRefreshRateSeconds={financeRefreshRateSeconds}
+            key={selectedAsset?.symbol ?? "no-asset"}
             onAssetSnapshotChange={updateWatchlistSnapshot}
             onRangeChange={handleRangeChange}
             range={chartRange}
@@ -655,6 +656,7 @@ export function DashboardClient({
         <ProfileSettingsDialog
           onClose={() => setIsProfileDialogOpen(false)}
           onProfileSave={setProfile}
+          onWatchlistImport={() => void loadWatchlistSnapshots()}
           profile={profile}
         />
       ) : null}

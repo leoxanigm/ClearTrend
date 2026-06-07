@@ -35,17 +35,35 @@ import {
 } from "@/lib/profile-rules";
 import { useNotifications } from "@/components/ui/Notifications";
 import type { UserProfile } from "@/lib/profile-types";
+import {
+  validateWatchlistFile,
+  watchlistFileRules,
+} from "@/lib/watchlist-file";
 import { useTranslations } from "next-intl";
 
 type ProfileSettingsDialogProps = {
   onClose: () => void;
   onProfileSave: (profile: UserProfile) => void;
+  onWatchlistImport: () => void;
   profile: UserProfile;
 };
 
 type ProfileResponse = {
   error?: string;
   profile?: UserProfile;
+};
+
+type WatchlistImportResponse = {
+  error?: string;
+  ignoredSymbols?: string[];
+  importedSymbols?: string[];
+  invalidEntries?: number;
+};
+
+type WatchlistPreview = {
+  file: File;
+  invalidEntries: number;
+  symbols: string[];
 };
 
 type DragState = {
@@ -58,11 +76,7 @@ type DragState = {
   width: number;
 };
 
-const allowedAvatarMimeTypes = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
+const allowedAvatarMimeTypes = new Set(avatarUploadRules.allowedMimeTypes);
 
 function formatMegabytes(bytes: number) {
   return `${Math.round(bytes / 1024 / 1024)} MB`;
@@ -75,6 +89,7 @@ function hasNumberChanged(currentValue: number, nextValue: number) {
 export function ProfileSettingsDialog({
   onClose,
   onProfileSave,
+  onWatchlistImport,
   profile,
 }: ProfileSettingsDialogProps) {
   const t = useTranslations("profile");
@@ -82,7 +97,9 @@ export function ProfileSettingsDialog({
   const { notify } = useNotifications();
   const displayNameId = useId();
   const avatarInputId = useId();
+  const watchlistInputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const watchlistFileInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<DragState | null>(null);
   const localPreviewUrlRef = useRef<string | null>(null);
@@ -103,6 +120,15 @@ export function ProfileSettingsDialog({
   );
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
+  const [isWatchlistExporting, setIsWatchlistExporting] = useState(false);
+  const [isWatchlistImporting, setIsWatchlistImporting] = useState(false);
+  const [watchlistImportProgress, setWatchlistImportProgress] = useState(0);
+  const [watchlistPreview, setWatchlistPreview] =
+    useState<WatchlistPreview | null>(null);
+  const [watchlistError, setWatchlistError] = useState<string | null>(null);
+  const isDialogBusy =
+    isSaving || isWatchlistExporting || isWatchlistImporting;
   const previewAvatarUrl = removeAvatar
     ? null
     : localPreviewUrl ?? profile.avatarUrl;
@@ -164,7 +190,7 @@ export function ProfileSettingsDialog({
         return;
       }
 
-      if (event.key === "Escape" && !isSaving) {
+      if (event.key === "Escape" && !isDialogBusy) {
         onClose();
       }
     }
@@ -172,7 +198,7 @@ export function ProfileSettingsDialog({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isCropEditorOpen, isSaving, onClose]);
+  }, [isCropEditorOpen, isDialogBusy, onClose]);
 
   function resetCrop() {
     setAvatarOffsetX(0);
@@ -268,10 +294,165 @@ export function ProfileSettingsDialog({
     resetCrop();
   }
 
+  async function handleWatchlistFileChange(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (
+      file.type !== "application/json" ||
+      !file.name.toLowerCase().endsWith(".json")
+    ) {
+      setWatchlistPreview(null);
+      setWatchlistError(t("watchlistFile.errors.type"));
+      return;
+    }
+
+    if (file.size <= 0 || file.size > watchlistFileRules.maxSize) {
+      setWatchlistPreview(null);
+      setWatchlistError(t("watchlistFile.errors.size"));
+      return;
+    }
+
+    const payload = await file.text()
+      .then((text) => JSON.parse(text) as unknown)
+      .catch(() => null);
+
+    if (payload === null) {
+      setWatchlistPreview(null);
+      setWatchlistError(t("watchlistFile.errors.invalidJson"));
+      return;
+    }
+
+    const validation = validateWatchlistFile(payload);
+
+    if (validation.error) {
+      setWatchlistPreview(null);
+      setWatchlistError(t("watchlistFile.errors.format"));
+      return;
+    }
+
+    setWatchlistError(null);
+    setWatchlistPreview({
+      file,
+      invalidEntries: validation.invalidEntries,
+      symbols: validation.symbols,
+    });
+  }
+
+  async function handleWatchlistExport() {
+    setWatchlistError(null);
+    setIsWatchlistExporting(true);
+
+    try {
+      const response = await fetch("/api/assets/watchlist/file", {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("Watchlist export failed");
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const disposition = response.headers.get("content-disposition") ?? "";
+      const fileName = disposition.match(/filename="([^"]+)"/)?.[1] ??
+        "cleartrend-watchlist.json";
+
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+      notify({
+        title: t("watchlistFile.exported"),
+        tone: "success",
+      });
+    } catch {
+      setWatchlistError(t("watchlistFile.errors.export"));
+    } finally {
+      setIsWatchlistExporting(false);
+    }
+  }
+
+  async function handleWatchlistImport() {
+    if (!watchlistPreview) {
+      return;
+    }
+
+    setWatchlistError(null);
+    setWatchlistImportProgress(0);
+    setIsWatchlistImporting(true);
+
+    const formData = new FormData();
+    formData.set("watchlist", watchlistPreview.file);
+
+    try {
+      const result = await new Promise<{
+        body: WatchlistImportResponse | null;
+        status: number;
+      }>((resolve, reject) => {
+        const request = new XMLHttpRequest();
+
+        request.open("POST", "/api/assets/watchlist/file");
+        request.responseType = "json";
+        request.upload.addEventListener("progress", (event) => {
+          if (event.lengthComputable) {
+            setWatchlistImportProgress(
+              Math.round((event.loaded / event.total) * 100)
+            );
+          }
+        });
+        request.addEventListener("load", () => {
+          resolve({
+            body: request.response as WatchlistImportResponse | null,
+            status: request.status,
+          });
+        });
+        request.addEventListener("error", () => reject(new Error("Upload failed")));
+        request.send(formData);
+      });
+
+      if (result.status < 200 || result.status >= 300) {
+        throw new Error(result.body?.error ?? "Watchlist import failed");
+      }
+
+      const importedCount = result.body?.importedSymbols?.length ?? 0;
+      const ignoredCount =
+        (result.body?.ignoredSymbols?.length ?? 0) +
+        (result.body?.invalidEntries ?? 0);
+
+      setWatchlistImportProgress(100);
+      setWatchlistPreview(null);
+      onWatchlistImport();
+      notify({
+        body: ignoredCount > 0
+          ? t("watchlistFile.importResultWithIgnored", {
+              ignored: ignoredCount,
+              imported: importedCount,
+            })
+          : t("watchlistFile.importResult", { imported: importedCount }),
+        title: t("watchlistFile.imported"),
+        tone: "success",
+      });
+    } catch {
+      setWatchlistError(t("watchlistFile.errors.import"));
+    } finally {
+      setIsWatchlistImporting(false);
+    }
+  }
+
   function handleBackdropPointerDown(
     event: ReactPointerEvent<HTMLDivElement>
   ) {
-    if (event.target === event.currentTarget && !isSaving) {
+    if (event.target === event.currentTarget && !isDialogBusy) {
       onClose();
     }
   }
@@ -392,17 +573,42 @@ export function ProfileSettingsDialog({
 
     setError(null);
     setIsSaving(true);
+    setAvatarUploadProgress(0);
 
     try {
-      const response = await fetch("/api/profile", {
-        body: formData,
-        method: "PATCH",
-      });
-      const body = (await response.json().catch(() => null)) as
-        | ProfileResponse
-        | null;
+      const result = await new Promise<{
+        body: ProfileResponse | null;
+        status: number;
+      }>((resolve, reject) => {
+        const request = new XMLHttpRequest();
 
-      if (!response.ok || !body?.profile) {
+        request.open("PATCH", "/api/profile");
+        request.responseType = "json";
+
+        if (selectedFile) {
+          request.upload.addEventListener("progress", (uploadEvent) => {
+            if (uploadEvent.lengthComputable) {
+              setAvatarUploadProgress(
+                Math.round((uploadEvent.loaded / uploadEvent.total) * 100)
+              );
+            }
+          });
+        }
+
+        request.addEventListener("load", () => {
+          resolve({
+            body: request.response as ProfileResponse | null,
+            status: request.status,
+          });
+        });
+        request.addEventListener("error", () =>
+          reject(new Error("Profile upload failed"))
+        );
+        request.send(formData);
+      });
+      const body = result.body;
+
+      if (result.status < 200 || result.status >= 300 || !body?.profile) {
         const message = translateProfileError(body?.error);
 
         setError(message);
@@ -415,6 +621,7 @@ export function ProfileSettingsDialog({
       }
 
       onProfileSave(body.profile);
+      setAvatarUploadProgress(100);
       notify({
         title: "Profile updated",
         tone: "success",
@@ -465,6 +672,14 @@ export function ProfileSettingsDialog({
       "Avatar must be a JPEG, PNG, or WebP image.": t("errors.imageType"),
       "Avatar file content does not match its image type.": t("errors.imageType"),
       "Avatar file is empty.": t("errors.imageType"),
+      "Animated avatars are not supported.": t("errors.animatedImage"),
+      "Avatar dimensions exceed the safe processing limit.": t(
+        "errors.dimensionsTooLarge"
+      ),
+      "Avatar dimensions must be at least 64 by 64 pixels.": t(
+        "errors.dimensionsTooSmall"
+      ),
+      "Avatar image could not be processed.": t("errors.imageInvalid"),
       "Invalid display name.": t("errors.displayNameInvalid"),
       "Profile could not be saved.": t("errors.profileSave"),
     };
@@ -491,7 +706,7 @@ export function ProfileSettingsDialog({
 
           <IconButton
             className="profile-dialog-close"
-            disabled={isSaving}
+            disabled={isDialogBusy}
             label={t("aria.closeSettings")}
             onClick={onClose}
           >
@@ -517,6 +732,7 @@ export function ProfileSettingsDialog({
                 </button>
                 <IconButton
                   className="profile-avatar-upload-button"
+                  disabled={isDialogBusy}
                   label={t("aria.chooseImage")}
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -527,7 +743,9 @@ export function ProfileSettingsDialog({
               <div className="profile-avatar-actions">
                 <Button
                   className="profile-inline-button"
-                  disabled={!hasAvatar && !profile.avatarUrl}
+                  disabled={
+                    isDialogBusy || (!hasAvatar && !profile.avatarUrl)
+                  }
                   onClick={handleRemoveAvatar}
                   variant="outline"
                 >
@@ -542,6 +760,14 @@ export function ProfileSettingsDialog({
                   type="file"
                 />
               </div>
+              {isSaving && selectedFile ? (
+                <progress
+                  aria-label={t("avatarUploadProgress")}
+                  className="profile-upload-progress"
+                  max="100"
+                  value={avatarUploadProgress}
+                />
+              ) : null}
             </div>
           </section>
 
@@ -561,26 +787,82 @@ export function ProfileSettingsDialog({
             <div className="profile-watchlist-actions">
               <Button
                 className="profile-inline-button"
-                disabled
+                disabled={isWatchlistExporting || isWatchlistImporting}
+                onClick={() => void handleWatchlistExport()}
                 variant="outline"
               >
-                {t("buttons.downloadWatchlist")}
+                {isWatchlistExporting
+                  ? t("watchlistFile.exporting")
+                  : t("buttons.downloadWatchlist")}
               </Button>
               <Button
                 className="profile-inline-button"
-                disabled
-                variant="outline"
-              >
-                {t("buttons.uploadWatchlist")}
-              </Button>
-              <Button
-                className="profile-inline-button"
-                disabled
+                disabled={isWatchlistImporting}
+                onClick={() => watchlistFileInputRef.current?.click()}
                 variant="outline"
               >
                 {t("buttons.importWatchlist")}
               </Button>
+              <input
+                accept={watchlistFileRules.accept}
+                className="profile-file-input"
+                id={watchlistInputId}
+                onChange={(event) => void handleWatchlistFileChange(event)}
+                ref={watchlistFileInputRef}
+                type="file"
+              />
             </div>
+
+            {watchlistPreview ? (
+              <div className="profile-watchlist-preview">
+                <p>
+                  {t("watchlistFile.preview", {
+                    count: watchlistPreview.symbols.length,
+                  })}
+                </p>
+                <code>
+                  {watchlistPreview.symbols.slice(0, 12).join(", ")}
+                  {watchlistPreview.symbols.length > 12 ? ", ..." : ""}
+                </code>
+                {watchlistPreview.invalidEntries > 0 ? (
+                  <p className="profile-watchlist-note">
+                    {t("watchlistFile.invalidEntries", {
+                      count: watchlistPreview.invalidEntries,
+                    })}
+                  </p>
+                ) : null}
+                {isWatchlistImporting ? (
+                  <progress
+                    aria-label={t("watchlistFile.progress")}
+                    max="100"
+                    value={watchlistImportProgress}
+                  />
+                ) : null}
+                <div className="profile-watchlist-preview-actions">
+                  <Button
+                    disabled={isWatchlistImporting}
+                    onClick={() => setWatchlistPreview(null)}
+                    variant="outline"
+                  >
+                    {commonT("cancel")}
+                  </Button>
+                  <Button
+                    disabled={isWatchlistImporting}
+                    onClick={() => void handleWatchlistImport()}
+                  >
+                    {isWatchlistImporting
+                      ? t("watchlistFile.importing")
+                      : t("watchlistFile.confirmImport")}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {watchlistError ? (
+              <p className="form-message form-message-error">
+                {watchlistError}
+              </p>
+            ) : null}
           </section>
 
           {error ? (
@@ -591,7 +873,7 @@ export function ProfileSettingsDialog({
         <footer className="profile-dialog-footer">
           <Button
             className="profile-footer-button"
-            disabled={isSaving}
+            disabled={isDialogBusy}
             onClick={onClose}
             variant="outline"
           >
@@ -599,7 +881,7 @@ export function ProfileSettingsDialog({
           </Button>
           <Button
             className="profile-footer-button"
-            disabled={isSaving}
+            disabled={isDialogBusy}
             type="submit"
           >
             {isSaving ? commonT("saving") : commonT("saveChanges")}

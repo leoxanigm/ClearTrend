@@ -1,4 +1,4 @@
-.PHONY: dev up down logs ps health db-push db-shell db-studio reset-db backup restore restore-check clean fclean certs dev-info up-info
+.PHONY: dev up down logs ps health db-push db-shell db-studio reset-db backup restore restore-check test-file-upload clean fclean certs dev-info up-info
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
@@ -69,6 +69,14 @@ restore-check:
 	@test -n "$(file)" || (echo "Usage: make restore-check file=backups/name.sql" && exit 1)
 	@test -f "$(file)" || (echo "Backup file not found: $(file)" && exit 1)
 	$(COMPOSE) run --rm --no-deps backup /scripts/restore-check.sh "/backups/$(notdir $(file))"
+
+test-file-upload:
+	$(COMPOSE_DEV) exec -T web npm run test:avatar-images
+	$(COMPOSE_DEV) exec -T web npm run test:avatar-upload
+	$(COMPOSE_DEV) exec -T web npm run test:watchlist-file
+
+test-analytics-dashboard:
+	$(COMPOSE_DEV) exec -T web npm run test:chart-export
 
 certs:
 	@if [ ! -f nginx/certs/server.crt ]; then \

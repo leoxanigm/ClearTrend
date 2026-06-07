@@ -99,7 +99,7 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 |---|---:|---|---:|---|
 | Frontend and Backend Frameworks | Major | Valid | 2 | elhirond, amoureau, mathboye |
 | Backend Microservices | Major | Valid | 2 | elhirond, mathboye, amoureau |
-| Advanced Analytics Dashboard with Data Visualization | Major | In progress, not validated | 0 | elhirond, mathboye |
+| Advanced Analytics Dashboard with Data Visualization | Major | Valid | 2 | elhirond, mathboye |
 | Real-time WebSocket/SSE | Major | Not implemented | 0 | |
 | Recommendation ML | Major | Not implemented in this branch | 0 | |
 | Secure Public API | Major | Partial, not validated | 0 | zalemu |
@@ -112,11 +112,8 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 | OAuth 2.0 | Minor | Valid | 1 | amoureau |
 | Notifications CRUD | Minor | Not implemented | 0 | amoureau |
 | 3 Languages | Minor | Valid | 1 | elhirond |
-| File Upload Management | Minor | Valid if scoped to avatar upload | 1 conditional | elhirond |
-| **Total defendable now** |  |  | **10 + 1 conditional** | |
-
-File Upload Management should count only if it is presented as avatar upload
-management, not as generic CSV/JSON import.
+| File Upload Management | Minor | Valid | 1 | elhirond |
+| **Total defendable now** |  |  | **13** | |
 
 Participants are inferred from non-merge commits with a functional link to the
 module, not every incidental file touch. Aliases are normalized: `leoxanigm` is
@@ -150,25 +147,22 @@ Docker Compose runs `web`, `analysis`, `db`, and `proxy` as separate services wi
 
 ### Major - Advanced Analytics Dashboard with Data Visualization
 
-Status: in progress, not fully validated yet.
+Status: valid.
 
-The dashboard already provides an interactive financial view connected to the analysis backend. Users can select assets, switch chart ranges, inspect price points on hover, track watchlist performance by period, and see loading/error states when market data is unavailable.
+The dashboard provides interactive market visualizations connected to the FastAPI analysis service.
 
-Current progress:
+Proofs:
 
-- Interactive SVG price chart with hover tooltip, axes, volume, provider, interval, and last update metadata.
-- Market ranges: `1D`, `1W`, `1M`, `3M`, `1Y`.
-- Watchlist performance range selector connected to `/api/assets/performance`.
-- Client refresh logic connected to the analysis service cache and visibility changes.
+- SVG line chart for prices and bar chart for traded volumes.
+- Interactive hover details, axes, provider, interval, point count, and last update metadata.
+- Asset filter, ranges `1D` to `1Y`, and custom start/end filtering inside the loaded period.
+- Automatic refresh from the analysis cache, including refresh when the browser tab becomes visible again.
+- CSV and JSON export for the selected asset and range, including OHLCV candles and candle variation.
+- Loading, unavailable-data, and missing-volume states.
 
-Still missing before validation:
+The Trend and Sentiment tiles are placeholders reserved for the future ML module. They are not used as proof for this analytics module.
 
-- CSV/JSON export for chart or dashboard data.
-- Real sentiment timeline and trend score connected to analysis data.
-- More advanced filters beyond asset and range selection.
-- Manual validation with complete demo data and expected empty/error states.
-
-Advanced search is tracked separately and still needs backend/data validation before it can be considered finished.
+Detailed operation and tests: `docs/modules/advanced_analytics_dashboard.md`.
 
 ### Major - Real-time WebSocket/SSE
 
@@ -477,29 +471,29 @@ Validation:
 
 ### Minor - File Upload Management
 
-Status: implemented for avatar upload. This is likely valid if the module is
-claimed with user avatar management as its scope.
+Status: implemented and validated.
 
-The profile dialog lets users upload, preview, crop, save, and remove an avatar.
-The backend receives the profile update as `multipart/form-data` and stores the
-uploaded file plus metadata on the user profile.
+ClearTrend supports two controlled file workflows: private avatar images and
+versioned JSON watchlist import/export.
 
-Proofs:
+Detailed module documentation:
+[File Upload Management](docs/modules/file_upload_management.md).
 
-- Supported formats: JPEG, PNG, and WebP.
-- Maximum size: 5 MB.
-- Client-side checks reject unsupported formats and oversized files before
-  upload.
-- Server-side checks validate the MIME type, file size, empty files, and image
-  file signatures.
-- Uploaded files use generated names and are stored under
-  `/uploads/avatars`.
-- Replacing or deleting an avatar removes the previous local file.
-- Account deletion also removes the user's local avatar.
+Proof:
 
-Important limit: this does not validate generic CSV/JSON import. The watchlist
-download/upload/import buttons are present in the profile dialog but disabled,
-so this module should be presented specifically as avatar upload management.
+- JPEG, PNG, and WebP avatars are validated on both client and server.
+- Sharp decodes, rotates, resizes, strips metadata, and converts images to WebP.
+- Avatar upload keeps the manual zoom and position editor.
+- New avatars are stored outside `public/` in a persistent Docker volume and
+  served only to their authenticated owner.
+- Upload progress, preview, replacement, removal, and account cleanup are
+  implemented.
+- Favorite symbols can be exported to a versioned JSON file.
+- JSON import validates MIME, extension, size, structure, version, symbols, and
+  known analysis tickers before merging favorites.
+- The UI previews imported symbols and displays upload progress.
+- `make test-file-upload` runs the image pipeline, authenticated avatar API, and
+  watchlist JSON integration tests.
 
 
 # Individual Contributions

@@ -10,12 +10,18 @@ import {
 } from "react";
 import type { WatchlistAsset } from "@/lib/assets";
 import { Button } from "@/components/ui/Button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
   chartRanges,
   type ChartCandle,
   type ChartRange,
 } from "@/lib/analysis-data";
+import {
+  createChartCsvExport,
+  createChartExportFileName,
+  createChartJsonExport,
+} from "@/lib/chart-analytics";
 import { useLocale, useTranslations } from "next-intl";
 
 type AssetChartProps = {
@@ -65,6 +71,8 @@ type ChartPoint = {
   x: number;
   y: number;
 };
+
+type ChartVisualization = "price" | "volume";
 
 const desktopChartSize: ChartSize = {
   height: 400,
@@ -224,6 +232,36 @@ function getSystemTimeZone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
+function formatDateControlValue(timestamp: number, includeTime: boolean) {
+  const date = new Date(timestamp);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const dateValue = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )}`;
+
+  return includeTime
+    ? `${dateValue}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+    : dateValue;
+}
+
+function parseDateControlValue(
+  value: string,
+  includeTime: boolean,
+  endOfRange: boolean
+) {
+  if (!value) {
+    return null;
+  }
+
+  const timestamp = Date.parse(
+    includeTime
+      ? value
+      : `${value}T${endOfRange ? "23:59:59.999" : "00:00:00"}`
+  );
+
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
 function formatAxisTime(timestamp: number, locale: string) {
   return new Intl.DateTimeFormat(locale, {
     hour: "2-digit",
@@ -299,19 +337,25 @@ function buildChartData(
   candles: ChartCandle[],
   range: ChartRange,
   chartSize: ChartSize,
-  locale: string
+  locale: string,
+  visualization: ChartVisualization
 ) {
   if (candles.length === 0) {
     return {
       areaPath: "",
+      hasVolume: false,
       linePath: "",
       points: [],
+      volumeBars: [],
       xTicks: [],
       yTicks: [],
     };
   }
 
   const closes = candles.map((candle) => candle.close);
+  const volumes = candles.map((candle) => Math.max(candle.volume ?? 0, 0));
+  const hasVolume = volumes.some((volume) => volume > 0);
+  const isVolumeChart = visualization === "volume";
   const minClose = Math.min(...closes);
   const maxClose = Math.max(...closes);
   const valuePadding = Math.max(
@@ -319,8 +363,10 @@ function buildChartData(
     maxClose * 0.002,
     1
   );
-  const minValue = minClose - valuePadding;
-  const maxValue = maxClose + valuePadding;
+  const minValue = isVolumeChart ? 0 : minClose - valuePadding;
+  const maxValue = isVolumeChart
+    ? Math.max(...volumes, 1) * 1.05
+    : maxClose + valuePadding;
   const { height, padding, width } = chartSize;
   const usableWidth = width - padding.left - padding.right;
   const usableHeight = height - padding.top - padding.bottom;
@@ -361,7 +407,9 @@ function buildChartData(
 
   const chartPoints = candles.map((candle, index) => {
     const x = getX(index);
-    const y = getY(candle.close);
+    const y = getY(
+      isVolumeChart ? Math.max(candle.volume ?? 0, 0) : candle.close
+    );
 
     return {
       candle,
@@ -386,11 +434,24 @@ function buildChartData(
     lastPoint.split(",")[0]
   },${chartBottom} L ${firstPoint.split(",")[0]},${chartBottom} Z`;
   const yTickValues = [maxValue, (maxValue + minValue) / 2, minValue];
+  const volumeBarWidth = Math.max(
+    1,
+    Math.min(18, (usableWidth / Math.max(candles.length, 1)) * 0.72)
+  );
 
   return {
-    areaPath,
-    linePath,
+    areaPath: isVolumeChart ? "" : areaPath,
+    hasVolume,
+    linePath: isVolumeChart ? "" : linePath,
     points: chartPoints,
+    volumeBars: isVolumeChart
+      ? chartPoints.map((point) => ({
+          height: Math.max(chartBottom - point.y, 0),
+          width: volumeBarWidth,
+          x: point.x - volumeBarWidth / 2,
+          y: point.y,
+        }))
+      : [],
     xTicks: isFixedOneDayWindow
       ? [xMin, xMin + xDomain / 2, xMax].map((timestamp, tickIndex) => {
           const isFirstTick = tickIndex === 0;
@@ -423,7 +484,9 @@ function buildChartData(
           };
         }),
     yTicks: yTickValues.map((value) => ({
-      label: formatAxisPrice(value, locale),
+      label: isVolumeChart
+        ? formatVolume(value, locale, "0")
+        : formatAxisPrice(value, locale),
       value,
       y: getY(value),
     })),
@@ -448,6 +511,10 @@ export function AssetChart({
   const [source, setSource] = useState<string | null>(null);
   const [interval, setInterval] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [visualization, setVisualization] =
+    useState<ChartVisualization>("price");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const updatedAtRef = useRef<string | null>(null);
@@ -627,13 +694,53 @@ export function AssetChart({
     };
   }, [applyChartResponse, asset?.symbol, chartPollIntervalMs, range]);
 
+  const dateControlIncludesTime = range === "1D" || range === "1W";
+  const minimumDateValue =
+    candles.length > 0
+      ? formatDateControlValue(
+          candles[0].timestamp,
+          dateControlIncludesTime
+        )
+      : "";
+  const maximumDateValue =
+    candles.length > 0
+      ? formatDateControlValue(
+          candles.at(-1)?.timestamp ?? candles[0].timestamp,
+          dateControlIncludesTime
+        )
+      : "";
+  const visibleCandles = useMemo(() => {
+    const fromTimestamp = parseDateControlValue(
+      dateFrom,
+      dateControlIncludesTime,
+      false
+    );
+    const toTimestamp = parseDateControlValue(
+      dateTo,
+      dateControlIncludesTime,
+      true
+    );
+
+    return candles.filter(
+      (candle) =>
+        (fromTimestamp === null || candle.timestamp >= fromTimestamp) &&
+        (toTimestamp === null || candle.timestamp <= toTimestamp)
+    );
+  }, [candles, dateControlIncludesTime, dateFrom, dateTo]);
   const chartSize = isCompactChart ? compactChartSize : desktopChartSize;
   const chartData = useMemo(
-    () => buildChartData(candles, range, chartSize, locale),
-    [candles, chartSize, locale, range]
+    () =>
+      buildChartData(
+        visibleCandles,
+        range,
+        chartSize,
+        locale,
+        visualization
+      ),
+    [chartSize, locale, range, visibleCandles, visualization]
   );
-  const firstCandle = candles[0] ?? null;
-  const lastCandle = candles[candles.length - 1] ?? null;
+  const firstCandle = visibleCandles[0] ?? null;
+  const lastCandle = visibleCandles.at(-1) ?? null;
   const intradayDayChangePercent =
     range === "1D" ? dayChangePercent : null;
   const rangeChangePercent =
@@ -662,6 +769,40 @@ export function AssetChart({
         )
       )
     : 0;
+
+  function downloadChartData(format: "csv" | "json") {
+    if (!asset || visibleCandles.length === 0) {
+      return;
+    }
+
+    const context = {
+      candles: visibleCandles,
+      interval,
+      range,
+      source,
+      symbol: asset.symbol,
+      updatedAt,
+    };
+    const content =
+      format === "csv"
+        ? createChartCsvExport(context)
+        : createChartJsonExport(context);
+    const blob = new Blob([content], {
+      type:
+        format === "csv"
+          ? "text/csv;charset=utf-8"
+          : "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = createChartExportFileName(asset.symbol, range, format);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 
   function handleChartMouseMove(event: MouseEvent<SVGSVGElement>) {
     if (isCompactChart || chartData.points.length === 0) {
@@ -709,7 +850,11 @@ export function AssetChart({
             aria-pressed={range === option}
             className="asset-chart-range"
             key={option}
-            onClick={() => onRangeChange(option)}
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+              onRangeChange(option);
+            }}
             variant="plain"
           >
             {option}
@@ -717,16 +862,125 @@ export function AssetChart({
         ))}
       </div>
 
+      <div className="asset-chart-date-filters">
+        <label>
+          <span>{t("dateFrom")}</span>
+          <input
+            max={dateTo || maximumDateValue}
+            min={minimumDateValue}
+            onChange={(event) => {
+              setDateFrom(event.target.value);
+              setHoveredPoint(null);
+            }}
+            type={dateControlIncludesTime ? "datetime-local" : "date"}
+            value={dateFrom}
+          />
+        </label>
+        <label>
+          <span>{t("dateTo")}</span>
+          <input
+            max={maximumDateValue}
+            min={dateFrom || minimumDateValue}
+            onChange={(event) => {
+              setDateTo(event.target.value);
+              setHoveredPoint(null);
+            }}
+            type={dateControlIncludesTime ? "datetime-local" : "date"}
+            value={dateTo}
+          />
+        </label>
+        {dateFrom || dateTo ? (
+          <Button
+            className="asset-chart-date-reset"
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+              setHoveredPoint(null);
+            }}
+            variant="plain"
+          >
+            {t("resetDates")}
+          </Button>
+        ) : null}
+      </div>
+
+      <div className="asset-chart-toolbar">
+        <div aria-label={t("visualizationLabel")}>
+          <SegmentedControl
+            onChange={(nextVisualization) => {
+              setVisualization(nextVisualization);
+              setHoveredPoint(null);
+            }}
+            options={[
+              {
+                label: t("visualizations.price"),
+                value: "price",
+              },
+              {
+                label: t("visualizations.volume"),
+                value: "volume",
+              },
+            ]}
+            value={visualization}
+          />
+        </div>
+
+        <div
+          aria-label={t("exportLabel")}
+          className="asset-chart-export-actions"
+        >
+          <Button
+            disabled={
+              isLoading || Boolean(error) || visibleCandles.length === 0
+            }
+            onClick={() => downloadChartData("csv")}
+            variant="outline"
+          >
+            {t("exportCsv")}
+          </Button>
+          <Button
+            disabled={
+              isLoading || Boolean(error) || visibleCandles.length === 0
+            }
+            onClick={() => downloadChartData("json")}
+            variant="outline"
+          >
+            {t("exportJson")}
+          </Button>
+        </div>
+      </div>
+
       <div className="asset-chart-body">
         {isLoading && <div className="chart-state">{t("loading")}</div>}
 
         {!isLoading && error && <div className="chart-state">{error}</div>}
 
-        {!isLoading && !error && candles.length > 0 && (
+        {!isLoading &&
+          !error &&
+          candles.length > 0 &&
+          visibleCandles.length === 0 && (
+            <div className="chart-state">{t("noFilteredData")}</div>
+          )}
+
+        {!isLoading &&
+          !error &&
+          visualization === "volume" &&
+          visibleCandles.length > 0 &&
+          !chartData.hasVolume && (
+            <div className="chart-state">{t("volumeUnavailable")}</div>
+          )}
+
+        {!isLoading &&
+          !error &&
+          visibleCandles.length > 0 &&
+          (visualization === "price" || chartData.hasVolume) && (
           <svg
-            aria-label={t("priceChart", {
+            aria-label={t(
+              visualization === "price" ? "priceChart" : "volumeChart",
+              {
               symbol: asset?.symbol ?? t("titleFallback"),
-            })}
+              }
+            )}
             className="asset-chart-svg"
             onMouseLeave={() => setHoveredPoint(null)}
             onMouseMove={handleChartMouseMove}
@@ -789,8 +1043,24 @@ export function AssetChart({
                 {tick.label}
               </text>
             ))}
-            <path className="asset-chart-area" d={chartData.areaPath} />
-            <path className="asset-chart-line" d={chartData.linePath} />
+            {visualization === "price" ? (
+              <>
+                <path className="asset-chart-area" d={chartData.areaPath} />
+                <path className="asset-chart-line" d={chartData.linePath} />
+              </>
+            ) : (
+              chartData.volumeBars.map((bar, index) => (
+                <rect
+                  className="asset-chart-volume-bar"
+                  height={bar.height}
+                  key={`${chartData.points[index].candle.timestamp}-${index}`}
+                  rx="1"
+                  width={bar.width}
+                  x={bar.x}
+                  y={bar.y}
+                />
+              ))
+            )}
             {!isCompactChart && hoveredPoint && (
               <g className="asset-chart-hover">
                 <line
@@ -821,12 +1091,18 @@ export function AssetChart({
                     width={tooltipWidth}
                   />
                   <text className="asset-chart-tooltip-value" x="10" y="19">
-                    {formatPrice(
-                      hoveredPoint.candle.close,
-                      currency,
-                      locale,
-                      commonT("na")
-                    )}
+                    {visualization === "price"
+                      ? formatPrice(
+                          hoveredPoint.candle.close,
+                          currency,
+                          locale,
+                          commonT("na")
+                        )
+                      : formatVolume(
+                          hoveredPoint.candle.volume,
+                          locale,
+                          commonT("na")
+                        )}
                   </text>
                   <text className="asset-chart-tooltip-date" x="10" y="36">
                     {hoveredPoint.tooltipDateLabel}
@@ -840,7 +1116,7 @@ export function AssetChart({
 
       <footer className="asset-chart-footer">
         <ChartFooterMetric
-          label={t("points", { count: candles.length })}
+          label={t("points", { count: visibleCandles.length })}
           tooltip={t("tooltips.points")}
         />
         <ChartFooterMetric

@@ -111,12 +111,19 @@
     "unfavoriteAsset": "Quitar {symbol} de favoritos"
   },
   "chart": {
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
+    "exportCsv": "Exportar CSV",
+    "exportJson": "Exportar JSON",
+    "exportLabel": "Formatos de exportación del gráfico",
     "loading": "Cargando gráfico...",
     "noAsset": "Ningún asset seleccionado",
+    "noFilteredData": "No hay datos en este periodo",
     "points": "{count} puntos",
     "priceChart": "Gráfico de precio de {symbol}",
     "providerFallback": "Análisis",
     "rangeLabel": "Rango del gráfico",
+    "resetDates": "Restablecer",
     "titleFallback": "Gráfico",
     "tooltips": {
       "interval": "Granularidad entre dos velas del gráfico.",
@@ -127,7 +134,14 @@
     },
     "updated": "Actualizado {value}",
     "unavailable": "Gráfico no disponible",
-    "volume": "Volumen {value}"
+    "visualizationLabel": "Tipo de visualización",
+    "visualizations": {
+      "price": "Precio",
+      "volume": "Volumen"
+    },
+    "volume": "Volumen {value}",
+    "volumeChart": "Gráfico de volumen de {symbol}",
+    "volumeUnavailable": "Datos de volumen no disponibles"
   },
   "profile": {
     "aria": {
@@ -140,26 +154,50 @@
       "zoomIn": "Acercar",
       "zoomOut": "Alejar"
     },
+    "avatarUploadProgress": "Progreso de subida de la imagen de perfil",
     "buttons": {
-      "downloadWatchlist": "Descargar CSV/JSON",
-      "importWatchlist": "Importar CSV/JSON",
-      "remove": "Eliminar",
-      "uploadWatchlist": "Subir CSV/JSON"
+      "downloadWatchlist": "Exportar JSON",
+      "importWatchlist": "Importar JSON",
+      "remove": "Eliminar"
     },
     "displayName": "Nombre visible",
     "editPhoto": "Editar foto",
     "errors": {
+      "animatedImage": "Las imágenes de perfil animadas no son compatibles.",
+      "dimensionsTooLarge": "Las dimensiones de la imagen son demasiado grandes para procesarlas con seguridad.",
+      "dimensionsTooSmall": "Elige una imagen de al menos 64 por 64 píxeles.",
       "displayNameInvalid": "Nombre visible inválido.",
       "displayNameLetters": "El nombre visible debe incluir al menos una letra o un número.",
       "displayNameMax": "El nombre visible debe tener 32 caracteres o menos.",
       "displayNameMin": "El nombre visible debe tener al menos 3 caracteres.",
       "displayNameUnsupported": "El nombre visible contiene caracteres no soportados.",
+      "imageInvalid": "No se pudo procesar la imagen seleccionada.",
       "imageType": "Elige una imagen JPEG, PNG o WebP.",
       "profileSave": "No se pudo guardar el perfil.",
       "tooLarge": "El avatar debe pesar {size} o menos."
     },
     "title": "Ajustes del perfil",
-    "watchlist": "Watchlist"
+    "watchlist": "Watchlist",
+    "watchlistFile": {
+      "confirmImport": "Añadir a favoritos",
+      "exported": "Watchlist exportada",
+      "exporting": "Exportando...",
+      "imported": "Watchlist importada",
+      "importing": "Subiendo...",
+      "importResult": "{imported} símbolos añadidos a favoritos.",
+      "importResultWithIgnored": "{imported} símbolos añadidos, {ignored} ignorados.",
+      "invalidEntries": "{count, plural, =1 {Se ignorará # entrada no válida.} other {Se ignorarán # entradas no válidas.}}",
+      "preview": "{count, plural, =1 {# símbolo listo para importar} other {# símbolos listos para importar}}",
+      "progress": "Progreso de subida de la watchlist",
+      "errors": {
+        "export": "No se pudo exportar la watchlist.",
+        "format": "Este archivo no es un formato de watchlist ClearTrend compatible.",
+        "import": "No se pudo importar la watchlist.",
+        "invalidJson": "El archivo seleccionado no contiene JSON válido.",
+        "size": "El archivo JSON debe tener entre 1 byte y 64 KB.",
+        "type": "Elige un archivo JSON."
+      }
+    }
   },
   "searchPage": {
     "labels": {

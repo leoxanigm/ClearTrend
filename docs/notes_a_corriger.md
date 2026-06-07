@@ -13,12 +13,10 @@ grandeur en difficulte et en lignes code/docs/tests, pas un chiffrage exact.
 | Watchlist chargee en entier | Ajouter chargement progressif, priorite au symbole selectionne, cache ou pagination. |
 | Recommendation ML | Ajouter tracking `UserEvent`, endpoint FastAPI, scoring, UI dashboard et scenario demo. |
 | Recherche avancee | Ajouter donnees demo, alimenter les tables recherchees et valider filtres/tri/pagination. |
-| Analytics dashboard avance | Ajouter export CSV/JSON, sentiment/trend reels et filtres plus avances. |
 | Public API securisee | Ajouter namespace public versionne, rate limit API key, OpenAPI et endpoints manquants. |
 | OAuth 2.0 | Nettoyer `.env.example`, documenter callbacks et gerer l'affichage des providers non configures. |
 | Notifications CRUD | Ajouter endpoints CRUD, notifications persistantes et centre de notifications UI. |
 | I18n polish | Remplacer les derniers textes hardcodes des toasts et labels secondaires. |
-| File upload | Clarifier le scope avatar, verifier persistance Docker et masquer/assumer les boutons watchlist desactives. |
 | Advanced permissions | Ajouter changement de role, helper `requireRole`, vrai role `ANALYST` et CRUD admin plus complet. |
 | Real-time WebSocket/SSE | Ajouter endpoint SSE/WebSocket, hook client, events serveur et demo multi-onglets. |
 | Migrations Prisma | Ajouter migrations versionnees et eviter `db push --accept-data-loss` comme flow normal. |
@@ -83,6 +81,9 @@ Pistes:
 - Retourner une liste classee avec un score et une explication courte
   "why recommended".
 - Afficher ces recommendations dans le dashboard.
+- Brancher les tuiles dashboard "Tendance" et "Sentiment" sur les sorties reelles
+  du modele. Elles restent des placeholders et ne font pas partie de la preuve
+  du module Analytics Dashboard.
 - Preparer un scenario demo: l'utilisateur suit ou consulte quelques assets, puis
   les recommendations changent de facon visible.
 - Ajouter des tests ou un script de verification sur un petit dataset de demo.
@@ -125,31 +126,6 @@ Pistes:
   retourne au moins un resultat dans un scenario demo.
 - Ajouter au moins un test manuel documente avec une requete qui retourne chaque
   type de resultat.
-
-## Analytics dashboard avance a terminer
-
-Estimation: difficulte 4/5, environ 250-600 lignes selon le niveau choisi pour
-export, filtres avances, sentiment timeline et scores relies au backend.
-
-Probleme:
-
-- Le dashboard affiche deja un chart interactif et des performances par periode.
-- Il manque encore des elements demandes pour valider le module complet:
-  export, filtres avances, sentiment timeline et trend score reels.
-
-Impact:
-
-- Le module peut etre presente comme en cours, mais pas comme valide.
-- Risque de refus si l'evaluation attend explicitement export CSV/JSON et
-  analytics sentiment/trend connectes au backend.
-
-Pistes:
-
-- Ajouter un export CSV/JSON pour les candles du chart ou le dashboard courant.
-- Brancher les cartes trend/sentiment sur des donnees `analysis` reelles.
-- Ajouter une vue ou timeline sentiment/trend si les donnees existent.
-- Documenter un parcours de demo avec range, watchlist performance, refresh,
-  loading/error/empty et export.
 
 ## Public API securisee a finaliser
 
@@ -306,41 +282,6 @@ Pistes:
   passer depuis `NotificationProvider`.
 - Laisser `/ui-showcase` en anglais si on assume que c'est une page interne de
   demonstration technique.
-
-## File upload a fiabiliser pour la demo
-
-Estimation: difficulte 2/5, environ 40-120 lignes selon qu'on ajoute seulement
-de la doc/volume Docker ou aussi quelques tests manuels automatises.
-
-Probleme:
-
-- Le module peut etre defendu avec l'upload d'avatar, mais il ne faut pas le
-  presenter comme import/export de fichiers generique.
-- Les boutons watchlist download/upload/import existent dans le profil mais sont
-  desactives.
-- Les avatars sont stockes dans `public/uploads/avatars`; en environnement Docker
-  final, il faut verifier que ce dossier est persistant entre rebuild/recreation
-  de conteneur si on veut garder les fichiers uploades.
-- Il manque une checklist de test manuel pour fichier trop lourd, mauvais type,
-  fichier vide, remplacement, suppression et suppression du compte.
-
-Impact:
-
-- Le module "File upload management" est proche/defendable, mais une demo peut
-  etre confuse si quelqu'un clique les boutons import watchlist desactives.
-- Sans volume ou strategie de stockage documentee, un avatar uploade peut etre
-  perdu apres recreation du conteneur.
-
-Pistes:
-
-- Documenter clairement dans le README que le module couvre l'avatar upload.
-- Soit retirer les boutons watchlist desactives de la demo, soit les garder hors
-  du claim module.
-- Ajouter un volume Docker ou une note explicite sur la persistance du dossier
-  `web/public/uploads/avatars`.
-- Preparer une mini checklist: upload PNG valide, upload PDF refuse, fichier
-  > 5 MB refuse, remplacement supprime l'ancien avatar, suppression du compte
-  supprime l'avatar.
 
 ## Advanced permissions a finaliser
 
