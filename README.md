@@ -153,12 +153,12 @@ The dashboard provides interactive market visualizations connected to the FastAP
 
 Proofs:
 
-- SVG line chart for prices and bar chart for traded volumes.
-- Interactive hover details, axes, provider, interval, point count, and last update metadata.
+- SVG price line and OHLC candlestick chart using each interval's real open, high, low, and close values.
+- Interactive hover details, axes, provider, interval, point count, latest market candle, and cache update metadata.
 - Asset filter, ranges `1D` to `1Y`, and custom start/end filtering inside the loaded period.
 - Automatic refresh from the analysis cache, including refresh when the browser tab becomes visible again.
 - CSV and JSON export for the selected asset and range, including OHLCV candles and candle variation.
-- Loading, unavailable-data, and missing-volume states.
+- Loading, unavailable-data, and empty-filter states.
 
 The Trend and Sentiment tiles are placeholders reserved for the future ML module. They are not used as proof for this analytics module.
 

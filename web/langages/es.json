@@ -111,12 +111,17 @@
     "unfavoriteAsset": "Quitar {symbol} de favoritos"
   },
   "chart": {
-    "dateFrom": "Desde",
-    "dateTo": "Hasta",
+    "candlestickChart": "Gráfico de velas de {symbol}",
+    "close": "Cierre",
+    "dateFrom": "Fecha de inicio",
+    "dateTo": "Fecha de fin",
     "exportCsv": "Exportar CSV",
     "exportJson": "Exportar JSON",
     "exportLabel": "Formatos de exportación del gráfico",
     "loading": "Cargando gráfico...",
+    "latestPoint": "Última vela {value}",
+    "low": "Mínimo",
+    "nextMarketOpen": "Próxima apertura {value}",
     "noAsset": "Ningún asset seleccionado",
     "noFilteredData": "No hay datos en este periodo",
     "points": "{count} puntos",
@@ -124,9 +129,15 @@
     "providerFallback": "Análisis",
     "rangeLabel": "Rango del gráfico",
     "resetDates": "Restablecer",
+    "high": "Máximo",
+    "hideAdvancedControls": "Ocultar los controles del gráfico",
+    "open": "Apertura",
+    "showAdvancedControls": "Mostrar los controles del gráfico",
     "titleFallback": "Gráfico",
     "tooltips": {
       "interval": "Granularidad entre dos velas del gráfico.",
+      "latestPoint": "Fecha del último dato de mercado mostrado, distinta de la actualización de la caché.",
+      "nextMarketOpen": "Próxima apertura regular del mercado estadounidense, mostrada en tu hora local.",
       "points": "Número de velas mostradas actualmente.",
       "provider": "Fuente usada para proporcionar estos datos de mercado.",
       "updated": "Tiempo transcurrido desde la última actualización de la caché usada.",
@@ -136,12 +147,10 @@
     "unavailable": "Gráfico no disponible",
     "visualizationLabel": "Tipo de visualización",
     "visualizations": {
-      "price": "Precio",
-      "volume": "Volumen"
+      "candles": "Velas",
+      "price": "Precio"
     },
-    "volume": "Volumen {value}",
-    "volumeChart": "Gráfico de volumen de {symbol}",
-    "volumeUnavailable": "Datos de volumen no disponibles"
+    "volume": "Volumen {value}"
   },
   "profile": {
     "aria": {

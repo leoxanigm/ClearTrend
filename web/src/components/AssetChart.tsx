@@ -6,10 +6,12 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent,
 } from "react";
 import type { WatchlistAsset } from "@/lib/assets";
 import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
@@ -22,6 +24,7 @@ import {
   createChartExportFileName,
   createChartJsonExport,
 } from "@/lib/chart-analytics";
+import { getNextMarketOpen } from "@/lib/market-calendar";
 import { useLocale, useTranslations } from "next-intl";
 
 type AssetChartProps = {
@@ -72,7 +75,7 @@ type ChartPoint = {
   y: number;
 };
 
-type ChartVisualization = "price" | "volume";
+type ChartVisualization = "candles" | "price";
 
 const desktopChartSize: ChartSize = {
   height: 400,
@@ -338,35 +341,39 @@ function buildChartData(
   range: ChartRange,
   chartSize: ChartSize,
   locale: string,
-  visualization: ChartVisualization
+  visualization: ChartVisualization,
+  useFullOneDayWindow: boolean
 ) {
   if (candles.length === 0) {
     return {
       areaPath: "",
-      hasVolume: false,
+      candlesticks: [],
       linePath: "",
       points: [],
-      volumeBars: [],
       xTicks: [],
       yTicks: [],
     };
   }
 
   const closes = candles.map((candle) => candle.close);
-  const volumes = candles.map((candle) => Math.max(candle.volume ?? 0, 0));
-  const hasVolume = volumes.some((volume) => volume > 0);
-  const isVolumeChart = visualization === "volume";
-  const minClose = Math.min(...closes);
-  const maxClose = Math.max(...closes);
+  const isCandlestickChart = visualization === "candles";
+  const minPrice = Math.min(
+    ...(isCandlestickChart
+      ? candles.map((candle) => candle.low)
+      : closes)
+  );
+  const maxPrice = Math.max(
+    ...(isCandlestickChart
+      ? candles.map((candle) => candle.high)
+      : closes)
+  );
   const valuePadding = Math.max(
-    (maxClose - minClose) * 0.1,
-    maxClose * 0.002,
+    (maxPrice - minPrice) * 0.1,
+    maxPrice * 0.002,
     1
   );
-  const minValue = isVolumeChart ? 0 : minClose - valuePadding;
-  const maxValue = isVolumeChart
-    ? Math.max(...volumes, 1) * 1.05
-    : maxClose + valuePadding;
+  const minValue = minPrice - valuePadding;
+  const maxValue = maxPrice + valuePadding;
   const { height, padding, width } = chartSize;
   const usableWidth = width - padding.left - padding.right;
   const usableHeight = height - padding.top - padding.bottom;
@@ -377,6 +384,7 @@ function buildChartData(
   // absolute timestamps; labels are rendered in the browser/system timezone.
   const isFixedOneDayWindow =
     range === "1D" &&
+    useFullOneDayWindow &&
     Number.isFinite(firstTimestamp) &&
     Number.isFinite(lastTimestamp);
   const oneDayWindowEnd = firstTimestamp + regularStockSessionMs;
@@ -407,9 +415,7 @@ function buildChartData(
 
   const chartPoints = candles.map((candle, index) => {
     const x = getX(index);
-    const y = getY(
-      isVolumeChart ? Math.max(candle.volume ?? 0, 0) : candle.close
-    );
+    const y = getY(candle.close);
 
     return {
       candle,
@@ -434,24 +440,37 @@ function buildChartData(
     lastPoint.split(",")[0]
   },${chartBottom} L ${firstPoint.split(",")[0]},${chartBottom} Z`;
   const yTickValues = [maxValue, (maxValue + minValue) / 2, minValue];
-  const volumeBarWidth = Math.max(
-    1,
-    Math.min(18, (usableWidth / Math.max(candles.length, 1)) * 0.72)
+  const candleWidth = Math.max(
+    2,
+    Math.min(14, (usableWidth / Math.max(candles.length, 1)) * 0.62)
   );
 
   return {
-    areaPath: isVolumeChart ? "" : areaPath,
-    hasVolume,
-    linePath: isVolumeChart ? "" : linePath,
-    points: chartPoints,
-    volumeBars: isVolumeChart
-      ? chartPoints.map((point) => ({
-          height: Math.max(chartBottom - point.y, 0),
-          width: volumeBarWidth,
-          x: point.x - volumeBarWidth / 2,
-          y: point.y,
-        }))
+    areaPath: isCandlestickChart ? "" : areaPath,
+    candlesticks: isCandlestickChart
+      ? chartPoints.map((point) => {
+          const openY = getY(point.candle.open);
+          const closeY = getY(point.candle.close);
+          const rawBodyHeight = Math.abs(closeY - openY);
+          const bodyHeight = Math.max(rawBodyHeight, 2);
+          const bodyY =
+            rawBodyHeight >= 2
+              ? Math.min(openY, closeY)
+              : (openY + closeY) / 2 - bodyHeight / 2;
+
+          return {
+            bodyHeight,
+            bodyY,
+            highY: getY(point.candle.high),
+            lowY: getY(point.candle.low),
+            rising: point.candle.close >= point.candle.open,
+            width: candleWidth,
+            x: point.x,
+          };
+        })
       : [],
+    linePath: isCandlestickChart ? "" : linePath,
+    points: chartPoints,
     xTicks: isFixedOneDayWindow
       ? [xMin, xMin + xDomain / 2, xMax].map((timestamp, tickIndex) => {
           const isFirstTick = tickIndex === 0;
@@ -479,14 +498,17 @@ function buildChartData(
 
           return {
             anchor,
-            label: formatCalendarDate(candles[index].datetime, range, locale),
+            label: formatTooltipDate(
+              candles[index],
+              candles[index].timestamp,
+              range,
+              locale
+            ),
             x: getX(index),
           };
         }),
     yTicks: yTickValues.map((value) => ({
-      label: isVolumeChart
-        ? formatVolume(value, locale, "0")
-        : formatAxisPrice(value, locale),
+      label: formatAxisPrice(value, locale),
       value,
       y: getY(value),
     })),
@@ -515,6 +537,8 @@ export function AssetChart({
     useState<ChartVisualization>("price");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [isMobileControlsOpen, setIsMobileControlsOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const updatedAtRef = useRef<string | null>(null);
@@ -561,6 +585,20 @@ export function AssetChart({
 
     return () => {
       mediaQuery.removeEventListener("change", handleMediaChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    function updateCurrentTime() {
+      setCurrentTime(Date.now());
+    }
+
+    const initialTimeout = window.setTimeout(updateCurrentTime, 0);
+    const intervalId = window.setInterval(updateCurrentTime, 60_000);
+
+    return () => {
+      window.clearTimeout(initialTimeout);
+      window.clearInterval(intervalId);
     };
   }, []);
 
@@ -697,29 +735,33 @@ export function AssetChart({
   const dateControlIncludesTime = range === "1D" || range === "1W";
   const minimumDateValue =
     candles.length > 0
-      ? formatDateControlValue(
-          candles[0].timestamp,
-          dateControlIncludesTime
-        )
+      ? dateControlIncludesTime
+        ? formatDateControlValue(candles[0].timestamp, true)
+        : getDatePart(candles[0].datetime)
       : "";
   const maximumDateValue =
     candles.length > 0
-      ? formatDateControlValue(
-          candles.at(-1)?.timestamp ?? candles[0].timestamp,
-          dateControlIncludesTime
-        )
+      ? dateControlIncludesTime
+        ? formatDateControlValue(
+            candles.at(-1)?.timestamp ?? candles[0].timestamp,
+            true
+          )
+        : getDatePart(candles.at(-1)?.datetime ?? candles[0].datetime)
       : "";
   const visibleCandles = useMemo(() => {
-    const fromTimestamp = parseDateControlValue(
-      dateFrom,
-      dateControlIncludesTime,
-      false
-    );
-    const toTimestamp = parseDateControlValue(
-      dateTo,
-      dateControlIncludesTime,
-      true
-    );
+    if (!dateControlIncludesTime) {
+      return candles.filter((candle) => {
+        const candleDate = getDatePart(candle.datetime);
+
+        return (
+          (!dateFrom || candleDate >= dateFrom) &&
+          (!dateTo || candleDate <= dateTo)
+        );
+      });
+    }
+
+    const fromTimestamp = parseDateControlValue(dateFrom, true, false);
+    const toTimestamp = parseDateControlValue(dateTo, true, true);
 
     return candles.filter(
       (candle) =>
@@ -735,9 +777,18 @@ export function AssetChart({
         range,
         chartSize,
         locale,
-        visualization
+        visualization,
+        !dateFrom && !dateTo
       ),
-    [chartSize, locale, range, visibleCandles, visualization]
+    [
+      chartSize,
+      dateFrom,
+      dateTo,
+      locale,
+      range,
+      visibleCandles,
+      visualization,
+    ]
   );
   const firstCandle = visibleCandles[0] ?? null;
   const lastCandle = visibleCandles.at(-1) ?? null;
@@ -748,27 +799,19 @@ export function AssetChart({
     (firstCandle && lastCandle
       ? ((lastCandle.close - firstCandle.close) / firstCandle.close) * 100
       : null);
-  const tooltipWidth = 124;
-  const tooltipHeight = 48;
-  const tooltipGap = 12;
-  const tooltipX =
-    hoveredPoint &&
-    hoveredPoint.x + tooltipWidth + tooltipGap >
-      chartSize.width - chartSize.padding.right
-      ? Math.max(
-          chartSize.padding.left,
-          hoveredPoint.x - tooltipWidth - tooltipGap
-        )
-      : (hoveredPoint?.x ?? 0) + tooltipGap;
-  const tooltipY = hoveredPoint
-    ? Math.max(
-        chartSize.padding.top + 6,
-        Math.min(
-          hoveredPoint.y - tooltipHeight / 2,
-          chartSize.height - chartSize.padding.bottom - tooltipHeight - 6
-        )
-      )
-    : 0;
+  const tooltipStyle: CSSProperties | undefined = hoveredPoint
+    ? {
+        left: `${(hoveredPoint.x / chartSize.width) * 100}%`,
+        top: `${Math.max(
+          12,
+          Math.min(88, (hoveredPoint.y / chartSize.height) * 100)
+        )}%`,
+      }
+    : undefined;
+  const tooltipAlignsLeft =
+    hoveredPoint !== null && hoveredPoint.x > chartSize.width * 0.58;
+  const nextMarketOpen =
+    currentTime === null ? null : getNextMarketOpen(new Date(currentTime));
 
   function downloadChartData(format: "csv" | "json") {
     if (!asset || visibleCandles.length === 0) {
@@ -844,109 +887,138 @@ export function AssetChart({
         </div>
       </header>
 
-      <div className="asset-chart-ranges" aria-label={t("rangeLabel")}>
-        {chartRanges.map((option) => (
-          <Button
-            aria-pressed={range === option}
-            className="asset-chart-range"
-            key={option}
-            onClick={() => {
-              setDateFrom("");
-              setDateTo("");
-              onRangeChange(option);
-            }}
-            variant="plain"
-          >
-            {option}
-          </Button>
-        ))}
-      </div>
-
-      <div className="asset-chart-date-filters">
-        <label>
-          <span>{t("dateFrom")}</span>
-          <input
-            max={dateTo || maximumDateValue}
-            min={minimumDateValue}
-            onChange={(event) => {
-              setDateFrom(event.target.value);
-              setHoveredPoint(null);
-            }}
-            type={dateControlIncludesTime ? "datetime-local" : "date"}
-            value={dateFrom}
-          />
-        </label>
-        <label>
-          <span>{t("dateTo")}</span>
-          <input
-            max={maximumDateValue}
-            min={dateFrom || minimumDateValue}
-            onChange={(event) => {
-              setDateTo(event.target.value);
-              setHoveredPoint(null);
-            }}
-            type={dateControlIncludesTime ? "datetime-local" : "date"}
-            value={dateTo}
-          />
-        </label>
-        {dateFrom || dateTo ? (
-          <Button
-            className="asset-chart-date-reset"
-            onClick={() => {
-              setDateFrom("");
-              setDateTo("");
-              setHoveredPoint(null);
-            }}
-            variant="plain"
-          >
-            {t("resetDates")}
-          </Button>
-        ) : null}
-      </div>
-
-      <div className="asset-chart-toolbar">
-        <div aria-label={t("visualizationLabel")}>
-          <SegmentedControl
-            onChange={(nextVisualization) => {
-              setVisualization(nextVisualization);
-              setHoveredPoint(null);
-            }}
-            options={[
-              {
-                label: t("visualizations.price"),
-                value: "price",
-              },
-              {
-                label: t("visualizations.volume"),
-                value: "volume",
-              },
-            ]}
-            value={visualization}
-          />
+      <div className="asset-chart-range-row">
+        <div className="asset-chart-ranges" aria-label={t("rangeLabel")}>
+          {chartRanges.map((option) => (
+            <Button
+              aria-pressed={range === option}
+              className="asset-chart-range"
+              key={option}
+              onClick={() => {
+                setDateFrom("");
+                setDateTo("");
+                onRangeChange(option);
+              }}
+              variant="plain"
+            >
+              {option}
+            </Button>
+          ))}
         </div>
 
-        <div
-          aria-label={t("exportLabel")}
-          className="asset-chart-export-actions"
+        <IconButton
+          aria-controls="asset-chart-controls"
+          aria-expanded={isMobileControlsOpen}
+          className="asset-chart-controls-toggle"
+          label={
+            isMobileControlsOpen
+              ? t("hideAdvancedControls")
+              : t("showAdvancedControls")
+          }
+          onClick={() =>
+            setIsMobileControlsOpen((currentValue) => !currentValue)
+          }
+          size="sm"
         >
-          <Button
-            disabled={
-              isLoading || Boolean(error) || visibleCandles.length === 0
-            }
-            onClick={() => downloadChartData("csv")}
-            variant="outline"
+          <span
+            aria-hidden="true"
+            className="asset-chart-controls-chevron"
+          />
+        </IconButton>
+      </div>
+
+      <div
+        className={`asset-chart-controls-panel${
+          isMobileControlsOpen ? " asset-chart-controls-panel-open" : ""
+        }`}
+        id="asset-chart-controls"
+      >
+        <div className="asset-chart-date-filters">
+          <label>
+            <span>{t("dateFrom")}</span>
+            <input
+              max={dateTo || maximumDateValue}
+              min={minimumDateValue}
+              onChange={(event) => {
+                setDateFrom(event.target.value);
+                setHoveredPoint(null);
+              }}
+              type={dateControlIncludesTime ? "datetime-local" : "date"}
+              value={dateFrom || minimumDateValue}
+            />
+          </label>
+          <label>
+            <span>{t("dateTo")}</span>
+            <input
+              max={maximumDateValue}
+              min={dateFrom || minimumDateValue}
+              onChange={(event) => {
+                setDateTo(event.target.value);
+                setHoveredPoint(null);
+              }}
+              type={dateControlIncludesTime ? "datetime-local" : "date"}
+              value={dateTo || maximumDateValue}
+            />
+          </label>
+          {dateFrom || dateTo ? (
+            <Button
+              className="asset-chart-date-reset"
+              onClick={() => {
+                setDateFrom("");
+                setDateTo("");
+                setHoveredPoint(null);
+              }}
+              variant="plain"
+            >
+              {t("resetDates")}
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="asset-chart-toolbar">
+          <div aria-label={t("visualizationLabel")}>
+            <SegmentedControl
+              onChange={(nextVisualization) => {
+                setVisualization(nextVisualization);
+                setHoveredPoint(null);
+              }}
+              options={[
+                {
+                  label: t("visualizations.price"),
+                  value: "price",
+                },
+                {
+                  label: t("visualizations.candles"),
+                  value: "candles",
+                },
+              ]}
+              value={visualization}
+            />
+          </div>
+
+          <div
+            aria-label={t("exportLabel")}
+            className="asset-chart-export-actions"
           >
-            {t("exportCsv")}
-          </Button>
-          <Button
-            disabled={
-              isLoading || Boolean(error) || visibleCandles.length === 0
-            }
-            onClick={() => downloadChartData("json")}
-            variant="outline"
-          >
-            {t("exportJson")}
-          </Button>
+            <Button
+              disabled={
+                isLoading || Boolean(error) || visibleCandles.length === 0
+              }
+              onClick={() => downloadChartData("csv")}
+              variant="outline"
+            >
+              {t("exportCsv")}
+            </Button>
+            <Button
+              disabled={
+                isLoading || Boolean(error) || visibleCandles.length === 0
+              }
+              onClick={() => downloadChartData("json")}
+              variant="outline"
+            >
+              {t("exportJson")}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -964,19 +1036,10 @@ export function AssetChart({
 
         {!isLoading &&
           !error &&
-          visualization === "volume" &&
-          visibleCandles.length > 0 &&
-          !chartData.hasVolume && (
-            <div className="chart-state">{t("volumeUnavailable")}</div>
-          )}
-
-        {!isLoading &&
-          !error &&
-          visibleCandles.length > 0 &&
-          (visualization === "price" || chartData.hasVolume) && (
+          visibleCandles.length > 0 && (
           <svg
             aria-label={t(
-              visualization === "price" ? "priceChart" : "volumeChart",
+              visualization === "price" ? "priceChart" : "candlestickChart",
               {
               symbol: asset?.symbol ?? t("titleFallback"),
               }
@@ -1049,16 +1112,31 @@ export function AssetChart({
                 <path className="asset-chart-line" d={chartData.linePath} />
               </>
             ) : (
-              chartData.volumeBars.map((bar, index) => (
-                <rect
-                  className="asset-chart-volume-bar"
-                  height={bar.height}
+              chartData.candlesticks.map((candle, index) => (
+                <g
+                  className={
+                    candle.rising
+                      ? "asset-chart-candle asset-chart-candle-rising"
+                      : "asset-chart-candle asset-chart-candle-falling"
+                  }
                   key={`${chartData.points[index].candle.timestamp}-${index}`}
-                  rx="1"
-                  width={bar.width}
-                  x={bar.x}
-                  y={bar.y}
-                />
+                >
+                  <line
+                    className="asset-chart-candle-wick"
+                    x1={candle.x}
+                    x2={candle.x}
+                    y1={candle.highY}
+                    y2={candle.lowY}
+                  />
+                  <rect
+                    className="asset-chart-candle-body"
+                    height={candle.bodyHeight}
+                    rx="1"
+                    width={candle.width}
+                    x={candle.x - candle.width / 2}
+                    y={candle.bodyY}
+                  />
+                </g>
               ))
             )}
             {!isCompactChart && hoveredPoint && (
@@ -1083,35 +1161,57 @@ export function AssetChart({
                   cy={hoveredPoint.y}
                   r="4"
                 />
-                <g transform={`translate(${tooltipX}, ${tooltipY})`}>
-                  <rect
-                    className="asset-chart-tooltip-box"
-                    height={tooltipHeight}
-                    rx="5"
-                    width={tooltipWidth}
-                  />
-                  <text className="asset-chart-tooltip-value" x="10" y="19">
-                    {visualization === "price"
-                      ? formatPrice(
-                          hoveredPoint.candle.close,
-                          currency,
-                          locale,
-                          commonT("na")
-                        )
-                      : formatVolume(
-                          hoveredPoint.candle.volume,
-                          locale,
-                          commonT("na")
-                        )}
-                  </text>
-                  <text className="asset-chart-tooltip-date" x="10" y="36">
-                    {hoveredPoint.tooltipDateLabel}
-                  </text>
-                </g>
               </g>
             )}
           </svg>
         )}
+        {!isCompactChart && hoveredPoint && tooltipStyle ? (
+          <div
+            className={`asset-chart-html-tooltip${
+              tooltipAlignsLeft ? " asset-chart-html-tooltip-left" : ""
+            }${
+              visualization === "price"
+                ? " asset-chart-html-tooltip-price"
+                : ""
+            }`}
+            style={tooltipStyle}
+          >
+            {visualization === "candles" ? (
+              <div className="asset-chart-tooltip-values">
+                {[
+                  ["open", hoveredPoint.candle.open],
+                  ["high", hoveredPoint.candle.high],
+                  ["low", hoveredPoint.candle.low],
+                  ["close", hoveredPoint.candle.close],
+                ].map(([label, value]) => (
+                  <div className="asset-chart-tooltip-row" key={String(label)}>
+                    <span>{t(String(label))}</span>
+                    <strong>
+                      {formatPrice(
+                        Number(value),
+                        currency,
+                        locale,
+                        commonT("na")
+                      )}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <strong className="asset-chart-tooltip-price">
+                {formatPrice(
+                  hoveredPoint.candle.close,
+                  currency,
+                  locale,
+                  commonT("na")
+                )}
+              </strong>
+            )}
+            <span className="asset-chart-tooltip-date">
+              {hoveredPoint.tooltipDateLabel}
+            </span>
+          </div>
+        ) : null}
       </div>
 
       <footer className="asset-chart-footer">
@@ -1134,10 +1234,34 @@ export function AssetChart({
           tooltip={t("tooltips.volume")}
         />
         <ChartFooterMetric
+          label={t("latestPoint", {
+            value: lastCandle
+              ? formatTooltipDate(
+                  lastCandle,
+                  lastCandle.timestamp,
+                  range,
+                  locale
+                )
+              : commonT("na"),
+          })}
+          tooltip={t("tooltips.latestPoint")}
+        />
+        <ChartFooterMetric
           label={t("updated", {
             value: formatRelativeUpdate(updatedAt, locale, commonT("na")),
           })}
           tooltip={t("tooltips.updated")}
+        />
+        <ChartFooterMetric
+          label={t("nextMarketOpen", {
+            value: nextMarketOpen
+              ? new Intl.DateTimeFormat(locale, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(nextMarketOpen)
+              : commonT("na"),
+          })}
+          tooltip={t("tooltips.nextMarketOpen")}
         />
       </footer>
     </section>

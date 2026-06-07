@@ -28,7 +28,7 @@ Depuis le dashboard, l'utilisateur peut :
 1. choisir un asset dans la watchlist ;
 2. choisir une periode ;
 3. afficher le prix sous forme de courbe ;
-4. afficher le volume sous forme de barres ;
+4. afficher les valeurs OHLC sous forme de bougies ;
 5. inspecter un point avec la souris ;
 6. exporter les donnees visibles en CSV ou JSON.
 
@@ -79,17 +79,23 @@ La vue `Price` affiche :
 - la performance de la periode ;
 - un tooltip avec la date et le prix.
 
-### Barres de volume
+### Bougies OHLC
 
-La vue `Volume` utilise les memes bougies et affiche :
+La vue `Candles` utilise les memes donnees et affiche :
 
-- une barre par point ;
-- une hauteur proportionnelle au volume ;
-- un axe adapte aux grands nombres ;
-- un tooltip avec la date et le volume.
+- une meche entre le minimum `low` et le maximum `high` ;
+- un corps entre l'ouverture `open` et la cloture `close` ;
+- une bougie verte lorsque la cloture est superieure ou egale a l'ouverture ;
+- une bougie rouge lorsque la cloture est inferieure a l'ouverture ;
+- un tooltip avec la date et les quatre valeurs OHLC.
 
-Si la source ne fournit aucun volume, l'interface affiche un etat explicite au
-lieu d'un graphique vide.
+La granularite vient directement de la periode choisie :
+
+```text
+1D -> 5 minutes
+1W -> 1 heure
+1M / 3M / 1Y -> 1 jour
+```
 
 ## Plages et filtres
 
@@ -108,7 +114,7 @@ Filtres disponibles :
 - asset selectionne dans la watchlist ;
 - periode du graphique ;
 - debut et fin personnalises dans la periode chargee ;
-- type de visualisation `Price` ou `Volume` ;
+- type de visualisation `Price` ou `Candles` ;
 - periode de performance de la watchlist.
 
 Les changements d'asset et de periode rechargent les bougies correspondantes.
@@ -129,8 +135,14 @@ Fonctionnement :
 4. en cas d'echec en arriere-plan, il conserve le graphique deja visible ;
 5. lorsque l'onglet redevient visible, il controle immediatement les donnees.
 
-Le footer affiche la source, l'intervalle, le nombre de points et la date
-relative de derniere mise a jour.
+Le footer affiche la source, l'intervalle, le nombre de points, la date de la
+derniere bougie de marche et la date relative de mise a jour du cache. Cette
+separation evite de confondre une derniere seance du vendredi avec un cache
+rafraichi ou un export effectue pendant le week-end.
+
+Il affiche aussi la prochaine ouverture reguliere du marche americain. Le
+calcul utilise 9h30 a New York, ignore les week-ends et les principaux jours
+feries NYSE, puis affiche le resultat dans le fuseau local du navigateur.
 
 Ce rafraichissement automatique valide la mise a jour des donnees du dashboard.
 Il ne doit pas etre confondu avec le module distinct WebSocket/SSE, qui reste a
@@ -143,6 +155,9 @@ Le bouton `Export CSV` genere un fichier :
 ```text
 cleartrend-aapl-1m-YYYY-MM-DD.csv
 ```
+
+La date du nom de fichier est la date d'export. La date de chaque point de
+marche reste presente dans la colonne `datetime`.
 
 Colonnes :
 
@@ -192,7 +207,6 @@ Le graphique gere :
 - chargement ;
 - erreur de recuperation ;
 - absence de donnees ;
-- absence de volume ;
 - boutons d'export desactives sans donnees ;
 - preservation du graphique lors d'un echec de rafraichissement en arriere-plan.
 
@@ -200,6 +214,9 @@ Le graphique gere :
 
 Sur mobile :
 
+- les periodes `1D` a `1Y` restent toujours visibles sous le titre ;
+- un bouton chevron replie par defaut les dates, le type de graphique et les
+  exports ;
 - les controles sont repartis sur plusieurs lignes ;
 - les boutons d'export utilisent toute la largeur disponible ;
 - le graphique utilise un format compact ;
@@ -252,8 +269,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T web npm r
 3. parcourir les periodes `1D`, `1W`, `1M`, `3M`, `1Y` ;
 4. limiter la vue avec les champs de debut et de fin ;
 5. sur desktop, survoler plusieurs points de la courbe ;
-6. passer de `Price` a `Volume` ;
-7. verifier le graphique en barres et son tooltip ;
+6. passer de `Price` a `Candles` ;
+7. verifier les meches high/low, les corps open/close et le tooltip OHLC ;
 8. exporter le CSV et controler les colonnes et la periode filtree ;
 9. exporter le JSON et controler `format`, `version`, `symbol` et `range` ;
 10. changer d'asset et verifier que le nom et le contenu des exports changent ;

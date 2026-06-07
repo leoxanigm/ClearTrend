@@ -111,12 +111,17 @@
     "unfavoriteAsset": "Remove {symbol} from favorites"
   },
   "chart": {
-    "dateFrom": "From",
-    "dateTo": "To",
+    "candlestickChart": "{symbol} candlestick chart",
+    "close": "Close",
+    "dateFrom": "Start date",
+    "dateTo": "End date",
     "exportCsv": "Export CSV",
     "exportJson": "Export JSON",
     "exportLabel": "Chart export formats",
     "loading": "Loading chart...",
+    "latestPoint": "Latest candle {value}",
+    "low": "Low",
+    "nextMarketOpen": "Next market open {value}",
     "noAsset": "No asset selected",
     "noFilteredData": "No data in this period",
     "points": "{count} points",
@@ -124,9 +129,15 @@
     "providerFallback": "Analysis",
     "rangeLabel": "Chart range",
     "resetDates": "Reset",
+    "high": "High",
+    "hideAdvancedControls": "Hide chart controls",
+    "open": "Open",
+    "showAdvancedControls": "Show chart controls",
     "titleFallback": "Chart",
     "tooltips": {
       "interval": "Granularity between two chart candles.",
+      "latestPoint": "Date of the latest displayed market data, separate from the cache update.",
+      "nextMarketOpen": "Next regular US market opening, displayed in your local time.",
       "points": "Number of candles currently displayed.",
       "provider": "Source used to provide this market data.",
       "updated": "Time elapsed since the cache used here was last updated.",
@@ -136,12 +147,10 @@
     "unavailable": "Chart unavailable",
     "visualizationLabel": "Visualization type",
     "visualizations": {
-      "price": "Price",
-      "volume": "Volume"
+      "candles": "Candles",
+      "price": "Price"
     },
-    "volume": "Volume {value}",
-    "volumeChart": "{symbol} volume chart",
-    "volumeUnavailable": "Volume data unavailable"
+    "volume": "Volume {value}"
   },
   "profile": {
     "aria": {

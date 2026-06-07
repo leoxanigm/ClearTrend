@@ -111,12 +111,17 @@
     "unfavoriteAsset": "Retirer {symbol} des favoris"
   },
   "chart": {
-    "dateFrom": "Début",
-    "dateTo": "Fin",
+    "candlestickChart": "Graphique en bougies de {symbol}",
+    "close": "Clôture",
+    "dateFrom": "Date de début",
+    "dateTo": "Date de fin",
     "exportCsv": "Exporter CSV",
     "exportJson": "Exporter JSON",
     "exportLabel": "Formats d'export du graphique",
     "loading": "Chargement du graphique...",
+    "latestPoint": "Dernière bougie {value}",
+    "low": "Plus bas",
+    "nextMarketOpen": "Prochaine ouverture {value}",
     "noAsset": "Aucun asset sélectionné",
     "noFilteredData": "Aucune donnée sur cette période",
     "points": "{count} points",
@@ -124,9 +129,15 @@
     "providerFallback": "Analyse",
     "rangeLabel": "Période du graphique",
     "resetDates": "Réinitialiser",
+    "high": "Plus haut",
+    "hideAdvancedControls": "Masquer les réglages du graphique",
+    "open": "Ouverture",
+    "showAdvancedControls": "Afficher les réglages du graphique",
     "titleFallback": "Graphique",
     "tooltips": {
       "interval": "Granularité entre deux bougies du graphique.",
+      "latestPoint": "Date de la dernière donnée de marché affichée, distincte de la mise à jour du cache.",
+      "nextMarketOpen": "Prochaine ouverture régulière du marché américain, affichée dans votre heure locale.",
       "points": "Nombre de bougies actuellement affichées.",
       "provider": "Source utilisée pour fournir ces données de marché.",
       "updated": "Temps écoulé depuis la dernière mise à jour du cache utilisé.",
@@ -136,12 +147,10 @@
     "unavailable": "Graphique indisponible",
     "visualizationLabel": "Type de visualisation",
     "visualizations": {
-      "price": "Prix",
-      "volume": "Volume"
+      "candles": "Bougies",
+      "price": "Prix"
     },
-    "volume": "Volume {value}",
-    "volumeChart": "Graphique du volume de {symbol}",
-    "volumeUnavailable": "Données de volume indisponibles"
+    "volume": "Volume {value}"
   },
   "profile": {
     "aria": {

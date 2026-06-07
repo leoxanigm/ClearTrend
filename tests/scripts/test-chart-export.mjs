@@ -6,6 +6,9 @@ const webRoot = process.env.TEST_WEB_ROOT ?? path.resolve("web");
 const chartExportModule = await import(
   pathToFileURL(path.join(webRoot, "src/lib/chart-analytics.ts")).href
 );
+const marketCalendarModule = await import(
+  pathToFileURL(path.join(webRoot, "src/lib/market-calendar.ts")).href
+);
 const {
   chartExportFormat,
   chartExportVersion,
@@ -13,6 +16,7 @@ const {
   createChartExportFileName,
   createChartJsonExport,
 } = chartExportModule;
+const { getNextMarketOpen } = marketCalendarModule;
 
 const candles = [
   {
@@ -81,6 +85,27 @@ assert.equal(
     new Date("2026-06-07T12:00:00Z")
   ),
   "cleartrend-aapl-1d-2026-06-07.csv"
+);
+
+assert.equal(
+  getNextMarketOpen(new Date("2026-06-07T22:40:00Z")).toISOString(),
+  "2026-06-08T13:30:00.000Z"
+);
+assert.equal(
+  getNextMarketOpen(new Date("2026-06-08T13:00:00Z")).toISOString(),
+  "2026-06-08T13:30:00.000Z"
+);
+assert.equal(
+  getNextMarketOpen(new Date("2026-06-08T14:00:00Z")).toISOString(),
+  "2026-06-09T13:30:00.000Z"
+);
+assert.equal(
+  getNextMarketOpen(new Date("2026-07-02T15:00:00Z")).toISOString(),
+  "2026-07-06T13:30:00.000Z"
+);
+assert.equal(
+  getNextMarketOpen(new Date("2026-01-04T18:00:00Z")).toISOString(),
+  "2026-01-05T14:30:00.000Z"
 );
 
 console.log("Analytics chart CSV/JSON exports: all tests passed.");
