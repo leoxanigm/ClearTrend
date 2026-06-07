@@ -14,7 +14,6 @@ grandeur en difficulte et en lignes code/docs/tests, pas un chiffrage exact.
 | Recommendation ML | Ajouter tracking `UserEvent`, endpoint FastAPI, scoring, UI dashboard et scenario demo. |
 | Recherche avancee | Ajouter donnees demo, alimenter les tables recherchees et valider filtres/tri/pagination. |
 | Analytics dashboard avance | Ajouter export CSV/JSON, sentiment/trend reels et filtres plus avances. |
-| Health/status/backups/DR | Corriger `/api/health` en runtime, ajouter `/status`, tester backup et restore. |
 | Public API securisee | Ajouter namespace public versionne, rate limit API key, OpenAPI et endpoints manquants. |
 | OAuth 2.0 | Nettoyer `.env.example`, documenter callbacks et gerer l'affichage des providers non configures. |
 | Notifications CRUD | Ajouter endpoints CRUD, notifications persistantes et centre de notifications UI. |
@@ -151,53 +150,6 @@ Pistes:
 - Ajouter une vue ou timeline sentiment/trend si les donnees existent.
 - Documenter un parcours de demo avec range, watchlist performance, refresh,
   loading/error/empty et export.
-
-## Health/status/backups/DR a finaliser
-
-Estimation: difficulte 2/5, environ 80-180 lignes si on reste simple: fix health
-runtime, page `/status`, doc restore et verification backup/restore.
-
-Probleme:
-
-- Le code contient une route `web/src/app/api/health/route.ts`.
-- Cette route est censee verifier le web, PostgreSQL via Prisma et le service
-  `analysis`.
-- Le service `analysis` expose bien `/health`.
-- Docker Compose contient des healthchecks pour `web`, `analysis` et `db`.
-- Le Makefile contient `make health`, `make backup` et `make restore`.
-- Mais pendant la revue, l'environnement dev local a renvoye `404` sur
-  `http://localhost:3000/api/health`.
-- Il n'existe pas encore de page `/status`.
-- Le restore existe comme commande, mais il manque une procedure documentee et
-  testee de bout en bout.
-
-Impact:
-
-- Le module ne doit pas etre considere comme valide en l'etat.
-- Les briques existent, mais l'evaluation demandera probablement une preuve
-  simple: endpoint health visible, page status, backup cree, restore effectue.
-- Attention: dire "on a un backup" sans avoir teste la restauration est un
-  mauvais argument. Un backup non restaure au moins une fois n'est pas vraiment
-  une preuve de recovery.
-
-Pistes:
-
-- Corriger ou relancer proprement l'environnement pour que `/api/health`
-  retourne le JSON attendu.
-- Verifier le cas nominal: `status: "ok"` quand `web`, `database` et
-  `analysis` sont disponibles.
-- Verifier le cas degrade: statut HTTP `503` si la DB ou `analysis` est
-  indisponible.
-- Ajouter une page `/status` tres simple qui affiche le resultat de
-  `/api/health`.
-- Tester `make backup` et verifier qu'un fichier
-  `backups/transcendence_YYYYMMDD_HHMMSS.sql` est cree.
-- Tester `make restore file=backups/nom.sql` sur une base reset.
-- Documenter la procedure dans le README: backup, reset, restore, verification.
-- Ajouter une phrase RPO/RTO simple pour la demo, par exemple backup manuel a
-  la demande et restauration en quelques minutes.
-- Optionnel si le sujet insiste sur "automated backups": ajouter une commande
-  ou un petit script planifiable qui lance `pg_dump` sans interaction.
 
 ## Public API securisee a finaliser
 

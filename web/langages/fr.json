@@ -283,6 +283,37 @@
       "search": "Recherche des actifs, analyses, rapports et notifications avec filtres et pagination."
     }
   },
+  "statusPage": {
+    "logoAria": "Accueil ClearTrend",
+    "eyebrow": "État du système",
+    "title": "État de ClearTrend",
+    "description": "Disponibilité actuelle des services de l'application.",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation...",
+    "checking": "Vérification des services...",
+    "lastChecked": "Dernière vérification : {date}",
+    "unreachable": "Le contrôle de santé est actuellement inaccessible.",
+    "states": {
+      "ok": "Opérationnel",
+      "error": "Indisponible",
+      "not_configured": "Non configuré",
+      "loading": "Vérification"
+    },
+    "services": {
+      "web": {
+        "name": "Application web",
+        "description": "Interface et API Next.js."
+      },
+      "database": {
+        "name": "Base de données",
+        "description": "Stockage des données PostgreSQL."
+      },
+      "analysis": {
+        "name": "Analyse",
+        "description": "Service FastAPI des données de marché."
+      }
+    }
+  },
   "adminPage": {
     "eyebrow": "Espace admin",
     "title": "Admin",

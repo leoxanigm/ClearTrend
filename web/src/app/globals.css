@@ -2797,6 +2797,87 @@ input {
 
 /* API key settings and docs pages end */
 
+.status-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: var(--app-background);
+  color: var(--app-text);
+}
+
+.status-header,
+.status-content {
+  width: min(100%, 720px);
+  margin-inline: auto;
+}
+
+.status-header,
+.status-heading,
+.status-service-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.status-content {
+  margin-top: 64px;
+}
+
+.status-heading h1 {
+  margin-top: 4px;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.status-description,
+.status-service-row p,
+.status-updated {
+  color: var(--app-muted);
+}
+
+.status-description {
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+.status-services {
+  margin-top: 28px;
+  border-block: 1px solid var(--app-border);
+}
+
+.status-service-row {
+  min-height: 88px;
+  padding-block: 16px;
+}
+
+.status-service-row + .status-service-row {
+  border-top: 1px solid var(--app-border);
+}
+
+.status-service-row p {
+  margin-top: 4px;
+  font-size: 0.875rem;
+}
+
+.status-updated {
+  margin-top: 16px;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 620px) {
+  .status-page {
+    padding: 20px;
+  }
+
+  .status-content {
+    margin-top: 48px;
+  }
+
+  .status-heading {
+    align-items: flex-start;
+  }
+}
+
 .notification-region {
   position: fixed;
   z-index: 80;

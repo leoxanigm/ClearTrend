@@ -10,7 +10,7 @@ Current starter scope:
 - FastAPI analysis service for market data and future analysis helpers.
 - PostgreSQL database managed from the web service with Prisma.
 - Docker Compose setup for development and evaluation-like HTTPS mode.
-- Database backup command through Docker.
+- Automated PostgreSQL backups and tested recovery commands through Docker.
 
 # Instructions
 
@@ -26,10 +26,12 @@ Start the development environment:
 make dev
 ```
 
-Development mode starts `web`, `analysis`, and `db` with hot reload and plain HTTP:
+Development mode starts `web`, `analysis`, `db`, and the automated backup
+service with hot reload and plain HTTP:
 
 - Web: http://localhost:3000
 - Web health: http://localhost:3000/api/health
+- Public status page: http://localhost:3000/status
 - Analysis health: http://localhost:8000/health
 
 Start the evaluation-like environment:
@@ -51,6 +53,8 @@ make health
 make db-shell
 make reset-db
 make backup
+make restore-check file=backups/name.sql
+make restore file=backups/name.sql
 make down
 make fclean
 ```
@@ -104,12 +108,12 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 | Custom Design System | Minor | Valid | 1 | elhirond, amoureau |
 | ORM | Minor | Valid | 1 | elhirond, amoureau, zalemu |
 | Advanced Search | Minor | Partial, not validated | 0 | zalemu |
-| Health, Status, Backups, DR | Minor | Partial, not validated | 0 | elhirond, mathboye |
+| Health, Status, Backups, DR | Minor | Valid | 1 | elhirond, mathboye |
 | OAuth 2.0 | Minor | Valid | 1 | amoureau |
 | Notifications CRUD | Minor | Not implemented | 0 | amoureau |
 | 3 Languages | Minor | Valid | 1 | elhirond |
 | File Upload Management | Minor | Valid if scoped to avatar upload | 1 conditional | elhirond |
-| **Total defendable now** |  |  | **9 + 1 conditional** | |
+| **Total defendable now** |  |  | **10 + 1 conditional** | |
 
 File Upload Management should count only if it is presented as avatar upload
 management, not as generic CSV/JSON import.
@@ -344,30 +348,45 @@ Still missing before validation:
 
 ### Minor - Health, Status, Backups, DR
 
-Status: partially implemented, not validated yet.
+Status: implemented and runtime validated.
 
-The project has a good technical base for operational checks and database
-recovery, but the module still needs a clean runtime validation and a documented
-restore procedure before it can be considered complete.
+ClearTrend exposes live service health, a public status page, automated database
+backups, and tested PostgreSQL recovery tooling.
 
-Current progress:
+Detailed module documentation:
+[Health, Status, Backups and DR](docs/modules/health_status_backups_dr.md).
+
+Proof:
 
 - `/api/health` exists in the web backend and checks the web app, PostgreSQL
-  through Prisma, and the FastAPI analysis service.
-- The analysis service exposes `/health`.
-- Docker Compose defines healthchecks for `web`, `analysis`, and `db`.
-- `make health` is available for manual health checks.
-- `make backup` creates a timestamped PostgreSQL dump in `backups/`.
-- `make restore file=backups/name.sql` restores a dump into PostgreSQL.
+  through Prisma, and the FastAPI analysis service. It returns `503` when a
+  dependency is unavailable.
+- `/api/health/live` is the independent web liveness probe used by Docker.
+- `/status` is public and refreshes the service state every 15 seconds.
+- Docker Compose healthchecks cover `web`, `analysis`, and `db`.
+- The `backup` service creates a PostgreSQL dump at startup and every 24 hours
+  by default, with seven-day retention. Both values are configurable in `.env`.
+- `make backup` creates an immediate timestamped dump in `backups/`.
+- `make restore-check file=backups/name.sql` restores into an isolated temporary
+  database and verifies the result without touching development data.
+- `make restore file=backups/name.sql` performs the disaster recovery restore
+  after stopping the application services. It replaces the current database.
 
-Still missing before validation:
+The backup and isolated restore were tested on June 7, 2026: 11 public tables
+were restored successfully. The degraded scenario was also tested: stopping the
+analysis service keeps `/status` available while `/api/health` returns `503`,
+then returns to `200` after recovery.
 
-- Verify that `/api/health` returns the expected JSON in the running
-  environment. During this review, the local dev runtime returned `404`.
-- Add a simple `/status` page or status view consuming `/api/health`.
-- Document and test a real backup/restore scenario.
-- Add a short DR explanation: where backups are stored, how to restore, and what
-  the expected recovery time/data loss are for the project demo.
+Disaster recovery procedure:
+
+1. Choose the latest valid file in `backups/`.
+2. Run `make restore-check file=backups/name.sql`.
+3. Run `make restore file=backups/name.sql`.
+4. Run `make health` and open `/status`.
+
+With the default daily schedule, the target RPO is at most 24 hours. For this
+project-sized database, the expected RTO is a few minutes. Market CSV data is a
+regenerable cache and is not included in the PostgreSQL backup.
 
 ### Minor - OAuth 2.0
 

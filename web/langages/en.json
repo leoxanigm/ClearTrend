@@ -283,6 +283,37 @@
       "search": "Searches assets, analyses, reports, and notifications with filters and pagination."
     }
   },
+  "statusPage": {
+    "logoAria": "ClearTrend home",
+    "eyebrow": "System status",
+    "title": "ClearTrend status",
+    "description": "Current availability of the application services.",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "checking": "Checking services...",
+    "lastChecked": "Last checked: {date}",
+    "unreachable": "The health endpoint is currently unreachable.",
+    "states": {
+      "ok": "Operational",
+      "error": "Unavailable",
+      "not_configured": "Not configured",
+      "loading": "Checking"
+    },
+    "services": {
+      "web": {
+        "name": "Web application",
+        "description": "Next.js interface and API."
+      },
+      "database": {
+        "name": "Database",
+        "description": "PostgreSQL data storage."
+      },
+      "analysis": {
+        "name": "Analysis",
+        "description": "FastAPI market data service."
+      }
+    }
+  },
   "adminPage": {
     "eyebrow": "Admin area",
     "title": "Admin",

@@ -1,4 +1,4 @@
-.PHONY: dev up down logs ps health db-push db-shell db-studio reset-db backup restore clean fclean certs dev-info up-info
+.PHONY: dev up down logs ps health db-push db-shell db-studio reset-db backup restore restore-check clean fclean certs dev-info up-info
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
@@ -8,17 +8,17 @@ COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
 # dev starts the coding environment: hot reload, exposed ports, plain HTTP.
 dev: .env
-	$(COMPOSE_DEV) up -d --build --remove-orphans db analysis
+	$(COMPOSE_DEV) up -d --build --remove-orphans db analysis backup
 	$(COMPOSE_DEV) build web
 	$(COMPOSE_DEV) run --rm --no-deps web npm run db:push
 	-$(COMPOSE_DEV) stop proxy
 	$(COMPOSE_DEV) up -d --no-deps web
 	$(MAKE) dev-info
-	$(COMPOSE_DEV) logs -f db analysis web
+	$(COMPOSE_DEV) logs -f db analysis backup web
 
 # up starts the evaluation-like environment: built containers and HTTPS through nginx.
 up: .env certs
-	$(COMPOSE) up -d --build --remove-orphans db analysis web proxy
+	$(COMPOSE) up -d --build --remove-orphans db analysis backup web proxy
 	$(COMPOSE) exec web npm run db:push
 	$(MAKE) up-info
 
@@ -52,12 +52,23 @@ reset-db:
 	$(MAKE) dev
 
 backup:
-	mkdir -p backups
-	$(COMPOSE) exec -T db sh -c 'pg_dump -U "$$POSTGRES_USER" "$$POSTGRES_DB"' > "backups/transcendence_$$(date +%Y%m%d_%H%M%S).sql"
+	$(COMPOSE) run --rm --no-deps backup /scripts/backup-db.sh
 
 restore:
 	@test -n "$(file)" || (echo "Usage: make restore file=backups/name.sql" && exit 1)
-	$(COMPOSE) exec -T db sh -c 'psql -U "$$POSTGRES_USER" "$$POSTGRES_DB"' < "$(file)"
+	@test -f "$(file)" || (echo "Backup file not found: $(file)" && exit 1)
+	$(COMPOSE_DEV) stop web analysis
+	@set -e; \
+	trap '$(COMPOSE_DEV) start analysis web >/dev/null' EXIT; \
+	$(COMPOSE) exec -T db sh -c '\
+		dropdb --if-exists --force -U "$$POSTGRES_USER" "$$POSTGRES_DB" && \
+		createdb -U "$$POSTGRES_USER" "$$POSTGRES_DB" && \
+		psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" "$$POSTGRES_DB"' < "$(file)"
+
+restore-check:
+	@test -n "$(file)" || (echo "Usage: make restore-check file=backups/name.sql" && exit 1)
+	@test -f "$(file)" || (echo "Backup file not found: $(file)" && exit 1)
+	$(COMPOSE) run --rm --no-deps backup /scripts/restore-check.sh "/backups/$(notdir $(file))"
 
 certs:
 	@if [ ! -f nginx/certs/server.crt ]; then \
@@ -68,6 +79,7 @@ dev-info:
 	@printf '\nDevelopment environment is ready:\n'
 	@printf '  Web app:         http://localhost:3000\n'
 	@printf '  Web health:      http://localhost:3000/api/health\n'
+	@printf '  Status page:     http://localhost:3000/status\n'
 	@printf '  Analysis health: http://localhost:8000/health\n'
 	@printf '\nUseful commands:\n'
 	@printf '  make logs\n'
@@ -78,6 +90,7 @@ up-info:
 	@printf '\nEvaluation-like environment is ready:\n'
 	@printf '  HTTPS app:       https://localhost\n'
 	@printf '  HTTPS health:    https://localhost/api/health\n'
+	@printf '  HTTPS status:    https://localhost/status\n'
 	@printf '\nThe HTTPS certificate is self-signed, so the browser warning is expected.\n'
 	@printf '\nUseful commands:\n'
 	@printf '  make logs\n'

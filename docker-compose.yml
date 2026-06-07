@@ -11,9 +11,9 @@ services:
       db:
         condition: service_healthy
       analysis:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health/live').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -58,6 +58,27 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - transcendence
+
+  backup:
+    image: postgres:17-alpine
+    env_file:
+      - .env
+    environment:
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+      POSTGRES_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup-db.sh:/scripts/backup-db.sh:ro
+      - ./scripts/backup-loop.sh:/scripts/backup-loop.sh:ro
+      - ./scripts/restore-check.sh:/scripts/restore-check.sh:ro
+    command: ["/bin/sh", "/scripts/backup-loop.sh"]
+    restart: unless-stopped
     networks:
       - transcendence
 

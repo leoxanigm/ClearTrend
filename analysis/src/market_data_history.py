@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pandas as pd
 from fastapi import HTTPException
@@ -184,6 +185,22 @@ def _has_valid_latest_daily_close(daily: pd.DataFrame) -> bool:
     )
 
 
+def _read_cached_history(
+    path: Path,
+    *,
+    ticker: str,
+    data_kind: str,
+) -> pd.DataFrame:
+    try:
+        return read_csv(path)
+    except (pd.errors.EmptyDataError, pd.errors.ParserError):
+        path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=404,
+            detail=f"No valid {data_kind} data for ticker '{ticker}'",
+        ) from None
+
+
 def load_daily_history(ticker: str) -> pd.DataFrame:
     safe = sanitize_ticker(ticker)
     path = latest_file(DATA_DIR, safe)
@@ -194,7 +211,11 @@ def load_daily_history(ticker: str) -> pd.DataFrame:
             detail=f"No data for ticker '{ticker}'",
         )
 
-    return read_csv(path)
+    return _read_cached_history(
+        path,
+        ticker=ticker,
+        data_kind="daily",
+    )
 
 
 def load_intraday_history(ticker: str) -> pd.DataFrame:
@@ -208,7 +229,11 @@ def load_intraday_history(ticker: str) -> pd.DataFrame:
             detail=f"No intraday data for ticker '{ticker}'",
         )
 
-    return read_csv(path)
+    return _read_cached_history(
+        path,
+        ticker=ticker,
+        data_kind="intraday",
+    )
 
 
 def load_intraday_history_with_official_close(ticker: str) -> pd.DataFrame:
@@ -274,7 +299,11 @@ def load_weekly_intraday_history(ticker: str) -> pd.DataFrame:
             detail=f"No weekly intraday data for ticker '{ticker}'",
         )
 
-    return read_csv(path)
+    return _read_cached_history(
+        path,
+        ticker=ticker,
+        data_kind="weekly intraday",
+    )
 
 
 def _aggregate_intraday_to_hourly(df: pd.DataFrame) -> pd.DataFrame | None:
