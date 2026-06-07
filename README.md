@@ -91,7 +91,36 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 
 # Modules
 
-## Major - Frontend and Backend Frameworks
+| Module | Type | Status | Valid points | Participants |
+|---|---:|---|---:|---|
+| Frontend and Backend Frameworks | Major | Valid | 2 | elhirond, amoureau, mathboye |
+| Backend Microservices | Major | Valid | 2 | elhirond, mathboye, amoureau |
+| Advanced Analytics Dashboard with Data Visualization | Major | In progress, not validated | 0 | elhirond, mathboye |
+| Real-time WebSocket/SSE | Major | Not implemented | 0 | |
+| Recommendation ML | Major | Not implemented in this branch | 0 | |
+| Secure Public API | Major | Partial, not validated | 0 | zalemu |
+| Advanced Permissions | Major | Partial, not validated | 0 | amoureau |
+| Additional Browsers | Minor | Valid | 1 | elhirond |
+| Custom Design System | Minor | Valid | 1 | elhirond, amoureau |
+| ORM | Minor | Valid | 1 | elhirond, amoureau, zalemu |
+| Advanced Search | Minor | Partial, not validated | 0 | zalemu |
+| Health, Status, Backups, DR | Minor | Partial, not validated | 0 | elhirond, mathboye |
+| OAuth 2.0 | Minor | Valid | 1 | amoureau |
+| Notifications CRUD | Minor | Not implemented | 0 | amoureau |
+| 3 Languages | Minor | Valid | 1 | elhirond |
+| File Upload Management | Minor | Valid if scoped to avatar upload | 1 conditional | elhirond |
+| **Total defendable now** |  |  | **9 + 1 conditional** | |
+
+File Upload Management should count only if it is presented as avatar upload
+management, not as generic CSV/JSON import.
+
+Participants are inferred from non-merge commits with a functional link to the
+module, not every incidental file touch. Aliases are normalized: `leoxanigm` is
+counted as `zalemu`, and `mbcraft-exe` / `Mathys` as `mathboye`.
+
+## Major Modules
+
+### Major - Frontend and Backend Frameworks
 
 The project uses modern frameworks for both the user interface and the server side.
 
@@ -101,33 +130,7 @@ Proofs:
 - Backend: Next.js API routes for authentication, user data, public API, and health checks.
 - Backend: FastAPI service for market data endpoints used by the web application.
 
-## Minor - Additional Browsers
-
-The main interface was manually checked on Chrome, Firefox, and Edge.
-
-Proofs:
-
-- Chrome: login, dashboard, watchlist, charts, profile, theme, and languages display correctly.
-- Firefox: same user flows display correctly.
-- Edge: same user flows display correctly.
-
-## Minor - Custom Design System
-
-The interface uses a small custom UI library with shared tokens and generic reusable components.
-
-Proofs:
-
-The component library can be checked visually on `/ui-showcase`. This page is not linked in the product navigation and is meant to be opened only by direct URL.
-
-15 Reusable components:
-
-- Button, IconButton, TextInput, SelectField, SegmentedControl.
-- Badge, Card, MetricTile, Avatar, DropdownMenu.
-- Modal, Tooltip, Toast, ThemeSwitch, NotificationProvider.
-
-The design system also centralizes light/dark tokens, surfaces, borders, text colors, accent colors, and shared UI CSS. App screens reuse these primitives on login, dashboard, profile settings, menus, charts, and admin forms, with UI assets such as logo variants, OAuth icons, theme icons, and favorite icons.
-
-## Major - Backend Microservices
+### Major - Backend Microservices
 
 The backend is split into independent services with clear responsibilities and internal REST communication.
 
@@ -141,7 +144,7 @@ Communication between services uses REST over the Docker network with `ANALYSIS_
 
 Docker Compose runs `web`, `analysis`, `db`, and `proxy` as separate services with healthchecks. The global `/api/health` endpoint reports the status of the web backend, database, and analysis backend.
 
-## Major - Advanced Analytics Dashboard
+### Major - Advanced Analytics Dashboard with Data Visualization
 
 Status: in progress, not fully validated yet.
 
@@ -163,7 +166,7 @@ Still missing before validation:
 
 Advanced search is tracked separately and still needs backend/data validation before it can be considered finished.
 
-## Major - Real-time WebSocket/SSE
+### Major - Real-time WebSocket/SSE
 
 Status: not implemented yet, not validated.
 
@@ -182,16 +185,303 @@ Still missing before validation:
 - Server-side broadcast events such as `notification.created`, `analysis.updated`, and `watchlist.updated`.
 - Cross-tab or cross-client demo proving that one backend event updates another connected client without manual refresh.
 
+### Major - Recommendation ML
 
-NEXT CHECK : 
-- ORM | 1 
-- Recommendation ML | 2 
-- Advanced search | 1 
-- Health/status/backups/DR | 1 
-- Public API securisee | 2
-- OAuth 2.0 | 1 
-- Notifications CRUD | 1 
-- 3 langues | 1
+Status: not implemented in this branch, not validated.
+
+This module is planned as a personalized recommendation system. The current branch only contains early data foundations, not a working ML pipeline, endpoint, or UI.
+
+Current foundation:
+
+- Prisma contains `UserEvent`, which can store user interactions.
+- Prisma contains analysis fields such as `recommendation`, `technicalScore`, `emotionScore`, and `confidenceScore`.
+- The analysis service is already separated in FastAPI, which is the right place to host the recommendation logic.
+
+Target structure:
+
+- Track user behavior: viewed assets, searches, watchlist additions/removals, favorites, exports, and source clicks.
+- Build asset features: recent performance, volatility, trend label, sentiment/emotion score, confidence score, and available sources.
+- Use a simple content-based model first, such as cosine similarity or nearest neighbors, because the project will not have enough users for strong collaborative filtering.
+- Return personalized recommendations with a short "why recommended" explanation.
+
+Still missing before validation:
+
+- Event tracking must write meaningful `UserEvent` rows.
+- A FastAPI recommendation endpoint must be added, for example `/recommendations/{userId}`.
+- A model or scoring pipeline must generate ranked recommendations from user history and asset features.
+- The dashboard must display recommendations and their explanation.
+- A demo scenario must prove that recommendations change after user interactions.
+
+### Major - Secure Public API
+
+Status: partially implemented, not validated yet.
+
+The project already has the foundations for external API access: users can
+create an API key, the secret is displayed once, only the hash is stored, and
+several backend routes accept either a browser session or an API key.
+
+Current progress:
+
+- API keys are stored in PostgreSQL with a hash, prefix, creation date, last use
+  date, and revocation field.
+- Account settings can create, display metadata for, and delete an API key.
+- API authentication accepts `Authorization: Bearer <api_key>` and
+  `X-API-Key: <api_key>`.
+- API-key requests update `lastUsedAt`.
+- Authenticated endpoints already exist for watchlist CRUD, asset candles,
+  asset search, asset performance, and advanced search.
+- `/api-docs` lists curl examples for the current API routes.
+
+Still missing before validation:
+
+- Add a clear public/versioned namespace, for example `/api/public/v1`.
+- Add API-key rate limiting on the public endpoints, not only on login/register.
+- Provide at least five public endpoints covering the expected resource surface,
+  including assets, watchlists, reports, and notifications.
+- Add a machine-readable API contract such as `/api/public/v1/openapi.json`.
+- Standardize public API errors and document `401`, `403`, `404`, `409`, `429`,
+  and `5xx` responses.
+- Validate the full curl flow with a generated key, including unauthorized and
+  rate-limited requests.
+
+### Major - Advanced Permissions
+
+Status: partially implemented, not validated yet.
+
+The project has a real admin foundation: roles exist in the database, admin-only
+screens are protected server-side, and admins can inspect users and ban/unban
+accounts. This is a good start, but it is not yet the complete "Advanced
+permissions" module.
+
+Current progress:
+
+- Prisma defines `USER`, `ADMIN`, and `ANALYST` roles.
+- Users have a `role` and optional `bannedAt` field.
+- `/admin` is only accessible to admins.
+- Admin API routes use a server-side `requireAdminUser` guard.
+- The admin page lists users, supports search/sort, displays role/status/API key
+  count/watchlist metadata, and can ban or unban users.
+- Banned users are blocked from profile reads and sign-in/session refresh flows.
+
+Still missing before validation:
+
+- Full user CRUD from the admin interface.
+- Admin action to change a user's role.
+- Reusable `requireRole` or policy helpers for more than admin-only checks.
+- A real `ANALYST` permission surface, because the role exists but is not used
+  for specific views/actions yet.
+- A short manual validation scenario proving user/admin/analyst behavior.
+
+## Minor Modules
+
+### Minor - Additional Browsers
+
+The main interface was manually checked on Chrome, Firefox, and Edge.
+
+Proofs:
+
+- Chrome: login, dashboard, watchlist, charts, profile, theme, and languages display correctly.
+- Firefox: same user flows display correctly.
+- Edge: same user flows display correctly.
+
+### Minor - Custom Design System
+
+The interface uses a small custom UI library with shared tokens and generic reusable components.
+
+Proofs:
+
+The component library can be checked visually on `/ui-showcase`. This page is not linked in the product navigation and is meant to be opened only by direct URL.
+
+15 Reusable components:
+
+- Button, IconButton, TextInput, SelectField, SegmentedControl.
+- Badge, Card, MetricTile, Avatar, DropdownMenu.
+- Modal, Tooltip, Toast, ThemeSwitch, NotificationProvider.
+
+The design system also centralizes light/dark tokens, surfaces, borders, text colors, accent colors, and shared UI CSS. App screens reuse these primitives on login, dashboard, profile settings, menus, charts, and admin forms, with UI assets such as logo variants, OAuth icons, theme icons, and favorite icons.
+
+### Minor - ORM
+
+The web backend uses Prisma as the ORM layer for the PostgreSQL database.
+
+Proofs:
+
+Prisma defines the relational schema for users, assets, watchlists, analyses, reports, notifications, API keys, app settings, and user events. The schema includes relations, enums, unique constraints, indexes, and SQL table mappings.
+
+The generated Prisma client is used by the application backend for authentication, OAuth user upsert, profile management, API keys, admin user management, advanced search, watchlist persistence, app settings, and health checks.
+
+Validation:
+
+- `npx prisma validate` passes. It checks that `schema.prisma` is syntactically valid and that models, relations, enums, and datasource settings are coherent.
+- `npm run prisma:generate` generates the Prisma client successfully. It creates the TypeScript client used by the backend to query PostgreSQL through Prisma.
+
+### Minor - Advanced Search
+
+Status: partially implemented, not validated yet.
+
+The project has two search surfaces. The quick watchlist search is functional for
+asset lookup. The dedicated `/search` interface also exists and calls the
+backend, but the module is not validated yet because the searchable database
+content is not reliably populated by the current user flows.
+
+Current progress:
+
+- Watchlist asset search uses `/api/assets/search`.
+- The "Advanced Search" button opens the protected `/search` page.
+- The `/search` page calls `/api/search` with filters, sorting, direction,
+  pagination, date range, sentiment, and source parameters.
+- `/api/search` uses Prisma to search assets, analyses, reports, and
+  notifications.
+
+Still missing before validation:
+
+- Seed or generate useful demo data for every searched type.
+- Ensure the dashboard, watchlist, and analysis flows create searchable records
+  in the database.
+- Validate the full flow from the Advanced Search button to real results.
+- Document a demo proving filters, sorting, pagination, and multiple result
+  types.
+
+### Minor - Health, Status, Backups, DR
+
+Status: partially implemented, not validated yet.
+
+The project has a good technical base for operational checks and database
+recovery, but the module still needs a clean runtime validation and a documented
+restore procedure before it can be considered complete.
+
+Current progress:
+
+- `/api/health` exists in the web backend and checks the web app, PostgreSQL
+  through Prisma, and the FastAPI analysis service.
+- The analysis service exposes `/health`.
+- Docker Compose defines healthchecks for `web`, `analysis`, and `db`.
+- `make health` is available for manual health checks.
+- `make backup` creates a timestamped PostgreSQL dump in `backups/`.
+- `make restore file=backups/name.sql` restores a dump into PostgreSQL.
+
+Still missing before validation:
+
+- Verify that `/api/health` returns the expected JSON in the running
+  environment. During this review, the local dev runtime returned `404`.
+- Add a simple `/status` page or status view consuming `/api/health`.
+- Document and test a real backup/restore scenario.
+- Add a short DR explanation: where backups are stored, how to restore, and what
+  the expected recovery time/data loss are for the project demo.
+
+### Minor - OAuth 2.0
+
+Status: implemented and manually validated.
+
+The application uses NextAuth for remote authentication and exposes OAuth sign-in
+buttons directly on the login page.
+
+Current progress:
+
+- OAuth providers are configured for Google, GitHub, and 42 School.
+- The login page displays one button per provider.
+- OAuth users are stored in the Prisma `User` model with provider name and
+  provider account id.
+- The sign-in callback creates or updates the user, stores the display name, and
+  keeps the OAuth avatar when available.
+- The session and JWT callbacks expose the internal user id and OAuth identity.
+- `.env.example` lists client id/client secret variables for Google, GitHub, and
+  42 School.
+
+Validation:
+
+- Google OAuth works for account creation and login.
+- GitHub OAuth works for account creation and login.
+- 42 School OAuth works for account creation and login.
+
+Small cleanup still useful:
+
+- Fix `.env.example` so `AUTH_SECRET` is documented once with a clear example
+  value.
+- Document the required callback URLs for Google, GitHub, and 42 School.
+- Decide whether OAuth accounts should be linked to existing email/password
+  accounts with the same email.
+
+### Minor - Notifications CRUD
+
+Status: not implemented yet, not validated.
+
+The project has the data model and local toast UI needed to support
+notifications, but it does not yet provide a complete persistent notification
+system.
+
+Current foundation:
+
+- Prisma contains a `Notification` model with type, title, body, entity
+  metadata, read date, and timestamps.
+- The `NotificationType` enum already covers watchlist, analysis, API key,
+  export, and system events.
+- The advanced search endpoint can read existing notifications.
+- The UI has a local `NotificationProvider` and toast component for immediate
+  browser feedback, already used for profile updates, logout, account deletion,
+  and related success/error states.
+
+Still missing before validation:
+
+- Add `/api/notifications` CRUD endpoints.
+- Add list, mark as read/unread, update, and delete behavior.
+- Create persistent notifications automatically from key actions such as
+  watchlist changes, analysis/report events, API key creation/revocation, and
+  imports/exports.
+- Add a notification center in the dashboard.
+- Validate the flow with real persisted notifications, not only local toasts.
+
+### Minor - 3 Languages
+
+Status: implemented and valid.
+
+The application supports English, French, and Spanish through `next-intl`.
+
+Proofs:
+
+- Translation files exist for `en`, `fr`, and `es`.
+- The three translation files expose the same 250 message keys.
+- The active locale is resolved from the `cleartrend-locale` cookie or the
+  browser `Accept-Language` header.
+- The root layout sets the HTML `lang` attribute from the active locale.
+- A language selector is available on login and from the dashboard user menu.
+- Main product screens use translated messages: login, dashboard, watchlist,
+  chart, profile settings, advanced search, API docs, API key page, admin page,
+  legal pages, theme switch, OAuth buttons, and footer links.
+
+Validation:
+
+- English, French, and Spanish can be selected from the UI.
+- The app refreshes after changing language and keeps the choice in a cookie.
+- Translation key parity was checked: no missing keys between `en`, `fr`, and
+  `es`.
+
+### Minor - File Upload Management
+
+Status: implemented for avatar upload. This is likely valid if the module is
+claimed with user avatar management as its scope.
+
+The profile dialog lets users upload, preview, crop, save, and remove an avatar.
+The backend receives the profile update as `multipart/form-data` and stores the
+uploaded file plus metadata on the user profile.
+
+Proofs:
+
+- Supported formats: JPEG, PNG, and WebP.
+- Maximum size: 5 MB.
+- Client-side checks reject unsupported formats and oversized files before
+  upload.
+- Server-side checks validate the MIME type, file size, empty files, and image
+  file signatures.
+- Uploaded files use generated names and are stored under
+  `/uploads/avatars`.
+- Replacing or deleting an avatar removes the previous local file.
+- Account deletion also removes the user's local avatar.
+
+Important limit: this does not validate generic CSV/JSON import. The watchlist
+download/upload/import buttons are present in the profile dialog but disabled,
+so this module should be presented specifically as avatar upload management.
+
 
 # Individual Contributions
 
