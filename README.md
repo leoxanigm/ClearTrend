@@ -141,6 +141,57 @@ Communication between services uses REST over the Docker network with `ANALYSIS_
 
 Docker Compose runs `web`, `analysis`, `db`, and `proxy` as separate services with healthchecks. The global `/api/health` endpoint reports the status of the web backend, database, and analysis backend.
 
+## Major - Advanced Analytics Dashboard
+
+Status: in progress, not fully validated yet.
+
+The dashboard already provides an interactive financial view connected to the analysis backend. Users can select assets, switch chart ranges, inspect price points on hover, track watchlist performance by period, and see loading/error states when market data is unavailable.
+
+Current progress:
+
+- Interactive SVG price chart with hover tooltip, axes, volume, provider, interval, and last update metadata.
+- Market ranges: `1D`, `1W`, `1M`, `3M`, `1Y`.
+- Watchlist performance range selector connected to `/api/assets/performance`.
+- Client refresh logic connected to the analysis service cache and visibility changes.
+
+Still missing before validation:
+
+- CSV/JSON export for chart or dashboard data.
+- Real sentiment timeline and trend score connected to analysis data.
+- More advanced filters beyond asset and range selection.
+- Manual validation with complete demo data and expected empty/error states.
+
+Advanced search is tracked separately and still needs backend/data validation before it can be considered finished.
+
+## Major - Real-time WebSocket/SSE
+
+Status: not implemented yet, not validated.
+
+The application currently has periodic dashboard refreshes, but it does not yet implement a real-time WebSocket or SSE channel. Chart data is refreshed by client polling, and UI notifications are local to the current browser session.
+
+Current progress:
+
+- Dashboard chart polling refreshes market data from the analysis cache.
+- The notification UI can display local toasts through `NotificationProvider`.
+- The data model already contains notification-related tables for future work.
+
+Still missing before validation:
+
+- A real `/api/events` endpoint using `text/event-stream` or a WebSocket endpoint.
+- A client `EventSource` or WebSocket hook with reconnect handling.
+- Server-side broadcast events such as `notification.created`, `analysis.updated`, and `watchlist.updated`.
+- Cross-tab or cross-client demo proving that one backend event updates another connected client without manual refresh.
+
+
+NEXT CHECK : 
+- ORM | 1 
+- Recommendation ML | 2 
+- Advanced search | 1 
+- Health/status/backups/DR | 1 
+- Public API securisee | 2
+- OAuth 2.0 | 1 
+- Notifications CRUD | 1 
+- 3 langues | 1
 
 # Individual Contributions
 
