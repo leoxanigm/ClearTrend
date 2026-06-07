@@ -1,6 +1,7 @@
 import type { ComponentPropsWithoutRef } from "react";
+import { cx } from "./cx";
 
-type ButtonVariant = "outline" | "primary" | "sidebar" | "tab";
+type ButtonVariant = "outline" | "plain" | "primary" | "sidebar" | "tab";
 
 type ButtonProps = ComponentPropsWithoutRef<"button"> & {
   active?: boolean;
@@ -9,18 +10,16 @@ type ButtonProps = ComponentPropsWithoutRef<"button"> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   outline: "outline-button",
+  plain: "",
   primary: "primary-button",
   sidebar: "sidebar-item",
   tab: "tab-button",
 };
 
-function cx(...classes: Array<string | false | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
-
 export function Button({
   active = false,
   className,
+  type = "button",
   variant = "primary",
   ...props
 }: ButtonProps) {
@@ -31,6 +30,7 @@ export function Button({
         variant === "tab" && active && "tab-button-active",
         className
       )}
+      type={type}
       {...props}
     />
   );

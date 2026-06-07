@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { usePathname } from "next/navigation";
+import { Toast } from "./Toast";
 
 export type NotificationTone = "error" | "info" | "success" | "warning";
 
@@ -151,26 +152,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         className="notification-region"
       >
         {notifications.map((notification) => (
-          <section
-            className={`notification-toast notification-toast-${notification.tone}`}
+          <Toast
+            body={notification.body}
             key={notification.id}
-            role={notification.tone === "error" ? "alert" : "status"}
-          >
-            <div className="notification-toast-content">
-              <p className="notification-toast-title">{notification.title}</p>
-              {notification.body ? (
-                <p className="notification-toast-body">{notification.body}</p>
-              ) : null}
-            </div>
-            <button
-              aria-label="Dismiss notification"
-              className="notification-toast-dismiss"
-              onClick={() => dismissNotification(notification.id)}
-              type="button"
-            >
-              <span aria-hidden="true">x</span>
-            </button>
-          </section>
+            onDismiss={() => dismissNotification(notification.id)}
+            title={notification.title}
+            tone={notification.tone}
+          />
         ))}
       </div>
     </NotificationContext.Provider>

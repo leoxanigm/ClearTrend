@@ -12,6 +12,10 @@ import { AppLogo } from "@/components/AppLogo";
 import { AssetChart } from "@/components/AssetChart";
 import { FooterLinks } from "@/components/FooterLinks";
 import { ProfileSettingsDialog } from "@/components/ProfileSettingsDialog";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { DropdownMenu } from "@/components/ui/DropdownMenu";
+import { MetricTile } from "@/components/ui/MetricTile";
 import { useNotifications } from "@/components/ui/Notifications";
 import { UserAvatar } from "@/components/UserAvatar";
 import { WatchlistNav } from "@/components/WatchlistNav";
@@ -553,29 +557,29 @@ export function DashboardClient({
             </div>
           </div>
 
-          <details className="user-menu" ref={userMenuRef}>
-            <summary
-              aria-label={t("openUserMenu", {
+          <DropdownMenu
+            className="user-menu"
+            label={t("openUserMenu", {
                 name: profile.displayName,
-              })}
-              className="user-menu-trigger"
-            >
-              <UserAvatar className="user-menu-avatar" profile={profile} />
-            </summary>
-            <div className="user-menu-panel">
+            })}
+            panelClassName="user-menu-panel"
+            ref={userMenuRef}
+            trigger={<UserAvatar className="user-menu-avatar" profile={profile} />}
+            triggerClassName="user-menu-trigger"
+          >
               <p className="user-menu-name">{profile.displayName}</p>
               {profile.role === "ADMIN" ? (
-                <p className="app-eyebrow text-[var(--app-accent)]">ADMIN</p>
+                <Badge tone="accent">ADMIN</Badge>
               ) : null}
               <p className="user-menu-email">{profile.email}</p>
 
-              <button
+              <Button
                 className="user-menu-action"
                 onClick={handleOpenProfileDialog}
-                type="button"
+                variant="plain"
               >
                 {t("profileSettings")}
-              </button>
+              </Button>
 
               {profile.role === "ADMIN" ? (
                 <a className="user-menu-action" href="/admin">
@@ -601,26 +605,25 @@ export function DashboardClient({
               </div>
 
               <div className="user-menu-form">
-                <button
+                <Button
                   className="user-menu-action delete-profile-button"
                   disabled={isDeletingProfile || isLoggingOut}
                   onClick={handleDeleteProfile}
-                  type="button"
+                  variant="plain"
                 >
                   {isDeletingProfile ? t("deletingProfile") : t("deleteProfile")}
-                </button>
+                </Button>
 
-                <button
+                <Button
                   className="user-menu-action logout-button"
                   disabled={isLoggingOut || isDeletingProfile}
                   onClick={handleLogout}
-                  type="button"
+                  variant="plain"
                 >
                   {isLoggingOut ? t("loggingOut") : t("logout")}
-                </button>
+                </Button>
               </div>
-            </div>
-          </details>
+          </DropdownMenu>
         </header>
 
         <div className="dashboard-grid mt-8 grid flex-1 gap-6">
@@ -633,19 +636,17 @@ export function DashboardClient({
           />
 
           <aside className="dashboard-summary-grid">
-            <div className="app-card p-4">
-              <p className="app-eyebrow">{t("trend")}</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--app-accent)]">
-                {t("trendNeutral")}
-              </p>
-            </div>
+            <MetricTile
+              label={t("trend")}
+              tone="accent"
+              value={t("trendNeutral")}
+            />
 
-            <div className="app-card p-4">
-              <p className="app-eyebrow">{t("sentiment")}</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--app-secondary)]">
-                {t("sentimentPending")}
-              </p>
-            </div>
+            <MetricTile
+              label={t("sentiment")}
+              tone="secondary"
+              value={t("sentimentPending")}
+            />
           </aside>
         </div>
       </section>

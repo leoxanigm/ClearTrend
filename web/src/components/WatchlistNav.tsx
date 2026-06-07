@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { WatchlistAsset } from '@/lib/assets';
 import { chartRanges, type ChartRange } from '@/lib/analysis-data';
+import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
+import { SelectField } from '@/components/ui/SelectField';
 import { useTranslations } from 'next-intl';
 
 type SortDirection = 'asc' | 'desc';
@@ -201,17 +204,17 @@ function WatchlistItem({
     </>
   );
   const favoriteButton = (
-    <button
-      aria-label={favoriteLabel}
-      aria-pressed={asset.isFavorite}
+    <IconButton
       className={`watchlist-favorite-button${
         asset.isFavorite ? ' watchlist-favorite-button-active' : ''
       }`}
       disabled={favoritePending}
+      label={favoriteLabel}
       onClick={() => onFavoriteToggle(asset.symbol, !asset.isFavorite)}
-      type='button'>
+      pressed={asset.isFavorite}
+      variant='ghost'>
       <span aria-hidden='true'>{asset.isFavorite ? '★' : '☆'}</span>
-    </button>
+    </IconButton>
   );
 
   if (mobile) {
@@ -235,16 +238,16 @@ function WatchlistItem({
       className={className}
       ref={element => setItemRef(asset.symbol, element)}>
       {favoriteButton}
-      <button
+      <Button
         aria-label={`${asset.name} ${formatPerformancePercent(
           performancePercent
         )}`}
         aria-pressed={selected}
         className='sidebar-asset-select'
         onClick={() => onSelect(asset.symbol)}
-        type='button'>
+        variant='plain'>
         {content}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -496,18 +499,18 @@ export function WatchlistNav({
 
             {!isSearching &&
               results.map(result => (
-                <button
+                <Button
                   className='asset-search-result'
                   key={`${result.symbol}-${result.name}`}
                   onClick={() => addAsset(result.symbol)}
-                  type='button'>
+                  variant='plain'>
                   <span className='asset-search-result-name'>
                     {result.name ?? result.symbol}
                   </span>
                   <span className='asset-search-result-symbol'>
                     {result.symbol}
                   </span>
-                </button>
+                </Button>
               ))}
 
             {!isSearching && searchMessage && (
@@ -522,57 +525,57 @@ export function WatchlistNav({
       </div>
 
       <div aria-label={t('sort')} className='watchlist-sort-bar' role='group'>
-        <button
+        <Button
           aria-label={t('sortFavorites')}
           className='watchlist-sort-button watchlist-sort-button-favorite'
           onClick={() => handleSortChange('favorite')}
-          type='button'>
+          variant='plain'>
           <span aria-hidden='true'>★</span>
           <span className='watchlist-sort-arrow' aria-hidden='true'>
             {sortState.favoritesFirst ? '↑' : '↓'}
           </span>
-        </button>
-        <button
+        </Button>
+        <Button
           aria-label={t('sortName')}
           className={`watchlist-sort-button watchlist-sort-button-name${
             sortState.key === 'name' ? ' watchlist-sort-button-active' : ''
           }`}
           onClick={() => handleSortChange('name')}
-          type='button'>
+          variant='plain'>
           <span>A-Z</span>
           {sortState.key === 'name' ? (
             <span className='watchlist-sort-arrow' aria-hidden='true'>
               {getSortArrow(sortState.direction)}
             </span>
           ) : null}
-        </button>
-        <select
-          aria-label={t('performanceRange')}
-          className='watchlist-range-select'
-          onChange={event =>
-            onPerformanceRangeChange(event.target.value as ChartRange)
-          }
-          value={performanceRange}>
-          {chartRanges.map(range => (
-            <option key={range} value={range}>
-              {range}
-            </option>
-          ))}
-        </select>
-        <button
+        </Button>
+        <SelectField
+          ariaLabel={t('performanceRange')}
+          containerClassName='watchlist-range-field'
+          hideLabel
+          label={t('performanceRange')}
+          onValueChange={value => onPerformanceRangeChange(value)}
+          options={chartRanges.map(range => ({
+            label: range,
+            value: range
+          }))}
+          selectClassName='watchlist-range-select'
+          value={performanceRange}
+        />
+        <Button
           aria-label={t('sortDailyPercent')}
           className={`watchlist-sort-button watchlist-sort-button-percent${
             sortState.key === 'dp' ? ' watchlist-sort-button-active' : ''
           }`}
           onClick={() => handleSortChange('dp')}
-          type='button'>
+          variant='plain'>
           <span>%</span>
           {sortState.key === 'dp' ? (
             <span className='watchlist-sort-arrow' aria-hidden='true'>
               {getSortArrow(sortState.direction)}
             </span>
           ) : null}
-        </button>
+        </Button>
       </div>
 
       <nav className='watchlist-nav space-y-2'>

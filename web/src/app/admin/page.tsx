@@ -1,6 +1,7 @@
 import { AdminFinanceRefreshRateSelect } from "@/components/AdminFinanceRefreshRateSelect";
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
+import { Button } from "@/components/ui/Button";
 import { getFinanceRefreshRateSeconds } from "@/lib/app-settings";
 import { getPrisma } from "@/lib/prisma";
 import { getCurrentUserProfile } from "@/lib/profile";
@@ -283,7 +284,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 type="search"
               />
             </label>
-            <button type="submit">{t("users.search.submit")}</button>
+            <Button type="submit" variant="plain">
+              {t("users.search.submit")}
+            </Button>
             {query ? (
               <Link className="admin-user-search-reset" href="/admin">
                 {t("users.search.clear")}
@@ -369,7 +372,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       type="hidden"
                       value={user.bannedAt ? "unban" : "ban"}
                     />
-                    <button
+                    <Button
                       className={
                         user.bannedAt
                           ? "admin-user-action-button"
@@ -377,11 +380,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       }
                       disabled={user.id === profile.id}
                       type="submit"
+                      variant="plain"
                     >
                       {user.bannedAt
                         ? t("users.actions.unban")
                         : t("users.actions.ban")}
-                    </button>
+                    </Button>
                   </form>
                 </div>
               </details>

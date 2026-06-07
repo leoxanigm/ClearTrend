@@ -9,6 +9,8 @@ import {
   type MouseEvent,
 } from "react";
 import type { WatchlistAsset } from "@/lib/assets";
+import { Button } from "@/components/ui/Button";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   chartRanges,
   type ChartCandle,
@@ -93,14 +95,12 @@ const regularStockSessionMs = 6.5 * 60 * 60 * 1000;
 
 function ChartFooterMetric({ label, tooltip }: ChartFooterMetricProps) {
   return (
-    <button
-      aria-label={`${label}: ${tooltip}`}
-      className="asset-chart-footer-metric"
-      data-tooltip={tooltip}
-      type="button"
+    <Tooltip
+      content={tooltip}
+      label={label}
     >
       {label}
-    </button>
+    </Tooltip>
   );
 }
 
@@ -705,15 +705,15 @@ export function AssetChart({
 
       <div className="asset-chart-ranges" aria-label={t("rangeLabel")}>
         {chartRanges.map((option) => (
-          <button
+          <Button
             aria-pressed={range === option}
             className="asset-chart-range"
             key={option}
             onClick={() => onRangeChange(option)}
-            type="button"
+            variant="plain"
           >
             {option}
-          </button>
+          </Button>
         ))}
       </div>
 

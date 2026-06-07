@@ -1,6 +1,7 @@
 'use client';
 
 import { AppLogo } from '@/components/AppLogo';
+import { Button } from '@/components/ui/Button';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
@@ -154,13 +155,13 @@ export function ApiKeySettingsClient() {
           {!isLoading && !apiKey ? (
             <>
               <p>{t('states.noKey')}</p>
-              <button
+              <Button
                 className='primary-action-button'
                 disabled={isSaving}
                 onClick={createApiKey}
-                type='button'>
+                variant='plain'>
                 {isSaving ? t('buttons.creating') : t('buttons.create')}
-              </button>
+              </Button>
             </>
           ) : null}
 
@@ -186,13 +187,13 @@ export function ApiKeySettingsClient() {
                 </div>
               </dl>
 
-              <button
+              <Button
                 className='danger-action-button'
                 disabled={isSaving}
                 onClick={deleteApiKey}
-                type='button'>
+                variant='plain'>
                 {isSaving ? t('buttons.deleting') : t('buttons.delete')}
-              </button>
+              </Button>
             </>
           ) : null}
 
@@ -200,12 +201,12 @@ export function ApiKeySettingsClient() {
             <div className='api-key-secret'>
               <p>{t('states.secretWarning')}</p>
               <code>{secret}</code>
-              <button
+              <Button
                 className='secondary-action-button'
                 onClick={copySecret}
-                type='button'>
+                variant='plain'>
                 {copied ? t('buttons.copied') : t('buttons.copy')}
-              </button>
+              </Button>
             </div>
           ) : null}
 

@@ -19,6 +19,10 @@ import {
   getDefaultAvatarScale,
   UserAvatar,
 } from "@/components/UserAvatar";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import { Modal } from "@/components/ui/Modal";
+import { TextInput } from "@/components/ui/TextInput";
 import {
   avatarUploadRules,
   clampAvatarOffsetForScale,
@@ -469,17 +473,14 @@ export function ProfileSettingsDialog({
   }
 
   return (
-    <div
-      className="profile-dialog-backdrop"
-      onPointerDown={handleBackdropPointerDown}
+    <Modal
+      ariaLabelledBy="profile-dialog-title"
+      as="form"
+      backdropClassName="profile-dialog-backdrop"
+      className="profile-dialog"
+      onBackdropPointerDown={handleBackdropPointerDown}
+      onSubmit={handleSubmit}
     >
-      <form
-        aria-labelledby="profile-dialog-title"
-        aria-modal="true"
-        className="profile-dialog"
-        onSubmit={handleSubmit}
-        role="dialog"
-      >
         <header className="profile-dialog-header">
           <div>
             <h2 className="profile-dialog-title" id="profile-dialog-title">
@@ -488,15 +489,14 @@ export function ProfileSettingsDialog({
             <p className="profile-dialog-email">{profile.email}</p>
           </div>
 
-          <button
-            aria-label={t("aria.closeSettings")}
+          <IconButton
             className="profile-dialog-close"
             disabled={isSaving}
+            label={t("aria.closeSettings")}
             onClick={onClose}
-            type="button"
           >
             <span aria-hidden="true" className="profile-dialog-close-icon" />
-          </button>
+          </IconButton>
         </header>
 
         <div className="profile-dialog-body">
@@ -515,25 +515,24 @@ export function ProfileSettingsDialog({
                     profile={profileWithPreview}
                   />
                 </button>
-                <button
-                  aria-label={t("aria.chooseImage")}
+                <IconButton
                   className="profile-avatar-upload-button"
+                  label={t("aria.chooseImage")}
                   onClick={() => fileInputRef.current?.click()}
-                  type="button"
                 >
                   <span aria-hidden="true" className="profile-plus-icon" />
-                </button>
+                </IconButton>
               </div>
 
               <div className="profile-avatar-actions">
-                <button
-                  className="outline-button profile-inline-button"
+                <Button
+                  className="profile-inline-button"
                   disabled={!hasAvatar && !profile.avatarUrl}
                   onClick={handleRemoveAvatar}
-                  type="button"
+                  variant="outline"
                 >
                   {t("buttons.remove")}
-                </button>
+                </Button>
                 <input
                   accept={avatarUploadRules.accept}
                   className="profile-file-input"
@@ -547,43 +546,40 @@ export function ProfileSettingsDialog({
           </section>
 
           <section className="profile-section">
-            <label className="form-field" htmlFor={displayNameId}>
-              <span className="form-label">{t("displayName")}</span>
-              <input
-                className="form-input"
-                id={displayNameId}
-                maxLength={displayNameLimits.max}
-                minLength={displayNameLimits.min}
-                onChange={(event) => setDisplayName(event.target.value)}
-                value={displayName}
-              />
-            </label>
+            <TextInput
+              id={displayNameId}
+              label={t("displayName")}
+              maxLength={displayNameLimits.max}
+              minLength={displayNameLimits.min}
+              onChange={(event) => setDisplayName(event.target.value)}
+              value={displayName}
+            />
           </section>
 
           <section className="profile-section">
             <h3 className="profile-section-title">{t("watchlist")}</h3>
             <div className="profile-watchlist-actions">
-              <button
-                className="outline-button profile-inline-button"
+              <Button
+                className="profile-inline-button"
                 disabled
-                type="button"
+                variant="outline"
               >
                 {t("buttons.downloadWatchlist")}
-              </button>
-              <button
-                className="outline-button profile-inline-button"
+              </Button>
+              <Button
+                className="profile-inline-button"
                 disabled
-                type="button"
+                variant="outline"
               >
                 {t("buttons.uploadWatchlist")}
-              </button>
-              <button
-                className="outline-button profile-inline-button"
+              </Button>
+              <Button
+                className="profile-inline-button"
                 disabled
-                type="button"
+                variant="outline"
               >
                 {t("buttons.importWatchlist")}
-              </button>
+              </Button>
             </div>
           </section>
 
@@ -593,44 +589,39 @@ export function ProfileSettingsDialog({
         </div>
 
         <footer className="profile-dialog-footer">
-          <button
-            className="outline-button profile-footer-button"
+          <Button
+            className="profile-footer-button"
             disabled={isSaving}
             onClick={onClose}
-            type="button"
+            variant="outline"
           >
             {commonT("cancel")}
-          </button>
-          <button
-            className="primary-button profile-footer-button"
+          </Button>
+          <Button
+            className="profile-footer-button"
             disabled={isSaving}
             type="submit"
           >
             {isSaving ? commonT("saving") : commonT("saveChanges")}
-          </button>
+          </Button>
         </footer>
 
         {isCropEditorOpen && previewAvatarUrl ? (
-          <div
-            className="profile-crop-backdrop"
-            onPointerDown={handleCropBackdropPointerDown}
+          <Modal
+            ariaLabel={t("aria.editCrop")}
+            backdropClassName="profile-crop-backdrop"
+            className="profile-crop-dialog"
+            onBackdropPointerDown={handleCropBackdropPointerDown}
           >
-            <section
-              aria-label={t("aria.editCrop")}
-              aria-modal="true"
-              className="profile-crop-dialog"
-              role="dialog"
-            >
               <header className="profile-crop-header">
                 <h3 className="profile-crop-title">{t("editPhoto")}</h3>
-                <button
-                  aria-label={t("aria.closeCrop")}
+                <IconButton
                   className="profile-dialog-close"
+                  label={t("aria.closeCrop")}
                   onClick={() => setIsCropEditorOpen(false)}
-                  type="button"
                 >
                   <span aria-hidden="true" className="profile-dialog-close-icon" />
-                </button>
+                </IconButton>
               </header>
 
               <div className="profile-crop-editor">
@@ -664,17 +655,16 @@ export function ProfileSettingsDialog({
                 </div>
 
                 <div className="profile-zoom-control">
-                  <button
-                    aria-label={t("aria.zoomOut")}
+                  <IconButton
                     className="profile-zoom-button"
                     disabled={cropDraftScale <= 1}
+                    label={t("aria.zoomOut")}
                     onClick={() =>
                       setCropDraftScaleValue(cropDraftScale - 0.05)
                     }
-                    type="button"
                   >
                     <span aria-hidden="true" className="profile-minus-icon" />
-                  </button>
+                  </IconButton>
                   <input
                     aria-label={t("aria.zoom")}
                     max="2.5"
@@ -686,33 +676,29 @@ export function ProfileSettingsDialog({
                     type="range"
                     value={cropDraftScale}
                   />
-                  <button
-                    aria-label={t("aria.zoomIn")}
+                  <IconButton
                     className="profile-zoom-button"
                     disabled={cropDraftScale >= 2.5}
+                    label={t("aria.zoomIn")}
                     onClick={() =>
                       setCropDraftScaleValue(cropDraftScale + 0.05)
                     }
-                    type="button"
                   >
                     <span aria-hidden="true" className="profile-plus-icon" />
-                  </button>
+                  </IconButton>
                   <span className="profile-zoom-value">
                     {Math.round(cropDraftScale * 100)}%
                   </span>
-                  <button
-                    className="primary-button profile-crop-save-button"
+                  <Button
+                    className="profile-crop-save-button"
                     onClick={saveCropDraft}
-                    type="button"
                   >
                     {commonT("save")}
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </section>
-          </div>
+          </Modal>
         ) : null}
-      </form>
-    </div>
+    </Modal>
   );
 }

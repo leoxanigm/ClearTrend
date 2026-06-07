@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { CSSProperties } from "react";
+import { Avatar } from "@/components/ui/Avatar";
 import { getAvatarCropRatio } from "@/lib/profile-rules";
 export { getDefaultAvatarScale } from "@/lib/profile-rules";
 
@@ -68,8 +69,10 @@ export function UserAvatar({
   className = "user-avatar",
   profile,
 }: UserAvatarProps) {
+  const fallback = getUserInitial(profile);
+
   return (
-    <span aria-hidden="true" className={className}>
+    <Avatar aria-hidden="true" className={className} fallback={fallback}>
       {profile.avatarUrl ? (
         <span className="user-avatar-stage" style={getAvatarStageStyle(profile)}>
           <img
@@ -81,8 +84,8 @@ export function UserAvatar({
           />
         </span>
       ) : (
-        <span className="user-avatar-initial">{getUserInitial(profile)}</span>
+        <span className="user-avatar-initial">{fallback}</span>
       )}
-    </span>
+    </Avatar>
   );
 }

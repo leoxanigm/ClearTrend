@@ -1,15 +1,19 @@
-'use client';
+"use client";
 
-import { SubmitEvent, useEffect, useMemo, useState } from 'react';
+import type { SubmitEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   SearchDirection,
   SearchEntityType,
   SearchResponse,
   SearchResultItem,
   SearchSortKey
-} from '@/lib/search-types';
-import { AppLogo } from '@/components/AppLogo';
-import { useTranslations } from 'next-intl';
+} from "@/lib/search-types";
+import { AppLogo } from "@/components/AppLogo";
+import { Button } from "@/components/ui/Button";
+import { SelectField } from "@/components/ui/SelectField";
+import { TextInput } from "@/components/ui/TextInput";
+import { useTranslations } from "next-intl";
 
 export function SearchClient() {
   const t = useTranslations('searchPage');
@@ -246,136 +250,124 @@ export function SearchClient() {
       </header>
 
       <form className='search-panel' onSubmit={handleSubmit}>
-        <div className='search-field search-field-wide'>
-          <label htmlFor='search-q'>{t('labels.query')}</label>
-          <input
-            id='search-q'
-            onChange={event => {
+        <TextInput
+          containerClassName='search-field search-field-wide'
+          id='search-q'
+          inputClassName=''
+          label={t('labels.query')}
+          labelClassName=''
+          onChange={event => {
               setQuery(event.target.value);
               setPage(1);
-            }}
-            placeholder={t('placeholders.query')}
-            type='search'
-            value={query}
-          />
-        </div>
+          }}
+          placeholder={t('placeholders.query')}
+          type='search'
+          value={query}
+        />
 
-        <div className='search-field'>
-          <label htmlFor='search-type'>{t('labels.type')}</label>
-          <select
-            id='search-type'
-            onChange={event => {
-              setType(event.target.value as SearchEntityType);
-              setPage(1);
-            }}
-            value={type}>
-            {entityTypes.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          containerClassName='search-field'
+          id='search-type'
+          label={t('labels.type')}
+          labelClassName=''
+          onValueChange={value => {
+            setType(value as SearchEntityType);
+            setPage(1);
+          }}
+          options={entityTypes}
+          selectClassName=''
+          value={type}
+        />
 
-        <div className='search-field'>
-          <label htmlFor='search-sort'>{t('labels.sort')}</label>
-          <select
-            id='search-sort'
-            onChange={event => {
-              setSort(event.target.value as SearchSortKey);
-              setPage(1);
-            }}
-            value={sort}>
-            {sortOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          containerClassName='search-field'
+          id='search-sort'
+          label={t('labels.sort')}
+          labelClassName=''
+          onValueChange={value => {
+            setSort(value as SearchSortKey);
+            setPage(1);
+          }}
+          options={sortOptions}
+          selectClassName=''
+          value={sort}
+        />
 
-        <div className='search-field'>
-          <label htmlFor='search-direction'>{t('labels.direction')}</label>
-          <select
-            id='search-direction'
-            onChange={event => {
-              setDirection(event.target.value as SearchDirection);
-              setPage(1);
-            }}
-            value={direction}>
-            {directionOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          containerClassName='search-field'
+          id='search-direction'
+          label={t('labels.direction')}
+          labelClassName=''
+          onValueChange={value => {
+            setDirection(value as SearchDirection);
+            setPage(1);
+          }}
+          options={directionOptions}
+          selectClassName=''
+          value={direction}
+        />
 
-        <div className='search-field'>
-          <label htmlFor='search-sentiment'>{t('labels.sentiment')}</label>
-          <select
-            id='search-sentiment'
-            onChange={event => {
-              setSentiment(event.target.value);
-              setPage(1);
-            }}
-            value={sentiment}>
-            {sentimentOptions.map(option => (
-              <option key={option.value || 'any'} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          containerClassName='search-field'
+          id='search-sentiment'
+          label={t('labels.sentiment')}
+          labelClassName=''
+          onValueChange={value => {
+            setSentiment(value);
+            setPage(1);
+          }}
+          options={sentimentOptions}
+          selectClassName=''
+          value={sentiment}
+        />
 
-        <div className='search-field'>
-          <label htmlFor='search-source'>{t('labels.source')}</label>
-          <select
-            id='search-source'
-            onChange={event => {
-              setSource(event.target.value);
-              setPage(1);
-            }}
-            value={source}>
-            {sourceOptions.map(option => (
-              <option key={option.value || 'any'} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          containerClassName='search-field'
+          id='search-source'
+          label={t('labels.source')}
+          labelClassName=''
+          onValueChange={value => {
+            setSource(value);
+            setPage(1);
+          }}
+          options={sourceOptions}
+          selectClassName=''
+          value={source}
+        />
 
-        <div className='search-field'>
-          <label htmlFor='search-date-from'>{t('labels.from')}</label>
-          <input
-            id='search-date-from'
-            onChange={event => {
+        <TextInput
+          containerClassName='search-field'
+          id='search-date-from'
+          inputClassName=''
+          label={t('labels.from')}
+          labelClassName=''
+          onChange={event => {
               setDateFrom(event.target.value);
               setPage(1);
-            }}
-            type='date'
-            value={dateFrom}
-          />
-        </div>
+          }}
+          type='date'
+          value={dateFrom}
+        />
 
-        <div className='search-field'>
-          <label htmlFor='search-date-to'>{t('labels.to')}</label>
-          <input
-            id='search-date-to'
-            onChange={event => {
+        <TextInput
+          containerClassName='search-field'
+          id='search-date-to'
+          inputClassName=''
+          label={t('labels.to')}
+          labelClassName=''
+          onChange={event => {
               setDateTo(event.target.value);
               setPage(1);
-            }}
-            type='date'
-            value={dateTo}
-          />
-        </div>
+          }}
+          type='date'
+          value={dateTo}
+        />
 
         <div className='search-actions'>
-          <button type='submit'>{commonT('search')}</button>
-          <button onClick={resetFilters} type='button'>
+          <Button type='submit' variant='plain'>{commonT('search')}</Button>
+          <Button onClick={resetFilters} variant='plain'>
             {t('buttons.reset')}
-          </button>
+          </Button>
         </div>
       </form>
 
@@ -418,19 +410,19 @@ export function SearchClient() {
 
         {pagination ? (
           <div className='search-pagination'>
-            <button
+            <Button
               disabled={!pagination.hasPreviousPage || isLoading}
               onClick={() => setPage(current => Math.max(1, current - 1))}
-              type='button'>
+              variant='plain'>
               {t('buttons.previous')}
-            </button>
+            </Button>
 
-            <button
+            <Button
               disabled={!pagination.hasNextPage || isLoading}
               onClick={() => setPage(current => current + 1)}
-              type='button'>
+              variant='plain'>
               {t('buttons.next')}
-            </button>
+            </Button>
           </div>
         ) : null}
       </section>

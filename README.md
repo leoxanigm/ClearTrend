@@ -7,7 +7,7 @@ Transcendence is a web application base for a financial analysis dashboard.
 Current starter scope:
 
 - Next.js web application with React and TypeScript.
-- FastAPI analysis service reserved for future market analysis, scraping, ML, and AI helpers.
+- FastAPI analysis service for market data and future analysis helpers.
 - PostgreSQL database managed from the web service with Prisma.
 - Docker Compose setup for development and evaluation-like HTTPS mode.
 - Database backup command through Docker.
@@ -90,6 +90,56 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 
 
 # Modules
+
+## Major - Frontend and Backend Frameworks
+
+The project uses modern frameworks for both the user interface and the server side.
+
+Proofs:
+
+- Frontend: Next.js with React and TypeScript for pages and UI components.
+- Backend: Next.js API routes for authentication, user data, public API, and health checks.
+- Backend: FastAPI service for market data endpoints used by the web application.
+
+## Minor - Additional Browsers
+
+The main interface was manually checked on Chrome, Firefox, and Edge.
+
+Proofs:
+
+- Chrome: login, dashboard, watchlist, charts, profile, theme, and languages display correctly.
+- Firefox: same user flows display correctly.
+- Edge: same user flows display correctly.
+
+## Minor - Custom Design System
+
+The interface uses a small custom UI library with shared tokens and generic reusable components.
+
+Proofs:
+
+The component library can be checked visually on `/ui-showcase`. This page is not linked in the product navigation and is meant to be opened only by direct URL.
+
+15 Reusable components:
+
+- Button, IconButton, TextInput, SelectField, SegmentedControl.
+- Badge, Card, MetricTile, Avatar, DropdownMenu.
+- Modal, Tooltip, Toast, ThemeSwitch, NotificationProvider.
+
+The design system also centralizes light/dark tokens, surfaces, borders, text colors, accent colors, and shared UI CSS. App screens reuse these primitives on login, dashboard, profile settings, menus, charts, and admin forms, with UI assets such as logo variants, OAuth icons, theme icons, and favorite icons.
+
+## Major - Backend Microservices
+
+The backend is split into independent services with clear responsibilities and internal REST communication.
+
+Proofs:
+
+The `web` service is the application backend: authentication, user profile, watchlist, admin settings, public API routes, and database writes through Prisma.
+
+The `analysis` service is a separate FastAPI backend: market data cache warmup, scheduled refresh, ticker list, snapshots, performances, candles, and health endpoint.
+
+Communication between services uses REST over the Docker network with `ANALYSIS_URL=http://analysis:8000`. The web backend validates user input, calls the analysis backend server-side, normalizes the response, and exposes protected API routes to the frontend.
+
+Docker Compose runs `web`, `analysis`, `db`, and `proxy` as separate services with healthchecks. The global `/api/health` endpoint reports the status of the web backend, database, and analysis backend.
 
 
 # Individual Contributions

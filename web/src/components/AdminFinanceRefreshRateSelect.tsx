@@ -1,5 +1,6 @@
 "use client";
 
+import { SelectField } from "@/components/ui/SelectField";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -24,6 +25,10 @@ export function AdminFinanceRefreshRateSelect({
   const router = useRouter();
   const [value, setValue] = useState(String(initialValue));
   const [isPending, startTransition] = useTransition();
+  const selectOptions = options.map((option) => ({
+    label: option.label,
+    value: String(option.value),
+  }));
 
   function handleChange(nextValue: string) {
     setValue(nextValue);
@@ -48,21 +53,14 @@ export function AdminFinanceRefreshRateSelect({
   }
 
   return (
-    <label className="language-select admin-refresh-rate-select">
-      <span className="language-select-label">{label}</span>
-      <select
-        aria-label={ariaLabel}
-        className="language-select-control"
-        disabled={isPending}
-        onChange={(event) => handleChange(event.target.value)}
-        value={value}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <SelectField
+      ariaLabel={ariaLabel}
+      containerClassName="language-select admin-refresh-rate-select"
+      disabled={isPending}
+      label={label}
+      onValueChange={handleChange}
+      options={selectOptions}
+      value={value}
+    />
   );
 }

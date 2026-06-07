@@ -3,6 +3,7 @@
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { LanguageSelect } from "@/components/ui/LanguageSelect";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { TextInput } from "@/components/ui/TextInput";
@@ -45,7 +46,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login */}
-        <div className="app-card p-6 shadow-sm">
+        <Card className="shadow-sm" padded>
           <SegmentedControl
             onChange={selectMode}
             options={authModes}
@@ -103,7 +104,7 @@ export default function LoginPage() {
                   : t("submit.login")}
             </Button>
           </form>
-        </div>
+        </Card>
 
         {/* OAuth buttons */}
         <OAuthButtons />

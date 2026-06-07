@@ -8,6 +8,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { SelectField } from "./SelectField";
 
 type LanguageSelectProps = {
   className?: string;
@@ -27,21 +28,17 @@ export function LanguageSelect({
   }
 
   return (
-    <label className={className}>
-      <span className="language-select-label">{t("label")}</span>
-      <select
-        aria-label={t("ariaLabel")}
-        className="language-select-control"
-        disabled={isPending}
-        onChange={(event) => handleLocaleChange(event.target.value as AppLocale)}
-        value={locale}
-      >
-        {locales.map((option) => (
-          <option key={option} value={option}>
-            {t(`options.${option}`)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <SelectField
+      ariaLabel={t("ariaLabel")}
+      containerClassName={className}
+      disabled={isPending}
+      label={t("label")}
+      onValueChange={handleLocaleChange}
+      options={locales.map((option) => ({
+        label: t(`options.${option}`),
+        value: option,
+      }))}
+      value={locale}
+    />
   );
 }

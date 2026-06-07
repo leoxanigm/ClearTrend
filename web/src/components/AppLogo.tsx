@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { cx } from "@/components/ui/cx";
 
 type AppLogoProps = {
   ariaLabel?: string;
@@ -8,10 +9,6 @@ type AppLogoProps = {
   priority?: boolean;
   size: "large" | "small";
 };
-
-function cx(...classes: Array<string | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
 
 export function AppLogo({
   ariaLabel = "ClearTrend",

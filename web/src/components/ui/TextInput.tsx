@@ -1,18 +1,25 @@
 import type { ComponentPropsWithoutRef } from "react";
+import { cx } from "./cx";
 
 type TextInputProps = ComponentPropsWithoutRef<"input"> & {
+  containerClassName?: string;
+  inputClassName?: string;
   label: string;
+  labelClassName?: string;
 };
 
-function cx(...classes: Array<string | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
-
-export function TextInput({ className, label, ...props }: TextInputProps) {
+export function TextInput({
+  className,
+  containerClassName = "form-field",
+  inputClassName = "form-input",
+  label,
+  labelClassName = "form-label",
+  ...props
+}: TextInputProps) {
   return (
-    <label className="form-field">
-      <span className="form-label">{label}</span>
-      <input className={cx("form-input", className)} {...props} />
+    <label className={containerClassName}>
+      <span className={labelClassName}>{label}</span>
+      <input className={cx(inputClassName, className)} {...props} />
     </label>
   );
 }
