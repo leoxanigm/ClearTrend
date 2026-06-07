@@ -87,7 +87,8 @@ La vue `Candles` utilise les memes donnees et affiche :
 - un corps entre l'ouverture `open` et la cloture `close` ;
 - une bougie verte lorsque la cloture est superieure ou egale a l'ouverture ;
 - une bougie rouge lorsque la cloture est inferieure a l'ouverture ;
-- un tooltip avec la date et les quatre valeurs OHLC.
+- un tooltip compact avec la date et les libelles complets `Ouverture`,
+  `Plus haut`, `Plus bas` et `Cloture`.
 
 La granularite vient directement de la periode choisie :
 
@@ -232,6 +233,7 @@ web/src/components/AssetChart.tsx
 web/src/components/DashboardClient.tsx
 web/src/lib/analysis-data.ts
 web/src/lib/chart-analytics.ts
+web/src/lib/market-calendar.ts
 web/src/app/api/assets/candles/route.ts
 analysis/src/market_data_views.py
 tests/scripts/test-chart-export.mjs
@@ -253,7 +255,10 @@ Le test verifie :
 - les valeurs absentes ;
 - le format et la version JSON ;
 - les metadonnees du graphique ;
-- le nom du fichier exporte.
+- le nom du fichier exporte ;
+- la prochaine ouverture avant et apres 9h30 a New York ;
+- le passage des week-ends, d'un jour ferie NYSE et du changement
+  heure d'hiver/heure d'ete.
 
 Verification globale :
 
