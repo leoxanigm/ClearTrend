@@ -9,7 +9,7 @@ remote_key="${2:?Usage: upload-infomaniak-s3.sh /path/to/file remote/object/key}
 : "${INFOMANIAK_S3_SECRET_ACCESS_KEY:?INFOMANIAK_S3_SECRET_ACCESS_KEY is required}"
 : "${INFOMANIAK_S3_BUCKET:?INFOMANIAK_S3_BUCKET is required}"
 
-endpoint="${INFOMANIAK_S3_ENDPOINT:-https://s3.pub1.infomaniak.cloud}"
+endpoint="${INFOMANIAK_S3_ENDPOINT:-https://s3.swiss-backup04.infomaniak.com}"
 region="${INFOMANIAK_S3_REGION:-us-east-1}"
 
 export RCLONE_CONFIG_INFOMANIAK_TYPE=s3
