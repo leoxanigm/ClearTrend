@@ -1,11 +1,20 @@
+export const mlAnalyzedSymbols = [
+  "GSPC",
+  "IXIC",
+  "BTC-USD",
+  "ETH-USD",
+  "GC=F",
+  "GOOGL",
+  "NVDA",
+] as const;
+
 export const defaultWatchlistSymbols = [
+  ...mlAnalyzedSymbols,
   "AAPL",
   "MSFT",
-  "NVDA",
   "TSLA",
   "AMD",
   "FAKE-TEST",
-  "GOOGL",
   "AMZN",
   "META",
   "NFLX",
