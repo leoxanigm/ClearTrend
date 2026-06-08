@@ -65,7 +65,9 @@ services:
       - transcendence
 
   backup:
-    image: postgres:17-alpine
+    build:
+      context: .
+      dockerfile: backup/Dockerfile
     env_file:
       - .env
     environment:
@@ -78,11 +80,6 @@ services:
     volumes:
       - ./backups:/backups
       - analysis_data:/analysis-data:ro
-      - ./scripts/backup-db.sh:/scripts/backup-db.sh:ro
-      - ./scripts/backup-analysis-data.sh:/scripts/backup-analysis-data.sh:ro
-      - ./scripts/backup-loop.sh:/scripts/backup-loop.sh:ro
-      - ./scripts/restore-check.sh:/scripts/restore-check.sh:ro
-    command: ["/bin/sh", "/scripts/backup-loop.sh"]
     restart: unless-stopped
     networks:
       - transcendence
