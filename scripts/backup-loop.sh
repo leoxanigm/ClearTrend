@@ -13,5 +13,9 @@ while true; do
     printf 'Analysis data backup failed; retrying in %s seconds.\n' "${interval}" >&2
   fi
 
+  if ! /scripts/backup-avatar-uploads.sh; then
+    printf 'Avatar uploads backup failed; retrying in %s seconds.\n' "${interval}" >&2
+  fi
+
   sleep "${interval}"
 done

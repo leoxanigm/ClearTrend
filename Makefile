@@ -54,6 +54,7 @@ reset-db:
 backup:
 	$(COMPOSE) run --rm --no-deps backup /scripts/backup-db.sh
 	$(COMPOSE) run --rm --no-deps backup /scripts/backup-analysis-data.sh
+	$(COMPOSE) run --rm --no-deps backup /scripts/backup-avatar-uploads.sh
 
 restore:
 	@test -n "$(file)" || (echo "Usage: make restore file=backups/name.sql" && exit 1)
