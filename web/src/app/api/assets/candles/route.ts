@@ -13,7 +13,8 @@ const symbolPattern = /^[A-Z0-9.-]{1,15}$/;
 export async function GET(req: Request) {
   const { response } = await requireApiIdentity(req);
 
-  if (response) { // unauthorized session or api key
+  if (response) {
+    // unauthorized session or api key
     return response;
   }
 
@@ -38,7 +39,9 @@ export async function GET(req: Request) {
     const data = await fetchAnalysisCandles(symbol, range);
 
     return NextResponse.json(data);
-  } catch {
+  } catch (error) {
+    console.error(error);
+    
     return NextResponse.json(
       {
         error: 'Chart data failed.'

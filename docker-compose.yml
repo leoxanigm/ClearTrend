@@ -77,7 +77,9 @@ services:
         condition: service_healthy
     volumes:
       - ./backups:/backups
+      - analysis_data:/analysis-data:ro
       - ./scripts/backup-db.sh:/scripts/backup-db.sh:ro
+      - ./scripts/backup-analysis-data.sh:/scripts/backup-analysis-data.sh:ro
       - ./scripts/backup-loop.sh:/scripts/backup-loop.sh:ro
       - ./scripts/restore-check.sh:/scripts/restore-check.sh:ro
     command: ["/bin/sh", "/scripts/backup-loop.sh"]
