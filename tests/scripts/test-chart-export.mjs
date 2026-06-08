@@ -9,6 +9,9 @@ const chartExportModule = await import(
 const marketCalendarModule = await import(
   pathToFileURL(path.join(webRoot, "src/lib/market-calendar.ts")).href
 );
+const chartLayoutModule = await import(
+  pathToFileURL(path.join(webRoot, "src/lib/chart-layout.ts")).href
+);
 const {
   chartExportFormat,
   chartExportVersion,
@@ -17,6 +20,7 @@ const {
   createChartJsonExport,
 } = chartExportModule;
 const { getNextMarketOpen } = marketCalendarModule;
+const { getCandlestickWidth } = chartLayoutModule;
 
 const candles = [
   {
@@ -107,5 +111,10 @@ assert.equal(
   getNextMarketOpen(new Date("2026-01-04T18:00:00Z")).toISOString(),
   "2026-01-05T14:30:00.000Z"
 );
+
+assert.equal(getCandlestickWidth([0], 640, "1D"), 6);
+assert.equal(getCandlestickWidth([0, 8, 16, 24], 640, "1D"), 4.96);
+assert.equal(getCandlestickWidth([0, 80, 160], 640, "1D"), 6);
+assert.equal(getCandlestickWidth([0, 80, 160], 640, "1M"), 14);
 
 console.log("Analytics chart CSV/JSON exports: all tests passed.");

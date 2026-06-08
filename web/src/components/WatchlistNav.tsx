@@ -6,6 +6,7 @@ import { chartRanges, type ChartRange } from '@/lib/analysis-data';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { SelectField } from '@/components/ui/SelectField';
+import { supportsMlAnalysis } from '@/lib/ml-analysis';
 import { useTranslations } from 'next-intl';
 
 type SortDirection = 'asc' | 'desc';
@@ -165,7 +166,33 @@ function getSortArrow(direction: SortDirection) {
   return direction === 'asc' ? '↑' : '↓';
 }
 
+function AiAnalysisIndicator({
+  badge,
+  label,
+  visible
+}: {
+  badge: string;
+  label: string;
+  visible: boolean;
+}) {
+  return (
+    <span className='watchlist-ai-indicator-slot'>
+      {visible ? (
+        <span
+          aria-label={label}
+          className='watchlist-ai-indicator'
+          role='img'
+          title={label}>
+          {badge}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function WatchlistItem({
+  aiBadge,
+  aiAnalysisLabel,
   asset,
   favoriteLabel,
   favoritePending,
@@ -176,6 +203,8 @@ function WatchlistItem({
   selected,
   setItemRef
 }: {
+  aiBadge: string;
+  aiAnalysisLabel: string;
   asset: WatchlistAsset;
   favoriteLabel: string;
   favoritePending: boolean;
@@ -189,6 +218,7 @@ function WatchlistItem({
   const className = `sidebar-item sidebar-asset${
     selected ? ' sidebar-asset-selected' : ''
   }`;
+  const hasMlAnalysis = supportsMlAnalysis(asset.symbol);
   const content = (
     <>
       <span className='sidebar-asset-main'>
@@ -222,6 +252,11 @@ function WatchlistItem({
       <div
         className={className}
         ref={element => setItemRef(asset.symbol, element)}>
+        <AiAnalysisIndicator
+          badge={aiBadge}
+          label={aiAnalysisLabel}
+          visible={hasMlAnalysis}
+        />
         {favoriteButton}
         <label
           className='sidebar-asset-select'
@@ -237,6 +272,11 @@ function WatchlistItem({
     <div
       className={className}
       ref={element => setItemRef(asset.symbol, element)}>
+      <AiAnalysisIndicator
+        badge={aiBadge}
+        label={aiAnalysisLabel}
+        visible={hasMlAnalysis}
+      />
       {favoriteButton}
       <Button
         aria-label={`${asset.name} ${formatPerformancePercent(
@@ -525,6 +565,7 @@ export function WatchlistNav({
       </div>
 
       <div aria-label={t('sort')} className='watchlist-sort-bar' role='group'>
+        <span aria-hidden='true' />
         <Button
           aria-label={t('sortFavorites')}
           className='watchlist-sort-button watchlist-sort-button-favorite'
@@ -588,6 +629,10 @@ export function WatchlistNav({
 
           return (
             <WatchlistItem
+              aiBadge={t('aiBadge')}
+              aiAnalysisLabel={t('aiAnalysisAvailable', {
+                symbol: asset.symbol
+              })}
               asset={asset}
               favoriteLabel={t(
                 asset.isFavorite ? 'unfavoriteAsset' : 'favoriteAsset',

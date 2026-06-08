@@ -6,7 +6,7 @@ export const watchlistFileRules = {
   version: 1,
 };
 
-const symbolPattern = /^[A-Z0-9.-]{1,15}$/;
+const symbolPattern = /^[A-Z0-9.=-]{1,15}$/;
 
 export type WatchlistFile = {
   exportedAt?: string;

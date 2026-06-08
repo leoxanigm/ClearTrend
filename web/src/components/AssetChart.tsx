@@ -24,6 +24,7 @@ import {
   createChartExportFileName,
   createChartJsonExport,
 } from "@/lib/chart-analytics";
+import { getCandlestickWidth } from "@/lib/chart-layout";
 import { getNextMarketOpen } from "@/lib/market-calendar";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -440,9 +441,10 @@ function buildChartData(
     lastPoint.split(",")[0]
   },${chartBottom} L ${firstPoint.split(",")[0]},${chartBottom} Z`;
   const yTickValues = [maxValue, (maxValue + minValue) / 2, minValue];
-  const candleWidth = Math.max(
-    2,
-    Math.min(14, (usableWidth / Math.max(candles.length, 1)) * 0.62)
+  const candleWidth = getCandlestickWidth(
+    chartPoints.map((point) => point.x),
+    usableWidth,
+    range
   );
 
   return {

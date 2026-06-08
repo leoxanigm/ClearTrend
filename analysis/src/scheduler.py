@@ -15,6 +15,7 @@ from .market_data import (
     latest_weekly_intraday_source_date,
     refresh_weekly_intraday_from_1d,
 )
+from .ml.prediction_store import refresh_all_predictions
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,9 @@ async def refresh_daily_history_if_needed() -> bool:
     logger.info("Daily history refresh started.")
     await asyncio.to_thread(build_daily_history)
     logger.info("Daily history refresh completed.")
+    logger.info("Daily ML prediction refresh started.")
+    await asyncio.to_thread(refresh_all_predictions)
+    logger.info("Daily ML prediction refresh completed.")
     return True
 
 

@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const symbolPattern = /^[A-Z0-9.-]{1,15}$/;
+const symbolPattern = /^[A-Z0-9.=-]{1,15}$/;
 
 export async function GET(req: Request) {
   const { response } = await requireApiIdentity(req);

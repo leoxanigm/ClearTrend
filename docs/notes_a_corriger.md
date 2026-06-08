@@ -11,7 +11,7 @@ grandeur en difficulte et en lignes code/docs/tests, pas un chiffrage exact.
 | Module / sujet | A modifier / ajouter / supprimer |
 |---|---|
 | Watchlist chargee en entier | Ajouter chargement progressif, priorite au symbole selectionne, cache ou pagination. |
-| Recommendation ML | Ajouter tracking `UserEvent`, endpoint FastAPI, scoring, UI dashboard et scenario demo. |
+| ML Trend Prediction | Ajouter la cle Gemini, tester le sentiment reel et valider le scenario de demo. |
 | Recherche avancee | Ajouter donnees demo, alimenter les tables recherchees et valider filtres/tri/pagination. |
 | Public API securisee | Ajouter namespace public versionne, rate limit API key, OpenAPI et endpoints manquants. |
 | OAuth 2.0 | Nettoyer `.env.example`, documenter callbacks et gerer l'affichage des providers non configures. |
@@ -49,44 +49,39 @@ Pistes:
   tous les fichiers a chaque instance.
 - Limiter la watchlist demo par defaut si besoin pendant l'evaluation.
 
-## Recommendation ML a implementer
+## ML Trend Prediction a finaliser
 
-Estimation: difficulte 5/5, environ 400-900 lignes pour event tracking, endpoint
-FastAPI, scoring ML simple, UI dashboard, scenario demo et verification.
+Estimation restante: difficulte 2/5, environ 20-80 lignes de correction selon
+les retours Gemini, puis documentation et verification manuelle.
 
-Probleme:
+Etat:
 
-- Le module Recommendation ML n'est pas implemente dans cette branche.
-- Il existe seulement des fondations de donnees: `UserEvent` dans Prisma et des
-  champs d'analyse comme `recommendation`, `technicalScore`, `emotionScore` et
-  `confidenceScore`.
-- La branche ML mentionnee n'est pas encore disponible dans le repo courant, donc
-  elle ne peut pas etre consideree dans l'etat d'avancement actuel.
+- Le module est maintenant traite comme un module Major personnalise, et non
+  comme le module officiel de recommandations personnalisees.
+- La regression historique, le backtest temporel, Reddit RSS, ApeWisdom, la
+  fusion, les endpoints et les tuiles dashboard sont implementes.
+- Chaque asset est entraine independamment une fois par jour dans un job backend
+  apres le refresh daily. Les clients lisent tous le meme snapshot persiste.
+- Les tests locaux et le parcours authentifie web vers FastAPI passent.
+- La partie Gemini n'a pas encore ete executee avec une vraie cle.
 
-Impact:
+Reste a faire avant validation:
 
-- Le module "Recommendation ML" ne doit pas etre considere comme valide.
-- Il faudra une vraie preuve de personnalisation et pas seulement une liste
-  globale d'assets populaires.
+- Ajouter `GEMINI_API_KEY` dans `.env`, sans la commit.
+- Recreer `analysis` pour charger la variable d'environnement.
+- Tester NVDA, Bitcoin et un asset avec peu de messages.
+- Verifier que les messages Reddit retenus parlent bien de l'investissement.
+- Ajuster seulement les filtres ou le prompt si Gemini classe du contenu hors
+  sujet; ne pas modifier les poids pour fabriquer une tendance attendue.
+- Conserver une capture ou une sortie JSON des trois horizons pour la demo.
+- Expliquer que le prix estime est experimental et que la confiance n'est pas
+  une probabilite de gain.
 
-Pistes:
+Option ulterieure, non necessaire a la premiere validation:
 
-- Tracker les actions utilisateur dans `user_events`: vues d'assets, recherches,
-  ajouts/retraits de watchlist, favoris, exports et clics source.
-- Construire des features asset: performance recente, volatilite, trend label,
-  sentiment/emotion score, confidence score et sources disponibles.
-- Commencer par un modele content-based simple, par exemple similarite cosinus
-  ou nearest neighbors, plutot qu'un collaborative filtering pur.
-- Ajouter un endpoint FastAPI, par exemple `/recommendations/{userId}`.
-- Retourner une liste classee avec un score et une explication courte
-  "why recommended".
-- Afficher ces recommendations dans le dashboard.
-- Brancher les tuiles dashboard "Tendance" et "Sentiment" sur les sorties reelles
-  du modele. Elles restent des placeholders et ne font pas partie de la preuve
-  du module Analytics Dashboard.
-- Preparer un scenario demo: l'utilisateur suit ou consulte quelques assets, puis
-  les recommendations changent de facon visible.
-- Ajouter des tests ou un script de verification sur un petit dataset de demo.
+- Historiser les signaux et leurs resultats reels pendant plusieurs semaines.
+- Entrainer ensuite un meta-modele sur ces observations. Une Random Forest
+  multi-source n'est pas justifiee avant de disposer de cet historique social.
 
 ## Recherche avancee a raccorder et valider
 

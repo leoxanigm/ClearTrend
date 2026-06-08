@@ -17,14 +17,21 @@ import { Button } from "@/components/ui/Button";
 import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import { MetricTile } from "@/components/ui/MetricTile";
 import { useNotifications } from "@/components/ui/Notifications";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { UserAvatar } from "@/components/UserAvatar";
 import { WatchlistNav } from "@/components/WatchlistNav";
 import { LanguageSelect } from "@/components/ui/LanguageSelect";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
 import type { WatchlistAsset } from "@/lib/assets";
 import { isChartRange, type ChartRange } from "@/lib/analysis-data";
+import {
+  chartRangeToMlHorizon,
+  supportsMlAnalysis,
+  type MlAnalysis,
+  type MlPrediction,
+} from "@/lib/ml-analysis";
 import type { UserProfile } from "@/lib/profile-types";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { signOut } from "next-auth/react";
 
 type DashboardClientProps = {
@@ -41,7 +48,39 @@ type AssetSnapshotUpdate = {
   symbol: string;
 };
 
+type MlAnalysisState =
+  | { status: "idle" | "loading" | "unavailable"; value: null }
+  | { status: "ready"; value: MlAnalysis };
+
+type MetricTone = "accent" | "negative" | "positive" | "secondary";
+
 const marketValueTolerance = 0.000001;
+
+function scoreTone(score: number | null, fallback: MetricTone): MetricTone {
+  if (score === null) {
+    return fallback;
+  }
+
+  if (score >= 0.57) {
+    return "positive";
+  }
+
+  if (score <= 0.43) {
+    return "negative";
+  }
+
+  return fallback;
+}
+
+function percentScore(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function signedPercentScore(value: number) {
+  const roundedValue = Math.round(value * 100);
+
+  return `${roundedValue > 0 ? "+" : ""}${roundedValue}%`;
+}
 
 function assetSnapshotChanged(
   asset: WatchlistAsset | undefined,
@@ -106,6 +145,7 @@ export function DashboardClient({
 }: DashboardClientProps) {
   const t = useTranslations("dashboard");
   const commonT = useTranslations("common");
+  const locale = useLocale();
   const userMenuRef = useRef<HTMLDetailsElement>(null);
   const { notifyAfterNavigation } = useNotifications();
   const { notify } = useNotifications();
@@ -128,6 +168,10 @@ export function DashboardClient({
   const [selectedSymbol, setSelectedSymbol] = useState(
     normalizedInitialSymbol ?? initialWatchlistAssets[0]?.symbol ?? null
   );
+  const [mlAnalysis, setMlAnalysis] = useState<MlAnalysisState>({
+    status: "idle",
+    value: null,
+  });
   const [chartRange, setChartRange] = useState<ChartRange>(
     normalizeInitialRange(initialRange)
   );
@@ -140,6 +184,120 @@ export function DashboardClient({
       null,
     [selectedSymbol, watchlistAssets]
   );
+  const selectedAssetHasMlAnalysis = supportsMlAnalysis(
+    selectedAsset?.symbol
+  );
+  const mlHorizon = chartRangeToMlHorizon(chartRange);
+  const mlPrediction: MlPrediction | null =
+    mlAnalysis.status === "ready"
+      ? mlAnalysis.value.predictions.find(
+          (prediction) => prediction.horizon === mlHorizon
+        ) ?? null
+      : null;
+  const mlSentiment =
+    mlAnalysis.status === "ready"
+      ? mlAnalysis.value.social.sentiment
+      : null;
+  const mlAttention =
+    mlAnalysis.status === "ready"
+      ? mlAnalysis.value.social.attention
+      : null;
+  const mlTrendValue =
+    mlAnalysis.status === "loading"
+      ? t("mlLoading")
+      : mlPrediction
+        ? `${t(`mlTrend${mlPrediction.trend}`)} ${percentScore(
+            mlPrediction.score
+          )}`
+        : t("mlUnavailable");
+  const mlTrendDescription = mlPrediction
+    ? t("mlTrendDescription", {
+        confidence: percentScore(mlPrediction.confidence),
+        horizon: mlPrediction.horizon,
+        price: mlPrediction.estimatedPrice.toLocaleString(undefined, {
+          maximumFractionDigits: 2,
+        }),
+      })
+    : undefined;
+  const sentimentScore =
+    mlSentiment?.available && typeof mlSentiment.score === "number"
+      ? mlSentiment.score
+      : null;
+  const sentimentTrend =
+    sentimentScore === null
+      ? null
+      : sentimentScore >= 0.57
+        ? "bullish"
+        : sentimentScore <= 0.43
+        ? "bearish"
+        : "neutral";
+  const sentimentSummary =
+    locale === "fr"
+      ? mlSentiment?.summaryFr
+      : locale === "es"
+        ? mlSentiment?.summaryEs
+        : mlSentiment?.summaryEn;
+  const activeSentimentSummary =
+    sentimentSummary ?? mlSentiment?.summary;
+  const sentimentHelp =
+    activeSentimentSummary
+      ? `${t("mlSentimentScoreHelp")} ${t("mlSentimentSummary", {
+          summary: activeSentimentSummary,
+        })}`
+      : t("mlSentimentScoreHelp");
+  const mlSentimentValue =
+    mlAnalysis.status === "loading"
+      ? t("mlLoading")
+      : sentimentScore !== null && sentimentTrend
+        ? (
+            <Tooltip
+              content={sentimentHelp}
+              label={t("mlSentimentScoreLabel")}
+            >
+              {t(`mlSentiment${sentimentTrend}`, {
+                score: Math.round(sentimentScore * 100),
+              })}
+            </Tooltip>
+          )
+        : t("mlUnavailable");
+  const mlSentimentDescription =
+    sentimentScore !== null && mlSentiment
+      ? (
+          <div className="ui-metric-detail-row">
+            <Tooltip
+              content={t("mlMessagesHelp")}
+              label={t("mlMessagesLabel")}
+            >
+              {t("mlMessagesValue", { count: mlSentiment.postCount })}
+            </Tooltip>
+            <Tooltip
+              content={t("mlAgreementHelp")}
+              label={t("mlAgreementLabel")}
+            >
+              {t("mlAgreementValue", {
+                agreement: percentScore(mlSentiment.agreement ?? 0),
+              })}
+            </Tooltip>
+            {mlAttention?.available &&
+            typeof mlAttention.mentions === "number" ? (
+              <Tooltip
+                content={t("mlMentionsHelp")}
+                label={t("mlMentionsLabel")}
+              >
+                {t("mlMentionsValue", {
+                  count: mlAttention.mentions,
+                  growth:
+                    typeof mlAttention.mentionGrowth === "number"
+                      ? signedPercentScore(mlAttention.mentionGrowth)
+                      : "—",
+                })}
+              </Tooltip>
+            ) : null}
+          </div>
+        )
+      : mlAnalysis.status === "ready" && mlSentiment
+        ? t("mlSentimentUnavailableReason")
+        : undefined;
   const watchlistSymbols = useMemo(
     () => watchlistAssets.map((asset) => asset.symbol).join(","),
     [watchlistAssets]
@@ -248,6 +406,52 @@ export function DashboardClient({
   useEffect(() => {
     replaceDashboardUrl(selectedAsset?.symbol ?? selectedSymbol, chartRange);
   }, [chartRange, selectedAsset?.symbol, selectedSymbol]);
+
+  useEffect(() => {
+    const symbol = selectedAsset?.symbol;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      if (!symbol || !supportsMlAnalysis(symbol)) {
+        setMlAnalysis({ status: "idle", value: null });
+        return;
+      }
+
+      setMlAnalysis({ status: "loading", value: null });
+
+      void fetch(
+        `/api/ml/analyse?symbol=${encodeURIComponent(
+          symbol
+        )}&horizon=${mlHorizon}`,
+        {
+          signal: controller.signal,
+        }
+      )
+        .then(async (response) => {
+          if (!response.ok) {
+            setMlAnalysis({ status: "unavailable", value: null });
+            return;
+          }
+
+          const body = (await response.json()) as MlAnalysis;
+          setMlAnalysis({ status: "ready", value: body });
+        })
+        .catch((error: unknown) => {
+          if (
+            error instanceof DOMException &&
+            error.name === "AbortError"
+          ) {
+            return;
+          }
+
+          setMlAnalysis({ status: "unavailable", value: null });
+        });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [mlHorizon, selectedAsset?.symbol]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -642,19 +846,29 @@ export function DashboardClient({
             range={chartRange}
           />
 
-          <aside className="dashboard-summary-grid">
-            <MetricTile
-              label={t("trend")}
-              tone="accent"
-              value={t("trendNeutral")}
-            />
+          {selectedAssetHasMlAnalysis ? (
+            <fieldset className="dashboard-ai-analysis">
+              <legend className="dashboard-ai-analysis-legend">
+                {t("aiAnalysis")}
+              </legend>
 
-            <MetricTile
-              label={t("sentiment")}
-              tone="secondary"
-              value={t("sentimentPending")}
-            />
-          </aside>
+              <div className="dashboard-summary-grid">
+                <MetricTile
+                  description={mlTrendDescription}
+                  label={t("trend")}
+                  tone={scoreTone(mlPrediction?.score ?? null, "accent")}
+                  value={mlTrendValue}
+                />
+
+                <MetricTile
+                  description={mlSentimentDescription}
+                  label={t("sentiment")}
+                  tone={scoreTone(sentimentScore, "secondary")}
+                  value={mlSentimentValue}
+                />
+              </div>
+            </fieldset>
+          ) : null}
         </div>
       </section>
 
