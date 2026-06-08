@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 
 from .market_data import (
     get_candles,
@@ -13,6 +13,12 @@ from .market_data import (
     snapshot_payloads,
 )
 from .scheduler import run_market_data_scheduler
+from .ml.prediction_store import (
+    load_prediction,
+    prediction_status,
+    select_prediction_horizon,
+)
+from .ml.trend_ensemble import SUPPORTED_TICKERS
 
 
 @asynccontextmanager
@@ -50,6 +56,54 @@ def health() -> dict[str, str]:
 @app.get("/tickers")
 def tickers() -> dict[str, list[str]]:
     return {"tickers": list_cached_tickers()}
+
+
+@app.get("/ml/assets")
+def ml_assets() -> dict[str, list[str]]:
+    return {
+        "tickers": [
+            sanitize_ticker(ticker)
+            for ticker in SUPPORTED_TICKERS
+        ]
+    }
+
+
+@app.get("/ml/status")
+def ml_status() -> dict[str, list[dict]]:
+    return {"assets": prediction_status()}
+
+
+@app.get("/ml/analyse/{ticker}")
+def ml_analyse(
+    ticker: str,
+    horizon: str | None = Query(None),
+) -> dict:
+    try:
+        supported = {
+            sanitize_ticker(source_ticker)
+            for source_ticker in SUPPORTED_TICKERS
+        }
+        safe_ticker = sanitize_ticker(ticker)
+
+        if safe_ticker not in supported:
+            raise ValueError(
+                f"Ticker '{ticker}' is not part of the ML asset universe"
+            )
+
+        payload = load_prediction(ticker)
+
+        if payload is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"ML prediction for '{safe_ticker}' "
+                    "has not been trained yet"
+                ),
+            )
+
+        return select_prediction_horizon(payload, horizon)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @app.get("/history/{ticker}/latest")

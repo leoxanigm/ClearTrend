@@ -6,7 +6,7 @@ import { getAssetDisplayName } from "@/lib/asset-labels";
 import { defaultWatchlistSymbols } from "@/lib/asset-symbols";
 import { getPrisma } from "@/lib/prisma";
 
-const symbolPattern = /^[A-Z0-9.-]{1,15}$/;
+const symbolPattern = /^[A-Z0-9.=-]{1,15}$/;
 
 export type WatchlistAsset = {
   dayChangePercent: number | null;

@@ -22,6 +22,7 @@ LONG_HISTORY_TICKERS = [
     "^IXIC",    # Nasdaq Composite
     "BTC-USD",  # Bitcoin
     "ETH-USD",  # Ethereum
+    "GC=F",     # Gold futures
     "GOOGL",    # Google / Alphabet
     "NVDA",     # Nvidia
 ]

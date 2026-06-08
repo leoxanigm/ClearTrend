@@ -11,6 +11,7 @@
     "test:avatar-upload": "TEST_WEB_ROOT=/app node /tests/scripts/test-avatar-upload.mjs",
     "test:watchlist-file": "TEST_WEB_ROOT=/app node /tests/scripts/test-watchlist-file.mjs",
     "test:chart-export": "TEST_WEB_ROOT=/app node --no-warnings --experimental-strip-types /tests/scripts/test-chart-export.mjs",
+    "test:ml-analysis": "ANALYSIS_TEST_URL=http://analysis:8000 node /tests/scripts/test-ml-analysis.mjs",
     "prisma:generate": "prisma generate",
     "db:push": "prisma db push --accept-data-loss",
     "db:studio": "prisma studio",

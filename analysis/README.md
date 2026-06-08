@@ -38,6 +38,13 @@ without calling Yahoo.
   close correction.
 - `market_data_views.py`: API payloads for candles, snapshots, latest, and
   `updatedAt`.
+- `ml/historical_regression.py`: OHLCV features, Ridge Regression, chronological
+  backtests, estimated prices, and normalized trend scores.
+- `ml/reddit_sentiment.py`: seven-day Reddit RSS sampling and Gemini sentiment.
+- `ml/attention_signal.py`: ApeWisdom mention and rank attention.
+- `ml/trend_ensemble.py`: multi-source weighting, trend, and confidence.
+- `ml/prediction_store.py`: daily per-asset training orchestration, atomic JSON
+  snapshots, model versioning, and cache status.
 
 ## Health
 
@@ -56,6 +63,53 @@ curl http://localhost:8000/tickers
 ```json
 {"tickers": ["A", "AAPL", "ABBV", "ABNB", "ABT", "ACGL", "ACN", "ADBE", "..."]}
 ```
+
+## ML trend prediction
+
+The ML universe is intentionally limited to assets with five years of cached
+history:
+
+```bash
+curl http://localhost:8000/ml/assets
+```
+
+```json
+{"tickers":["GSPC","IXIC","BTC-USD","ETH-USD","GC=F","GOOGL","NVDA"]}
+```
+
+Read the latest shared prediction for all three horizons:
+
+```bash
+curl "http://localhost:8000/ml/analyse/NVDA"
+```
+
+Read one cached horizon:
+
+```bash
+curl "http://localhost:8000/ml/analyse/NVDA?horizon=1W"
+```
+
+Required environment for social sentiment:
+
+```dotenv
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash-lite
+```
+
+Inspect training freshness:
+
+```bash
+curl "http://localhost:8000/ml/status"
+```
+
+The daily backend job runs after the daily market-data refresh. It trains each
+asset independently, writes one JSON snapshot per asset under
+`/app/data/ml_predictions`, and skips a repeated run when the model version,
+Gemini configuration, training day, and latest daily candle are unchanged.
+
+API requests only read these files. They do not fit a model, call Reddit,
+Gemini, or ApeWisdom. The endpoint still serves the historical component when a
+social source was unavailable during the scheduled run.
 
 ## Latest
 

@@ -233,11 +233,16 @@ web/src/components/AssetChart.tsx
 web/src/components/DashboardClient.tsx
 web/src/lib/analysis-data.ts
 web/src/lib/chart-analytics.ts
+web/src/lib/chart-layout.ts
 web/src/lib/market-calendar.ts
 web/src/app/api/assets/candles/route.ts
 analysis/src/market_data_views.py
 tests/scripts/test-chart-export.mjs
 ```
+
+La largeur des bougies utilise l'espacement median entre les points. En `1D`,
+elle est plafonnee pour eviter des bougies trop larges en debut de seance ou
+lorsque le fournisseur retourne momentanement peu de points.
 
 ## Tests automatises
 

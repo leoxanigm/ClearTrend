@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Card } from "./Card";
 import { cx } from "./cx";
 
@@ -5,10 +6,10 @@ type MetricTone = "accent" | "default" | "negative" | "positive" | "secondary";
 
 type MetricTileProps = {
   className?: string;
-  description?: string;
-  label: string;
+  description?: ReactNode;
+  label: ReactNode;
   tone?: MetricTone;
-  value: string;
+  value: ReactNode;
 };
 
 export function MetricTile({
@@ -24,8 +25,9 @@ export function MetricTile({
       <p className={cx("ui-metric-value", `ui-metric-value-${tone}`)}>
         {value}
       </p>
-      {description ? <p className="ui-metric-description">{description}</p> : null}
+      {description ? (
+        <div className="ui-metric-description">{description}</div>
+      ) : null}
     </Card>
   );
 }
-

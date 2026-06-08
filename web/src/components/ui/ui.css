@@ -52,6 +52,16 @@
     font-size: 0.8125rem;
 }
 
+.ui-metric-detail-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+}
+
+.ui-metric-value .ui-tooltip {
+    font-weight: inherit;
+}
+
 .ui-badge {
     display: inline-flex;
     width: max-content;

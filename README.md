@@ -101,7 +101,7 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 | Backend Microservices | Major | Valid | 2 | elhirond, mathboye, amoureau |
 | Advanced Analytics Dashboard with Data Visualization | Major | Valid | 2 | elhirond, mathboye |
 | Real-time WebSocket/SSE | Major | Not implemented | 0 | |
-| Recommendation ML | Major | Not implemented in this branch | 0 | |
+| ML Trend Prediction (custom) | Major | Implemented, live Gemini test pending | 0 | mathboye, elhirond |
 | Secure Public API | Major | Partial, not validated | 0 | zalemu |
 | Advanced Permissions | Major | Partial, not validated | 0 | amoureau |
 | Additional Browsers | Minor | Valid | 1 | elhirond |
@@ -183,32 +183,53 @@ Still missing before validation:
 - Server-side broadcast events such as `notification.created`, `analysis.updated`, and `watchlist.updated`.
 - Cross-tab or cross-client demo proving that one backend event updates another connected client without manual refresh.
 
-### Major - Recommendation ML
+### Major - ML Trend Prediction (custom module)
 
-Status: not implemented in this branch, not validated.
+Status: implemented, live Gemini test pending before validation.
 
-This module is planned as a personalized recommendation system. The current branch only contains early data foundations, not a working ML pipeline, endpoint, or UI.
+ClearTrend combines historical market data, recent Reddit sentiment, and
+ApeWisdom attention to estimate a bearish, neutral, or bullish trend over one
+day, one week, and one month.
 
-Current foundation:
+Why this custom module:
 
-- Prisma contains `UserEvent`, which can store user interactions.
-- Prisma contains analysis fields such as `recommendation`, `technicalScore`, `emotionScore`, and `confidenceScore`.
-- The analysis service is already separated in FastAPI, which is the right place to host the recommendation logic.
+- It is directly relevant to a stock and cryptocurrency analytics platform.
+- It addresses temporal ML validation, multi-source normalization, external API
+  failures, uncertainty, and explainability.
+- It adds estimated prices, trend scores, confidence, and social sentiment to
+  the dashboard.
+- It deserves Major status because it contains four coordinated analysis
+  methods, chronological backtesting, three prediction horizons, a FastAPI API,
+  and a frontend integration.
 
-Target structure:
+Proof:
 
-- Track user behavior: viewed assets, searches, watchlist additions/removals, favorites, exports, and source clicks.
-- Build asset features: recent performance, volatility, trend label, sentiment/emotion score, confidence score, and available sources.
-- Use a simple content-based model first, such as cosine similarity or nearest neighbors, because the project will not have enough users for strong collaborative filtering.
-- Return personalized recommendations with a short "why recommended" explanation.
+- Ridge Regression estimates future log returns from five years of OHLCV data.
+- Time-series cross-validation prevents future data from leaking into training.
+- Each asset and horizon is trained independently; no universal model mixes
+  Bitcoin, equities, indices, and gold histories.
+- Reddit RSS supplies short posts from the latest seven days; Gemini classifies
+  their investment sentiment.
+- ApeWisdom measures how much attention the asset receives and adjusts the
+  importance of the social signal without treating popularity as bullish.
+- The final score is normalized between `0` and `1`; confidence stays low when
+  backtests are weak, sources are missing, or signals disagree.
+- A backend daily job retrains after market-data refresh and writes one atomic
+  snapshot per asset to the shared analysis volume.
+- Dashboard and API requests only read these shared snapshots; user refreshes
+  never start model training or external social calls.
 
-Still missing before validation:
+Supported assets: S&P 500, Nasdaq Composite, Bitcoin, Ethereum, gold, Alphabet,
+and Nvidia.
 
-- Event tracking must write meaningful `UserEvent` rows.
-- A FastAPI recommendation endpoint must be added, for example `/recommendations/{userId}`.
-- A model or scoring pipeline must generate ranked recommendations from user history and asset features.
-- The dashboard must display recommendations and their explanation.
-- A demo scenario must prove that recommendations change after user interactions.
+The complete design, formulas, variables, endpoints, tests, and limitations are
+documented in `docs/modules/ml_trend_prediction.md`.
+
+Still missing before claiming the two points:
+
+- Configure `GEMINI_API_KEY` locally.
+- Run and inspect at least one real social analysis.
+- Demonstrate the three horizons and explain why confidence can remain low.
 
 ### Major - Secure Public API
 
