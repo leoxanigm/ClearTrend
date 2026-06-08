@@ -123,6 +123,12 @@ Le filtre debut/fin travaille ensuite localement sur ces bougies. Pour `1D` et
 `1W`, il accepte aussi l'heure. Le graphique, le nombre de points et les exports
 utilisent uniquement les bougies restantes.
 
+Les snapshots `1D` et les performances de watchlist sont charges par lots de
+20 symboles, avec deux lots simultanes. Les requetes identiques en cours sont
+partagees entre utilisateurs et les resultats sont gardes 30 secondes cote
+`web`. Le selecteur affiche `...` pendant le chargement; `N/A` indique ensuite
+une absence reelle de donnees pour l'asset et la periode.
+
 ## Rafraichissement automatique
 
 Le dashboard utilise la frequence configuree par l'administrateur, avec une

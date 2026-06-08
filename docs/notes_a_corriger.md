@@ -10,7 +10,7 @@ grandeur en difficulte et en lignes code/docs/tests, pas un chiffrage exact.
 
 | Module / sujet | A modifier / ajouter / supprimer |
 |---|---|
-| Watchlist chargee en entier | Ajouter chargement progressif, priorite au symbole selectionne, cache ou pagination. |
+| Watchlist chargee en entier | Le cache et les lots sont faits; ajouter seulement un chargement progressif ou une pagination si la liste grandit encore. |
 | ML Trend Prediction | Ajouter la cle Gemini, tester le sentiment reel et valider le scenario de demo. |
 | Recherche avancee | Ajouter donnees demo, alimenter les tables recherchees et valider filtres/tri/pagination. |
 | Public API securisee | Ajouter namespace public versionne, rate limit API key, OpenAPI et endpoints manquants. |
@@ -31,22 +31,20 @@ Probleme:
 
 - A l'ouverture du dashboard, l'utilisateur voit rapidement la liste, puis le
   client recharge les donnees marche pour toute la watchlist.
-- Avec plusieurs navigateurs ou plusieurs instances ouvertes, cela peut ralentir
-  l'affichage des prix et variations.
+- Le chargement par lots, la deduplication des requetes et le cache court sont
+  maintenant en place. La liste complete reste toutefois chargee au demarrage.
 
 Impact:
 
 - Ce n'est pas un probleme de compatibilite navigateur.
-- Cela peut fragiliser la demo si plusieurs personnes testent le dashboard en
-  meme temps.
+- L'affichage est maintenant stable avec plusieurs clients, mais une liste
+  beaucoup plus grande augmenterait encore le temps du premier chargement.
 
 Pistes:
 
 - Charger seulement les premiers symboles visibles au depart.
 - Charger le symbole selectionne en priorite.
 - Ajouter un chargement progressif ou pagine pour le reste de la watchlist.
-- Mettre en cache les snapshots cote `web` ou `analysis` pour eviter de relire
-  tous les fichiers a chaque instance.
 - Limiter la watchlist demo par defaut si besoin pendant l'evaluation.
 
 ## ML Trend Prediction a finaliser

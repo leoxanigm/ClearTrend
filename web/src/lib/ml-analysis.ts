@@ -1,4 +1,5 @@
 import type { ChartRange } from "@/lib/analysis-data";
+import { mlAnalyzedSymbols } from "@/lib/asset-symbols";
 
 export type MlHorizon = "1D" | "1W" | "1M";
 export type MlTrend = "bearish" | "bullish" | "neutral";
@@ -45,16 +46,6 @@ export type MlAnalysis = {
   };
   ticker: string;
 };
-
-export const mlAnalyzedSymbols = [
-  "GSPC",
-  "IXIC",
-  "BTC-USD",
-  "ETH-USD",
-  "GC=F",
-  "GOOGL",
-  "NVDA",
-] as const;
 
 const mlAnalyzedSymbolSet = new Set<string>(mlAnalyzedSymbols);
 

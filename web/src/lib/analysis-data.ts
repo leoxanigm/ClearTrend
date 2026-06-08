@@ -119,6 +119,16 @@ let tickerCache:
     }
   | null = null;
 
+const analysisBatchSize = 20;
+const analysisBatchConcurrency = 2;
+const analysisBatchCacheMs = 30 * 1000;
+const analysisBatchTimeoutMs = 15 * 1000;
+const analysisJsonCache = new Map<
+  string,
+  { expiresAt: number; value: unknown }
+>();
+const analysisJsonInFlight = new Map<string, Promise<unknown>>();
+
 function getAnalysisUrl(path: string) {
   const analysisUrl = process.env.ANALYSIS_URL;
 
@@ -200,7 +210,11 @@ function normalizeAnalysisCandle(value: AnalysisCandle): ChartCandle | null {
 
 async function fetchAnalysisJson(
   path: string,
-  params?: Record<string, string>
+  params?: Record<string, string>,
+  options: {
+    cacheMs?: number;
+    timeoutMs?: number;
+  } = {}
 ) {
   const url = getAnalysisUrl(path);
 
@@ -208,16 +222,96 @@ async function fetchAnalysisJson(
     url.searchParams.set(key, value);
   }
 
-  const response = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(5000),
-  });
+  const cacheKey = url.toString();
+  const cached = analysisJsonCache.get(cacheKey);
 
-  if (!response.ok) {
-    throw new Error(`Analysis request failed with status ${response.status}`);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
   }
 
-  return response.json() as Promise<unknown>;
+  if (cached) {
+    analysisJsonCache.delete(cacheKey);
+  }
+
+  const inFlight = analysisJsonInFlight.get(cacheKey);
+
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const request = (async () => {
+    const response = await fetch(url, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(options.timeoutMs ?? 5000),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Analysis request failed with status ${response.status}`
+      );
+    }
+
+    const value = await response.json() as unknown;
+
+    if ((options.cacheMs ?? 0) > 0) {
+      analysisJsonCache.set(cacheKey, {
+        expiresAt: Date.now() + (options.cacheMs ?? 0),
+        value,
+      });
+    }
+
+    return value;
+  })();
+
+  analysisJsonInFlight.set(cacheKey, request);
+
+  try {
+    return await request;
+  } finally {
+    analysisJsonInFlight.delete(cacheKey);
+  }
+}
+
+function splitIntoBatches<T>(values: T[], batchSize: number) {
+  const batches: T[][] = [];
+
+  for (let index = 0; index < values.length; index += batchSize) {
+    batches.push(values.slice(index, index + batchSize));
+  }
+
+  return batches;
+}
+
+async function loadAnalysisInBatches<T>(
+  symbols: string[],
+  loader: (batchSymbols: string[]) => Promise<T[]>
+) {
+  const batches = splitIntoBatches(symbols, analysisBatchSize);
+  const values: T[] = [];
+
+  for (
+    let index = 0;
+    index < batches.length;
+    index += analysisBatchConcurrency
+  ) {
+    const batchGroup = batches.slice(
+      index,
+      index + analysisBatchConcurrency
+    );
+    const groupResults = await Promise.allSettled(
+      batchGroup.map((batch) =>
+        loader(batch)
+      )
+    );
+
+    for (const result of groupResults) {
+      if (result.status === "fulfilled") {
+        values.push(...result.value);
+      }
+    }
+  }
+
+  return values;
 }
 
 async function fetchAnalysisCandlesByParams(
@@ -327,26 +421,43 @@ function normalizeAnalysisSnapshot(
 export async function fetchAnalysisAssetSnapshots(
   symbols: string[]
 ) {
-  const normalizedSymbols = symbols
-    .map((symbol) => symbol.trim().toUpperCase())
-    .filter(Boolean);
+  const normalizedSymbols = Array.from(
+    new Set(
+      symbols
+        .map((symbol) => symbol.trim().toUpperCase())
+        .filter(Boolean)
+    )
+  );
 
   if (normalizedSymbols.length === 0) {
     return [];
   }
 
-  const body = (await fetchAnalysisJson(
-    "/snapshots",
-    {
-      symbols: normalizedSymbols.join(","),
-    }
-  )) as AnalysisSnapshotsResponse;
+  return loadAnalysisInBatches(
+    [...normalizedSymbols].sort(),
+    async (batchSymbols) => {
+      const body = (await fetchAnalysisJson(
+        "/snapshots",
+        {
+          symbols: batchSymbols.join(","),
+        },
+        {
+          cacheMs: analysisBatchCacheMs,
+          timeoutMs: analysisBatchTimeoutMs,
+        },
+      )) as AnalysisSnapshotsResponse;
 
-  return Array.isArray(body.snapshots)
-    ? body.snapshots
-        .map((value) => normalizeAnalysisSnapshot(value as AnalysisSnapshot))
-        .filter((value): value is AnalysisAssetSnapshot => Boolean(value))
-    : [];
+      return Array.isArray(body.snapshots)
+        ? body.snapshots
+            .map((value) =>
+              normalizeAnalysisSnapshot(value as AnalysisSnapshot)
+            )
+            .filter(
+              (value): value is AnalysisAssetSnapshot => Boolean(value)
+            )
+        : [];
+    }
+  );
 }
 
 function normalizeAnalysisPerformance(
@@ -369,29 +480,59 @@ export async function fetchAnalysisAssetPerformances(
   symbols: string[],
   range: ChartRange
 ) {
-  const normalizedSymbols = symbols
-    .map((symbol) => symbol.trim().toUpperCase())
-    .filter(Boolean);
+  const normalizedSymbols = Array.from(
+    new Set(
+      symbols
+        .map((symbol) => symbol.trim().toUpperCase())
+        .filter(Boolean)
+    )
+  );
 
   if (normalizedSymbols.length === 0) {
     return [];
   }
 
-  const body = (await fetchAnalysisJson(
-    "/performances",
-    {
-      range,
-      symbols: normalizedSymbols.join(","),
-    }
-  )) as AnalysisPerformancesResponse;
+  const performances = await loadAnalysisInBatches(
+    [...normalizedSymbols].sort(),
+    async (batchSymbols) => {
+      const body = (await fetchAnalysisJson(
+        "/performances",
+        {
+          range,
+          symbols: batchSymbols.join(","),
+        },
+        {
+          cacheMs: analysisBatchCacheMs,
+          timeoutMs: analysisBatchTimeoutMs,
+        },
+      )) as AnalysisPerformancesResponse;
 
-  return Array.isArray(body.performances)
-    ? body.performances
-        .map((value) =>
-          normalizeAnalysisPerformance(value as AnalysisPerformance)
-        )
-        .filter((value): value is AnalysisAssetPerformance => Boolean(value))
-    : [];
+      return Array.isArray(body.performances)
+        ? body.performances
+            .map((value) =>
+              normalizeAnalysisPerformance(value as AnalysisPerformance)
+            )
+            .filter(
+              (value): value is AnalysisAssetPerformance => Boolean(value)
+            )
+        : [];
+    }
+  );
+  const performanceBySymbol = new Map(
+    performances.map((performance) => [
+      performance.symbol,
+      performance,
+    ])
+  );
+
+  return normalizedSymbols.map(
+    (symbol) =>
+      performanceBySymbol.get(symbol) ?? {
+        performancePercent: null,
+        symbol,
+        updatedAt: null,
+      }
+  );
 }
 
 export async function fetchAnalysisTickers() {

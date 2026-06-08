@@ -306,6 +306,9 @@ export function DashboardClient({
     loadedWatchlistPerformanceRange === watchlistPerformanceRange
       ? watchlistPerformanceBySymbol
       : {};
+  const isWatchlistPerformanceLoading =
+    watchlistPerformanceRange !== "1D" &&
+    loadedWatchlistPerformanceRange !== watchlistPerformanceRange;
 
   useEffect(() => {
     watchlistAssetsRef.current = watchlistAssets;
@@ -486,7 +489,7 @@ export function DashboardClient({
         );
 
         if (!response.ok) {
-          return;
+          throw new Error("Watchlist performance request failed");
         }
 
         const body = (await response.json()) as {
@@ -710,6 +713,7 @@ export function DashboardClient({
           onPerformanceRangeChange={setWatchlistPerformanceRange}
           onSelectSymbol={handleSelectSymbol}
           performanceBySymbol={visibleWatchlistPerformanceBySymbol}
+          performanceLoading={isWatchlistPerformanceLoading}
           performanceRange={watchlistPerformanceRange}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />
@@ -738,6 +742,7 @@ export function DashboardClient({
           onPerformanceRangeChange={setWatchlistPerformanceRange}
           onSelectSymbol={handleSelectSymbol}
           performanceBySymbol={visibleWatchlistPerformanceBySymbol}
+          performanceLoading={isWatchlistPerformanceLoading}
           performanceRange={watchlistPerformanceRange}
           selectedSymbol={selectedAsset?.symbol ?? null}
         />

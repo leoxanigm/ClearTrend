@@ -10,7 +10,7 @@ import { supportsMlAnalysis } from '@/lib/ml-analysis';
 import { useTranslations } from 'next-intl';
 
 type SortDirection = 'asc' | 'desc';
-type SortKey = 'dp' | 'favorite' | 'name';
+type SortKey = 'ai' | 'dp' | 'favorite' | 'name';
 type SortState = {
   direction: SortDirection;
   favoritesFirst: boolean;
@@ -28,6 +28,7 @@ type WatchlistNavProps = {
   onPerformanceRangeChange: (range: ChartRange) => void;
   onSelectSymbol: (symbol: string) => void;
   performanceBySymbol: Record<string, number | null>;
+  performanceLoading: boolean;
   performanceRange: ChartRange;
   selectedSymbol: string | null;
 };
@@ -48,7 +49,14 @@ function getAssetPerformance(
     : performanceBySymbol[asset.symbol] ?? null;
 }
 
-function formatPerformancePercent(value: number | null) {
+function formatPerformancePercent(
+  value: number | null,
+  loading = false
+) {
+  if (loading) {
+    return '…';
+  }
+
   if (value === null) {
     return 'N/A';
   }
@@ -123,6 +131,14 @@ function compareAssetFavorites(
   return a.isFavorite ? 1 : -1;
 }
 
+function compareAssetAiAvailability(
+  a: WatchlistAsset,
+  b: WatchlistAsset
+) {
+  return Number(supportsMlAnalysis(b.symbol)) -
+    Number(supportsMlAnalysis(a.symbol));
+}
+
 function sortAssets(
   assets: WatchlistAsset[],
   sortState: SortState,
@@ -130,6 +146,12 @@ function sortAssets(
   performanceRange: ChartRange
 ) {
   return [...assets].sort((a, b) => {
+    const aiResult = compareAssetAiAvailability(a, b);
+
+    if (aiResult !== 0) {
+      return aiResult;
+    }
+
     const favoriteResult = compareAssetFavorites(
       a,
       b,
@@ -200,6 +222,7 @@ function WatchlistItem({
   onFavoriteToggle,
   onSelect,
   performancePercent,
+  performanceLoading,
   selected,
   setItemRef
 }: {
@@ -212,6 +235,7 @@ function WatchlistItem({
   onFavoriteToggle: (symbol: string, isFavorite: boolean) => void;
   onSelect: (symbol: string) => void;
   performancePercent: number | null;
+  performanceLoading: boolean;
   selected: boolean;
   setItemRef: (symbol: string, element: HTMLElement | null) => void;
 }) {
@@ -229,7 +253,10 @@ function WatchlistItem({
         className={`sidebar-performance ${getDayChangeClass(
           performancePercent
         )}`}>
-        {formatPerformancePercent(performancePercent)}
+        {formatPerformancePercent(
+          performancePercent,
+          performanceLoading
+        )}
       </span>
     </>
   );
@@ -246,18 +273,23 @@ function WatchlistItem({
       <span aria-hidden='true'>{asset.isFavorite ? '★' : '☆'}</span>
     </IconButton>
   );
+  const assetActions = (
+    <span className='watchlist-asset-actions'>
+      <AiAnalysisIndicator
+        badge={aiBadge}
+        label={aiAnalysisLabel}
+        visible={hasMlAnalysis}
+      />
+      {favoriteButton}
+    </span>
+  );
 
   if (mobile) {
     return (
       <div
         className={className}
         ref={element => setItemRef(asset.symbol, element)}>
-        <AiAnalysisIndicator
-          badge={aiBadge}
-          label={aiAnalysisLabel}
-          visible={hasMlAnalysis}
-        />
-        {favoriteButton}
+        {assetActions}
         <label
           className='sidebar-asset-select'
           htmlFor='dashboard-drawer'
@@ -272,15 +304,11 @@ function WatchlistItem({
     <div
       className={className}
       ref={element => setItemRef(asset.symbol, element)}>
-      <AiAnalysisIndicator
-        badge={aiBadge}
-        label={aiAnalysisLabel}
-        visible={hasMlAnalysis}
-      />
-      {favoriteButton}
+      {assetActions}
       <Button
         aria-label={`${asset.name} ${formatPerformancePercent(
-          performancePercent
+          performancePercent,
+          performanceLoading
         )}`}
         aria-pressed={selected}
         className='sidebar-asset-select'
@@ -300,6 +328,7 @@ export function WatchlistNav({
   onPerformanceRangeChange,
   onSelectSymbol,
   performanceBySymbol,
+  performanceLoading,
   performanceRange,
   selectedSymbol
 }: WatchlistNavProps) {
@@ -308,7 +337,7 @@ export function WatchlistNav({
   const [sortState, setSortState] = useState<SortState>({
     direction: 'asc',
     favoritesFirst: true,
-    key: 'name'
+    key: 'ai'
   });
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<AssetSearchResult[]>([]);
@@ -318,6 +347,7 @@ export function WatchlistNav({
     () => new Set()
   );
   const itemRefs = useRef(new Map<string, HTMLElement>());
+  const previousSelectedSymbolRef = useRef(selectedSymbol);
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -382,7 +412,14 @@ export function WatchlistNav({
   const searchInputId = mobile ? 'asset-search-mobile' : 'asset-search-desktop';
 
   useEffect(() => {
-    if (!selectedSymbol) {
+    const previousSelectedSymbol = previousSelectedSymbolRef.current;
+
+    previousSelectedSymbolRef.current = selectedSymbol;
+
+    if (
+      !selectedSymbol ||
+      previousSelectedSymbol === selectedSymbol
+    ) {
       return;
     }
 
@@ -390,7 +427,7 @@ export function WatchlistNav({
       block: 'nearest',
       behavior: 'smooth'
     });
-  }, [selectedSymbol, sortedAssets]);
+  }, [selectedSymbol]);
 
   function setItemRef(symbol: string, element: HTMLElement | null) {
     if (element) {
@@ -416,7 +453,10 @@ export function WatchlistNav({
       if (key === 'favorite') {
         return {
           ...currentSort,
-          favoritesFirst: !currentSort.favoritesFirst,
+          favoritesFirst:
+            currentSort.key === 'favorite'
+              ? !currentSort.favoritesFirst
+              : true,
           key
         };
       }
@@ -565,7 +605,6 @@ export function WatchlistNav({
       </div>
 
       <div aria-label={t('sort')} className='watchlist-sort-bar' role='group'>
-        <span aria-hidden='true' />
         <Button
           aria-label={t('sortFavorites')}
           className='watchlist-sort-button watchlist-sort-button-favorite'
@@ -646,6 +685,7 @@ export function WatchlistNav({
               onFavoriteToggle={handleFavoriteToggle}
               onSelect={onSelectSymbol}
               performancePercent={performancePercent}
+              performanceLoading={performanceLoading}
               selected={asset.symbol === selectedSymbol}
               setItemRef={setItemRef}
             />

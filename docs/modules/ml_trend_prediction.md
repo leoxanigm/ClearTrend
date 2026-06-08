@@ -342,6 +342,8 @@ La tuile Sentiment affiche:
 Les deux tuiles sont regroupees dans un cadre `Analyse IA`. Ce cadre est
 absent pour les assets hors du perimetre ML. Dans la watchlist, une pastille
 `IA` distingue les sept assets disposant d'une analyse calculee en backend.
+Ces sept assets sont presents dans la watchlist par defaut de tous les
+utilisateurs et restent regroupes en tete, quel que soit le tri choisi.
 
 Les valeurs sont explicables au survol:
 
