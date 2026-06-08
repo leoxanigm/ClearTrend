@@ -80,6 +80,7 @@ services:
     volumes:
       - ./backups:/backups
       - analysis_data:/analysis-data:ro
+      - avatar_uploads:/avatar-uploads:ro
     restart: unless-stopped
     networks:
       - transcendence
