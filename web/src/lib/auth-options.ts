@@ -7,6 +7,19 @@ import FortyTwo from "next-auth/providers/42-school";
 import { getPrisma } from "@/lib/prisma";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 
+function hasConfiguredOAuthCredential(value: string | undefined) {
+  return Boolean(
+    value &&
+      value.trim().length > 0 &&
+      !value.trim().startsWith("your_") &&
+      value.trim() !== "change-me"
+  );
+}
+
+function isOAuthProviderConfigured(id: string | undefined, secret: string | undefined) {
+  return hasConfiguredOAuthCredential(id) && hasConfiguredOAuthCredential(secret);
+}
+
 function getOAuthAvatarUrl(...values: unknown[]) {
   for (const value of values) {
     if (typeof value === "string" && value.length > 0) {
@@ -25,23 +38,45 @@ function getOAuthAvatarUrl(...values: unknown[]) {
   return null;
 }
 
+const oauthProviders = [
+  ...(isOAuthProviderConfigured(
+    process.env.AUTH_GOOGLE_ID,
+    process.env.AUTH_GOOGLE_SECRET
+  )
+    ? [
+        Google({
+          clientId: process.env.AUTH_GOOGLE_ID!,
+          clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+        }),
+      ]
+    : []),
+  ...(isOAuthProviderConfigured(
+    process.env.AUTH_GITHUB_ID,
+    process.env.AUTH_GITHUB_SECRET
+  )
+    ? [
+        Github({
+          clientId: process.env.AUTH_GITHUB_ID!,
+          clientSecret: process.env.AUTH_GITHUB_SECRET!,
+        }),
+      ]
+    : []),
+  ...(isOAuthProviderConfigured(
+    process.env.AUTH_42_SCHOOL_ID,
+    process.env.AUTH_42_SCHOOL_SECRET
+  )
+    ? [
+        FortyTwo({
+          clientId: process.env.AUTH_42_SCHOOL_ID!,
+          clientSecret: process.env.AUTH_42_SCHOOL_SECRET!,
+        }),
+      ]
+    : []),
+];
+
 export const authOptions: NextAuthOptions = {
   providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-    }),
-
-    Github({
-      clientId: process.env.AUTH_GITHUB_ID!,
-      clientSecret: process.env.AUTH_GITHUB_SECRET!,
-    }),
-
-    FortyTwo({
-      clientId: process.env.AUTH_42_SCHOOL_ID!,
-      clientSecret: process.env.AUTH_42_SCHOOL_SECRET!,
-    }),
-
+    ...oauthProviders,
     Credentials({
       name: "credentials",
       credentials: {
