@@ -108,7 +108,7 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 | Custom Design System | Minor | Valid | 1 | elhirond, amoureau |
 | ORM | Minor | Valid | 1 | elhirond, amoureau, zalemu |
 | Advanced Search | Minor | Partial, not validated | 0 | zalemu |
-| Health, Status, Backups, DR | Minor | Valid | 1 | elhirond, mathboye |
+| Health, Status, Backups, DR | Minor | Valid | 1 | elhirond, mathboye, zalemu |
 | OAuth 2.0 | Minor | Valid | 1 | amoureau |
 | Notifications CRUD | Minor | Not implemented | 0 | amoureau |
 | 3 Languages | Minor | Valid | 1 | elhirond |
@@ -379,8 +379,7 @@ Disaster recovery procedure:
 4. Run `make health` and open `/status`.
 
 With the default daily schedule, the target RPO is at most 24 hours. For this
-project-sized database, the expected RTO is a few minutes. Market CSV data is a
-regenerable cache and is not included in the PostgreSQL backup.
+project-sized database, the expected RTO is a few minutes.
 
 ### Minor - OAuth 2.0
 

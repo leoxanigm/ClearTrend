@@ -32,9 +32,18 @@ rclone copyto \
   --low-level-retries 10 \
   --stats-one-line
 
-rclone lsf \
-  "infomaniak:${INFOMANIAK_S3_BUCKET}/${remote_key}" \
-  >/dev/null
+remote_dir="$(dirname "${remote_key}")"
+remote_name="$(basename "${remote_key}")"
+
+if ! rclone lsf \
+  "infomaniak:${INFOMANIAK_S3_BUCKET}/${remote_dir}" \
+  --files-only \
+  | grep -Fx "${remote_name}" >/dev/null; then
+  printf 'Uploaded object was not found after upload: s3://%s/%s\n' \
+    "${INFOMANIAK_S3_BUCKET}" \
+    "${remote_key}" >&2
+  exit 1
+fi
 
 printf 'Uploaded backup to Infomaniak S3: s3://%s/%s\n' \
   "${INFOMANIAK_S3_BUCKET}" \

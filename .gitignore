@@ -7,6 +7,7 @@
 nginx/certs/
 backups/*.sql
 backups/*.dump
+backups/*.tar.gz
 !backups/.gitkeep
 
 # Node / Next.js
