@@ -2,15 +2,25 @@ import { AdminFinanceRefreshRateSelect } from "@/components/AdminFinanceRefreshR
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
 import { Button } from "@/components/ui/Button";
+import type { Role } from "@/generated/prisma/enums";
 import { getFinanceRefreshRateSeconds } from "@/lib/app-settings";
 import { getPrisma } from "@/lib/prisma";
 import { getCurrentUserProfile } from "@/lib/profile";
+import { normalizeDisplayName, validateDisplayName } from "@/lib/profile-rules";
+import { unlink } from "fs/promises";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
+import { basename, join, resolve } from "path";
 
 const adminSortOptions = ["username", "email", "banned", "admin"] as const;
+const adminRoleOptions = [
+  "USER",
+  "ANALYST",
+  "ADMIN",
+] as const satisfies readonly Role[];
+const avatarUploadPath = "/uploads/avatars";
 
 type AdminSortOption = (typeof adminSortOptions)[number];
 
@@ -38,6 +48,44 @@ function getDefaultSortDirection(option: AdminSortOption) {
 
 function getSearchQuery(value: string | undefined) {
   return value?.trim() ?? "";
+}
+
+function getAvatarDirectory() {
+  return join(process.cwd(), "public", "uploads", "avatars");
+}
+
+async function deleteLocalAvatar(url: string | null) {
+  if (!url?.startsWith(`${avatarUploadPath}/`)) {
+    return;
+  }
+
+  const avatarDirectory = resolve(getAvatarDirectory());
+  const avatarPath = resolve(avatarDirectory, basename(url));
+
+  if (!avatarPath.startsWith(`${avatarDirectory}/`)) {
+    return;
+  }
+
+  await unlink(avatarPath).catch(() => null);
+}
+
+function readFormString(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? value : "";
+}
+
+function normalizeEmail(value: FormDataEntryValue | null) {
+  return readFormString(value).trim().toLowerCase();
+}
+
+function isValidEmail(value: string) {
+  return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function isAdminRole(value: FormDataEntryValue | null): value is Role {
+  return (
+    typeof value === "string" &&
+    adminRoleOptions.includes(value as (typeof adminRoleOptions)[number])
+  );
 }
 
 function getSortHref(
@@ -99,6 +147,199 @@ async function toggleUserBan(formData: FormData) {
     },
   });
 
+  revalidatePath("/admin");
+}
+
+async function updateUserProfile(formData: FormData) {
+  "use server";
+
+  const profile = await getCurrentUserProfile();
+
+  if (!profile) {
+    redirect("/login");
+  }
+
+  if (profile.role !== "ADMIN") {
+    notFound();
+  }
+
+  const userId = formData.get("userId");
+  const email = normalizeEmail(formData.get("email"));
+  const rawDisplayName = formData.get("displayName");
+  const displayName = normalizeDisplayName(rawDisplayName);
+
+  if (typeof userId !== "string" || userId.length === 0) {
+    return;
+  }
+
+  if (!isValidEmail(email)) {
+    return;
+  }
+
+  if (displayName.length > 0) {
+    const displayNameValidation = validateDisplayName(displayName);
+
+    if (displayNameValidation.error || !displayNameValidation.value) {
+      return;
+    }
+  }
+
+  const prisma = getPrisma();
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      email,
+      id: {
+        not: userId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (existingUser) {
+    return;
+  }
+
+  await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      displayName: displayName || null,
+      email,
+    },
+  });
+
+  revalidatePath("/admin");
+}
+
+async function updateUserRole(formData: FormData) {
+  "use server";
+
+  const profile = await getCurrentUserProfile();
+
+  if (!profile) {
+    redirect("/login");
+  }
+
+  if (profile.role !== "ADMIN") {
+    notFound();
+  }
+
+  const userId = formData.get("userId");
+  const nextRole = formData.get("role");
+
+  if (typeof userId !== "string" || userId.length === 0) {
+    return;
+  }
+
+  if (!isAdminRole(nextRole)) {
+    return;
+  }
+
+  const prisma = getPrisma();
+
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        role: true,
+      },
+    });
+
+    if (!user || user.role === nextRole) {
+      return;
+    }
+
+    if (user.role === "ADMIN" && nextRole !== "ADMIN") {
+      const adminCount = await tx.user.count({
+        where: {
+          role: "ADMIN",
+        },
+      });
+
+      if (adminCount <= 1) {
+        return;
+      }
+    }
+
+    await tx.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        role: nextRole,
+      },
+    });
+  });
+
+  revalidatePath("/admin");
+}
+
+async function deleteUser(formData: FormData) {
+  "use server";
+
+  const profile = await getCurrentUserProfile();
+
+  if (!profile) {
+    redirect("/login");
+  }
+
+  if (profile.role !== "ADMIN") {
+    notFound();
+  }
+
+  const userId = formData.get("userId");
+
+  if (typeof userId !== "string" || userId.length === 0) {
+    return;
+  }
+
+  if (userId === profile.id) {
+    return;
+  }
+
+  const prisma = getPrisma();
+  const deletedAvatarUrl = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        avatarUrl: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    if (user.role === "ADMIN") {
+      const adminCount = await tx.user.count({
+        where: {
+          role: "ADMIN",
+        },
+      });
+
+      if (adminCount <= 1) {
+        return null;
+      }
+    }
+
+    await tx.user.delete({
+      where: {
+        id: userId,
+      },
+    });
+
+    return user.avatarUrl;
+  });
+
+  await deleteLocalAvatar(deletedAvatarUrl);
   revalidatePath("/admin");
 }
 
@@ -186,11 +427,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       result =
         Number(Boolean(b.bannedAt)) - Number(Boolean(a.bannedAt)) || byUsername;
     } else if (currentSort === "admin") {
-      result = Number(b.role === "ADMIN") - Number(a.role === "ADMIN") || byUsername;
+      result =
+        Number(b.role === "ADMIN") - Number(a.role === "ADMIN") || byUsername;
     }
 
     return currentDir === "desc" ? -result : result;
   });
+  const adminCount = users.filter((user) => user.role === "ADMIN").length;
 
   return (
     <main className="admin-page">
@@ -295,101 +538,186 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </form>
 
           <div className="admin-users-list">
-            {sortedUsers.map((user) => (
-              <details className="admin-user-row" key={user.id}>
-                <summary className="admin-user-summary">
-                  <div className="admin-user-identity">
-                    <strong>
-                      {user.displayName?.trim() || t("users.unnamed")}
-                    </strong>
-                    <span>{user.email}</span>
+            {sortedUsers.map((user) => {
+              const isLastAdmin = user.role === "ADMIN" && adminCount <= 1;
+
+              return (
+                <details className="admin-user-row" key={user.id}>
+                  <summary className="admin-user-summary">
+                    <div className="admin-user-identity">
+                      <strong>
+                        {user.displayName?.trim() || t("users.unnamed")}
+                      </strong>
+                      <span>{user.email}</span>
+                    </div>
+
+                    <span className="admin-user-badges">
+                      <span
+                        className={`admin-role-badge admin-role-badge-${user.role.toLowerCase()}`}
+                      >
+                        {user.role}
+                      </span>
+
+                      <span
+                        className={`admin-status-badge ${
+                          user.bannedAt
+                            ? "admin-status-badge-banned"
+                            : "admin-status-badge-active"
+                        }`}
+                      >
+                        {user.bannedAt
+                          ? t("users.status.banned")
+                          : t("users.status.active")}
+                      </span>
+                    </span>
+                  </summary>
+
+                  <div className="admin-user-details">
+                    <form
+                      action={updateUserProfile}
+                      className="admin-user-profile-form"
+                    >
+                      <input name="userId" type="hidden" value={user.id} />
+                      <label>
+                        <span>{t("users.actions.displayNameLabel")}</span>
+                        <input
+                          defaultValue={user.displayName ?? ""}
+                          maxLength={32}
+                          minLength={3}
+                          name="displayName"
+                          placeholder={t("users.unnamed")}
+                          type="text"
+                        />
+                      </label>
+                      <label>
+                        <span>{t("users.actions.emailLabel")}</span>
+                        <input
+                          defaultValue={user.email}
+                          name="email"
+                          required
+                          type="email"
+                        />
+                      </label>
+                      <Button
+                        className="admin-user-action-button"
+                        type="submit"
+                        variant="plain"
+                      >
+                        {t("users.actions.updateProfile")}
+                      </Button>
+                    </form>
+
+                    <dl className="admin-user-detail-grid">
+                      <div>
+                        <dt>{t("users.columns.provider")}</dt>
+                        <dd>
+                          {user.oauthProvider || t("users.passwordProvider")}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>{t("users.columns.watchlists")}</dt>
+                        <dd>
+                          <details className="admin-watchlist-details">
+                            <summary>
+                              {t("users.watchlistCount", {
+                                count: user.favoriteSymbols.length,
+                              })}
+                            </summary>
+                            <p>
+                              {user.favoriteSymbols.length > 0
+                                ? user.favoriteSymbols.join(", ")
+                                : t("users.watchlistEmpty")}
+                            </p>
+                          </details>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>{t("users.columns.apiKeys")}</dt>
+                        <dd>{user._count.apiKeys}</dd>
+                      </div>
+                      <div>
+                        <dt>{t("users.columns.created")}</dt>
+                        <dd>{dateFormatter.format(user.createdAt)}</dd>
+                      </div>
+                      <div>
+                        <dt>{t("users.columns.updated")}</dt>
+                        <dd>{dateFormatter.format(user.updatedAt)}</dd>
+                      </div>
+                    </dl>
+
+                    <form
+                      action={updateUserRole}
+                      className="admin-user-actions"
+                    >
+                      <input name="userId" type="hidden" value={user.id} />
+                      <label className="admin-user-role-select">
+                        <span>{t("users.actions.roleLabel")}</span>
+                        <select
+                          defaultValue={user.role}
+                          disabled={isLastAdmin}
+                          name="role"
+                        >
+                          {adminRoleOptions.map((role) => (
+                            <option key={role} value={role}>
+                              {t(`users.roles.${role.toLowerCase()}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <Button
+                        className="admin-user-action-button"
+                        disabled={isLastAdmin}
+                        type="submit"
+                        variant="plain"
+                      >
+                        {t("users.actions.updateRole")}
+                      </Button>
+                    </form>
+
+                    <form
+                      action={toggleUserBan}
+                      className="admin-user-actions"
+                    >
+                      <input name="userId" type="hidden" value={user.id} />
+                      <input
+                        name="banAction"
+                        type="hidden"
+                        value={user.bannedAt ? "unban" : "ban"}
+                      />
+                      <Button
+                        className={
+                          user.bannedAt
+                            ? "admin-user-action-button"
+                            : "admin-user-action-button admin-user-action-button-danger"
+                        }
+                        disabled={user.id === profile.id}
+                        type="submit"
+                        variant="plain"
+                      >
+                        {user.bannedAt
+                          ? t("users.actions.unban")
+                          : t("users.actions.ban")}
+                      </Button>
+                    </form>
+
+                    <form
+                      action={deleteUser}
+                      className="admin-user-actions"
+                    >
+                      <input name="userId" type="hidden" value={user.id} />
+                      <Button
+                        className="admin-user-action-button admin-user-action-button-danger"
+                        disabled={user.id === profile.id || isLastAdmin}
+                        type="submit"
+                        variant="plain"
+                      >
+                        {t("users.actions.delete")}
+                      </Button>
+                    </form>
                   </div>
-
-                  <span className="admin-user-badges">
-                    <span
-                      className={`admin-role-badge admin-role-badge-${user.role.toLowerCase()}`}
-                    >
-                      {user.role}
-                    </span>
-
-                    <span
-                      className={`admin-status-badge ${
-                        user.bannedAt
-                          ? "admin-status-badge-banned"
-                          : "admin-status-badge-active"
-                      }`}
-                    >
-                      {user.bannedAt
-                        ? t("users.status.banned")
-                        : t("users.status.active")}
-                    </span>
-                  </span>
-                </summary>
-
-                <div className="admin-user-details">
-                  <dl className="admin-user-detail-grid">
-                    <div>
-                      <dt>{t("users.columns.provider")}</dt>
-                      <dd>
-                        {user.oauthProvider || t("users.passwordProvider")}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>{t("users.columns.watchlists")}</dt>
-                      <dd>
-                        <details className="admin-watchlist-details">
-                          <summary>
-                            {t("users.watchlistCount", {
-                              count: user.favoriteSymbols.length,
-                            })}
-                          </summary>
-                          <p>
-                            {user.favoriteSymbols.length > 0
-                              ? user.favoriteSymbols.join(", ")
-                              : t("users.watchlistEmpty")}
-                          </p>
-                        </details>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>{t("users.columns.apiKeys")}</dt>
-                      <dd>{user._count.apiKeys}</dd>
-                    </div>
-                    <div>
-                      <dt>{t("users.columns.created")}</dt>
-                      <dd>{dateFormatter.format(user.createdAt)}</dd>
-                    </div>
-                    <div>
-                      <dt>{t("users.columns.updated")}</dt>
-                      <dd>{dateFormatter.format(user.updatedAt)}</dd>
-                    </div>
-                  </dl>
-
-                  <form action={toggleUserBan} className="admin-user-actions">
-                    <input name="userId" type="hidden" value={user.id} />
-                    <input
-                      name="banAction"
-                      type="hidden"
-                      value={user.bannedAt ? "unban" : "ban"}
-                    />
-                    <Button
-                      className={
-                        user.bannedAt
-                          ? "admin-user-action-button"
-                          : "admin-user-action-button admin-user-action-button-danger"
-                      }
-                      disabled={user.id === profile.id}
-                      type="submit"
-                      variant="plain"
-                    >
-                      {user.bannedAt
-                        ? t("users.actions.unban")
-                        : t("users.actions.ban")}
-                    </Button>
-                  </form>
-                </div>
-              </details>
-            ))}
+                </details>
+              );
+            })}
           </div>
         </div>
       </section>

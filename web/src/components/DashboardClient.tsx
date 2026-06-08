@@ -587,6 +587,12 @@ export function DashboardClient({
                 </a>
               ) : null}
 
+              {profile.role === "ADMIN" || profile.role === "ANALYST" ? (
+                <a className="user-menu-action" href="/analyst">
+                  {t("analystPage")}
+                </a>
+              ) : null}
+
               <a className="user-menu-action" href="/settings/api">
                 {t("apiSettings")}
               </a>

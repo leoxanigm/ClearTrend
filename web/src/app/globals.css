@@ -2057,6 +2057,7 @@ input {
 
 .api-key-page,
 .api-docs-page,
+.analyst-page,
 .admin-page {
   min-height: 100vh;
   padding: 32px;
@@ -2077,6 +2078,7 @@ input {
 .admin-page-header,
 .api-key-page-content,
 .api-docs-content,
+.analyst-page .api-docs-content,
 .admin-page-content {
   max-width: 960px;
   margin-inline: auto;
@@ -2098,6 +2100,7 @@ input {
 
 .api-key-page-content,
 .api-docs-content,
+.analyst-page .api-docs-content,
 .admin-page-content {
   margin-top: 48px;
 }
@@ -2144,6 +2147,7 @@ input {
 
 .api-key-page-content h1,
 .api-docs-content h1,
+.analyst-page .api-docs-content h1,
 .admin-page-content h1 {
   margin-top: 4px;
   font-size: 32px;
@@ -2157,6 +2161,144 @@ input {
   margin-top: 12px;
   color: var(--app-muted);
   line-height: 1.6;
+}
+
+.analyst-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.analyst-summary-panel,
+.analyst-metric-card,
+.analyst-panel,
+.analyst-status-grid article {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+}
+
+.analyst-summary-panel {
+  display: grid;
+  grid-row: span 2;
+  align-content: start;
+  gap: 10px;
+  padding: 16px;
+}
+
+.analyst-summary-panel h2 {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.analyst-summary-panel p:last-child {
+  color: var(--app-muted);
+  line-height: 1.5;
+}
+
+.analyst-metric-card {
+  display: grid;
+  gap: 8px;
+  min-height: 96px;
+  padding: 14px;
+}
+
+.analyst-metric-card p,
+.analyst-status-grid span {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.analyst-metric-card strong {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.analyst-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 20px;
+}
+
+.analyst-run-list {
+  display: grid;
+  gap: 8px;
+}
+
+.analyst-run-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
+  gap: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--app-panel);
+}
+
+.analyst-run-row > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.analyst-run-row strong,
+.analyst-run-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analyst-run-row span {
+  color: var(--app-muted);
+  font-size: 0.8125rem;
+}
+
+.analyst-run-row dl {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.analyst-run-row dt {
+  color: var(--app-muted);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.analyst-run-row dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.analyst-empty-state {
+  border: 1px dashed var(--app-border);
+  border-radius: 8px;
+  padding: 16px;
+  color: var(--app-muted);
+}
+
+.analyst-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.analyst-status-grid article {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.analyst-status-grid strong {
+  font-size: 22px;
 }
 
 .api-key-panel,
@@ -2421,6 +2563,42 @@ input {
   font-weight: 700;
 }
 
+.admin-user-profile-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.admin-user-profile-form label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-user-profile-form span {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-user-profile-form input {
+  min-width: 0;
+  min-height: 32px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.admin-user-profile-form input:focus {
+  border-color: var(--app-accent);
+  outline: none;
+}
+
 .admin-watchlist-details summary {
   display: inline-flex;
   align-items: center;
@@ -2554,7 +2732,38 @@ input {
 }
 
 .admin-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
   justify-self: start;
+}
+
+.admin-user-role-select {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-user-role-select span {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-user-role-select select {
+  min-height: 32px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 6px 28px 6px 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.admin-user-role-select select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .primary-action-button,
@@ -2680,6 +2889,7 @@ input {
 @media (max-width: 620px) {
   .api-key-page,
   .api-docs-page,
+  .analyst-page,
   .admin-page {
     padding: 20px;
   }
@@ -2726,6 +2936,16 @@ input {
     flex: 1;
   }
 
+  .analyst-card-grid,
+  .analyst-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analyst-run-row,
+  .analyst-run-row dl {
+    grid-template-columns: 1fr;
+  }
+
   .admin-panel-heading {
     flex-direction: column;
   }
@@ -2763,6 +2983,10 @@ input {
   }
 
   .admin-user-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-user-profile-form {
     grid-template-columns: 1fr;
   }
 

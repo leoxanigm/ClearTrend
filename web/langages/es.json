@@ -74,6 +74,7 @@
     "openWatchlist": "Abrir watchlist",
     "overview": "Resumen",
     "adminPage": "Admin",
+    "analystPage": "Analyst",
     "apiDocs": "Documentación de API",
     "apiSettings": "Clave API",
     "profileSettings": "Ajustes del perfil",
@@ -341,10 +342,68 @@
         "active": "Activo",
         "banned": "Baneado"
       },
+      "roles": {
+        "user": "Usuario",
+        "analyst": "Analista",
+        "admin": "Admin"
+      },
       "actions": {
         "ban": "Banear",
-        "unban": "Desbanear"
+        "delete": "Eliminar",
+        "displayNameLabel": "Nombre visible",
+        "emailLabel": "Email",
+        "unban": "Desbanear",
+        "roleLabel": "Rol",
+        "updateProfile": "Actualizar perfil",
+        "updateRole": "Cambiar rol"
       }
+    }
+  },
+  "analystPage": {
+    "eyebrow": "Permiso analyst",
+    "title": "Vista de análisis",
+    "description": "Panel operativo reservado para roles ANALYST y ADMIN. Los usuarios estándar no pueden acceder a estas métricas.",
+    "cards": {
+      "role": "Rol actual",
+      "scopeValue": "Acceso autorizado a indicadores globales de análisis."
+    },
+    "metrics": {
+      "totalAnalyses": "Análisis",
+      "completionRate": "Éxito",
+      "activeQueue": "Cola activa",
+      "failedAnalyses": "Fallos",
+      "trackedAssets": "Activos analizados",
+      "reports": "Informes",
+      "percent": "{value}%"
+    },
+    "recent": {
+      "title": "Análisis recientes",
+      "description": "Vista transversal de los últimos procesos, visible solo para analistas y admins.",
+      "empty": "Aún no hay análisis registrados.",
+      "columns": {
+        "status": "Estado",
+        "trend": "Tendencia",
+        "recommendation": "Reco",
+        "confidence": "Confianza",
+        "created": "Creado"
+      }
+    },
+    "statuses": {
+      "queued": "En espera",
+      "running": "En curso",
+      "succeeded": "Completado",
+      "failed": "Fallido"
+    },
+    "trends": {
+      "bullish": "Alcista",
+      "neutral": "Neutral",
+      "bearish": "Bajista"
+    },
+    "recommendations": {
+      "buy": "Comprar",
+      "hold": "Mantener",
+      "sell": "Vender",
+      "watch": "Vigilar"
     }
   },
   "legal": {
