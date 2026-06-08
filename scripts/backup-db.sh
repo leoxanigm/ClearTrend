@@ -39,3 +39,13 @@ find "${backup_dir}" \
   -exec rm -f {} \;
 
 printf 'Database backup created: %s\n' "${backup_file}"
+
+if [ "${INFOMANIAK_S3_BUCKET:-}" != "" ]; then
+  remote_prefix="${INFOMANIAK_S3_PREFIX:-backup}"
+  remote_path="${remote_prefix}/database"
+  remote_key="${remote_path}/$(basename "${backup_file}")"
+  s3_retention_days="${INFOMANIAK_S3_RETENTION_DAYS:-30}"
+
+  /scripts/upload-infomaniak-s3.sh "${backup_file}" "${remote_key}"
+  /scripts/prune-infomaniak-s3.sh "${remote_path}" "${s3_retention_days}"
+fi
