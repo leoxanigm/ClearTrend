@@ -12,7 +12,8 @@ dev: .env
 	$(COMPOSE_DEV) build web
 	$(COMPOSE_DEV) run --rm --no-deps web npm run db:push
 	-$(COMPOSE_DEV) stop proxy
-	$(COMPOSE_DEV) up -d --no-deps web
+	@printf '\nWaiting for the analysis API to be ready before starting the web app...\n'
+	$(COMPOSE_DEV) up -d web
 	$(MAKE) dev-info
 	$(COMPOSE_DEV) logs -f db analysis backup web
 
