@@ -2340,10 +2340,10 @@ input {
 
 .admin-page {
   display: grid;
-  min-height: 100vh;
-  min-height: 100svh;
+  height: 100vh;
+  height: 100svh;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .api-key-page-header,
@@ -2384,7 +2384,7 @@ input {
   grid-template-rows: auto auto minmax(0, 1fr);
   align-content: start;
   width: 100%;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .admin-refresh-rate-row {
@@ -2586,11 +2586,43 @@ input {
 .admin-panel {
   display: grid;
   min-height: 0;
-  grid-template-rows: auto auto auto;
-  align-self: start;
-  max-height: 100%;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  align-self: stretch;
   border: 0;
-  overflow: visible;
+  overflow: hidden;
+}
+
+.admin-view-switch {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 4px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 4px;
+  background: var(--app-panel);
+}
+
+.admin-view-switch-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--app-muted);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-view-switch-button:hover,
+.admin-view-switch-button-active {
+  background: var(--app-surface);
+  color: var(--app-text);
 }
 
 .admin-panel-heading {
@@ -2750,10 +2782,11 @@ input {
 
 .admin-users-list {
   display: grid;
-  align-self: start;
+  align-self: stretch;
   gap: 8px;
+  min-height: 0;
+  height: 100%;
   width: 100%;
-  max-height: clamp(10rem, calc(100svh - 360px), 32rem);
   border: 1px solid var(--app-border);
   border-radius: 8px;
   overflow-y: auto;
@@ -2798,6 +2831,10 @@ input {
   background: var(--app-panel);
 }
 
+.admin-notification-summary {
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, auto) 20px;
+}
+
 .admin-user-details {
   display: grid;
   gap: 14px;
@@ -2818,6 +2855,10 @@ input {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin: 0;
+}
+
+.admin-notification-detail-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .admin-user-detail-grid div {
@@ -2870,6 +2911,25 @@ input {
 .admin-user-profile-form input:focus {
   border-color: var(--app-accent);
   outline: none;
+}
+
+.admin-notification-body {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--app-border);
+  padding-top: 12px;
+}
+
+.admin-notification-body span {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.admin-notification-body p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
 }
 
 .admin-watchlist-details summary {
@@ -3197,8 +3257,12 @@ input {
     padding: 14px;
   }
 
-  .admin-users-list {
-    max-height: clamp(10rem, calc(100svh - 390px), 32rem);
+  .admin-view-switch {
+    width: 100%;
+  }
+
+  .admin-view-switch-button {
+    flex: 1;
   }
 
   .api-key-page-actions {
@@ -3244,6 +3308,10 @@ input {
     row-gap: 6px;
   }
 
+  .admin-notification-summary {
+    grid-template-columns: minmax(0, 1fr) auto 16px;
+  }
+
   .admin-user-summary::after {
     grid-column: 3;
     grid-row: 1;
@@ -3256,6 +3324,10 @@ input {
   }
 
   .admin-user-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-notification-detail-grid {
     grid-template-columns: 1fr;
   }
 

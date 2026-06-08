@@ -2,7 +2,7 @@ import { AdminFinanceRefreshRateSelect } from "@/components/AdminFinanceRefreshR
 import { AppLogo } from "@/components/AppLogo";
 import { FooterLinks } from "@/components/FooterLinks";
 import { Button } from "@/components/ui/Button";
-import type { Role } from "@/generated/prisma/enums";
+import type { NotificationType, Role } from "@/generated/prisma/enums";
 import { getFinanceRefreshRateSeconds } from "@/lib/app-settings";
 import { getPrisma } from "@/lib/prisma";
 import { getCurrentUserProfile } from "@/lib/profile";
@@ -14,7 +14,9 @@ import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { basename, join, resolve } from "path";
 
+const adminViewOptions = ["users", "notifications"] as const;
 const adminSortOptions = ["username", "email", "banned", "admin"] as const;
+const notificationSortOptions = ["created", "type", "user", "read"] as const;
 const adminRoleOptions = [
   "USER",
   "ANALYST",
@@ -22,20 +24,37 @@ const adminRoleOptions = [
 ] as const satisfies readonly Role[];
 const avatarUploadPath = "/uploads/avatars";
 
+type AdminViewOption = (typeof adminViewOptions)[number];
 type AdminSortOption = (typeof adminSortOptions)[number];
+type NotificationSortOption = (typeof notificationSortOptions)[number];
 
 type AdminPageProps = {
   searchParams?: Promise<{
     dir?: string;
     q?: string;
     sort?: string;
+    view?: string;
   }>;
 };
+
+function getAdminViewOption(value: string | undefined): AdminViewOption {
+  return adminViewOptions.includes(value as AdminViewOption)
+    ? (value as AdminViewOption)
+    : "users";
+}
 
 function getAdminSortOption(value: string | undefined): AdminSortOption {
   return adminSortOptions.includes(value as AdminSortOption)
     ? (value as AdminSortOption)
     : "username";
+}
+
+function getNotificationSortOption(
+  value: string | undefined
+): NotificationSortOption {
+  return notificationSortOptions.includes(value as NotificationSortOption)
+    ? (value as NotificationSortOption)
+    : "created";
 }
 
 function getSortDirection(value: string | undefined) {
@@ -44,6 +63,10 @@ function getSortDirection(value: string | undefined) {
 
 function getDefaultSortDirection(option: AdminSortOption) {
   return option === "banned" || option === "admin" ? "desc" : "asc";
+}
+
+function getDefaultNotificationSortDirection(option: NotificationSortOption) {
+  return option === "created" || option === "read" ? "desc" : "asc";
 }
 
 function getSearchQuery(value: string | undefined) {
@@ -110,6 +133,47 @@ function getSortHref(
   }
 
   return `/admin?${params.toString()}`;
+}
+
+function getNotificationSortHref(
+  option: NotificationSortOption,
+  currentSort: NotificationSortOption,
+  currentDir: string,
+  query: string
+) {
+  const nextDir =
+    option === currentSort
+      ? currentDir === "asc"
+        ? "desc"
+        : "asc"
+      : getDefaultNotificationSortDirection(option);
+  const params = new URLSearchParams({
+    dir: nextDir,
+    sort: option,
+    view: "notifications",
+  });
+
+  if (query) {
+    params.set("q", query);
+  }
+
+  return `/admin?${params.toString()}`;
+}
+
+function getAdminViewHref(view: AdminViewOption) {
+  const params = new URLSearchParams({
+    view,
+  });
+
+  return `/admin?${params.toString()}`;
+}
+
+function getNotificationTypeLabel(type: NotificationType) {
+  return type
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 async function toggleUserBan(formData: FormData) {
@@ -358,7 +422,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const dashboardT = await getTranslations("dashboard");
   const commonT = await getTranslations("common");
   const params = (await searchParams) ?? {};
+  const currentView = getAdminViewOption(params.view);
   const currentSort = getAdminSortOption(params.sort);
+  const currentNotificationSort = getNotificationSortOption(params.sort);
   const currentDir = getSortDirection(params.dir);
   const query = getSearchQuery(params.q);
   const financeRefreshRateSeconds = await getFinanceRefreshRateSeconds();
@@ -407,6 +473,74 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       },
     },
   });
+  const notifications = await prisma.notification.findMany({
+    where: query
+      ? {
+          OR: [
+            {
+              title: {
+                contains: query,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              body: {
+                contains: query,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              entityType: {
+                contains: query,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              entityId: {
+                contains: query,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              user: {
+                displayName: {
+                  contains: query,
+                  mode: "insensitive" as const,
+                },
+              },
+            },
+            {
+              user: {
+                email: {
+                  contains: query,
+                  mode: "insensitive" as const,
+                },
+              },
+            },
+          ],
+        }
+      : {},
+    orderBy: [{ createdAt: "desc" }],
+    select: {
+      id: true,
+      body: true,
+      createdAt: true,
+      entityId: true,
+      entityType: true,
+      readAt: true,
+      title: true,
+      type: true,
+      updatedAt: true,
+      user: {
+        select: {
+          displayName: true,
+          email: true,
+          role: true,
+        },
+      },
+    },
+    take: 250,
+  });
   const dateFormatter = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -432,6 +566,31 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     }
 
     return currentDir === "desc" ? -result : result;
+  });
+  const sortedNotifications = notifications.toSorted((a, b) => {
+    const byCreated = b.createdAt.getTime() - a.createdAt.getTime();
+    const byUser =
+      (a.user.displayName ?? "").localeCompare(
+        b.user.displayName ?? "",
+        locale,
+        { sensitivity: "base" }
+      ) ||
+      a.user.email.localeCompare(b.user.email, locale, { sensitivity: "base" });
+
+    let result = byCreated;
+
+    if (currentNotificationSort === "type") {
+      result =
+        a.type.localeCompare(b.type, locale, { sensitivity: "base" }) ||
+        byCreated;
+    } else if (currentNotificationSort === "user") {
+      result = byUser || byCreated;
+    } else if (currentNotificationSort === "read") {
+      result =
+        Number(Boolean(b.readAt)) - Number(Boolean(a.readAt)) || byCreated;
+    }
+
+    return currentDir === "desc" ? result : -result;
   });
   const adminCount = users.filter((user) => user.role === "ADMIN").length;
 
@@ -477,6 +636,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </div>
 
         <div className="admin-panel">
+          <div className="admin-view-switch" role="tablist">
+            {adminViewOptions.map((view) => (
+              <Link
+                aria-selected={currentView === view}
+                className={`admin-view-switch-button${
+                  currentView === view ? " admin-view-switch-button-active" : ""
+                }`}
+                href={getAdminViewHref(view)}
+                key={view}
+                role="tab"
+              >
+                {t(`views.${view}`)}
+              </Link>
+            ))}
+          </div>
+
+          {currentView === "users" ? (
+            <>
           <div className="admin-panel-heading">
             <div>
               <h2>
@@ -715,10 +892,173 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       </Button>
                     </form>
                   </div>
-                </details>
+              </details>
               );
             })}
           </div>
+            </>
+          ) : (
+            <>
+              <div className="admin-panel-heading">
+                <div>
+                  <h2>
+                    {t("notifications.title")}
+                    <span className="admin-user-count">
+                      {t("notifications.total", {
+                        count: sortedNotifications.length,
+                      })}
+                    </span>
+                  </h2>
+                </div>
+                <div className="admin-panel-actions">
+                  <div
+                    aria-label={t("notifications.sort.button")}
+                    className="admin-sort-bar"
+                    role="group"
+                  >
+                    {notificationSortOptions.map((option) => (
+                      <Link
+                        aria-current={
+                          currentNotificationSort === option
+                            ? "page"
+                            : undefined
+                        }
+                        className={`admin-sort-button${
+                          currentNotificationSort === option
+                            ? " admin-sort-button-active"
+                            : ""
+                        }`}
+                        href={getNotificationSortHref(
+                          option,
+                          currentNotificationSort,
+                          currentDir,
+                          query
+                        )}
+                        key={option}
+                      >
+                        <span>{t(`notifications.sort.options.${option}`)}</span>
+                        {currentNotificationSort === option ? (
+                          <span className="admin-sort-arrow" aria-hidden="true">
+                            {currentDir === "asc" ? "↑" : "↓"}
+                          </span>
+                        ) : null}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <form action="/admin" className="admin-user-search" method="GET">
+                <input name="view" type="hidden" value="notifications" />
+                <input
+                  name="sort"
+                  type="hidden"
+                  value={currentNotificationSort}
+                />
+                <input name="dir" type="hidden" value={currentDir} />
+                <label>
+                  <span>{t("notifications.search.label")}</span>
+                  <input
+                    defaultValue={query}
+                    name="q"
+                    placeholder={t("notifications.search.placeholder")}
+                    type="search"
+                  />
+                </label>
+                <Button type="submit" variant="plain">
+                  {t("notifications.search.submit")}
+                </Button>
+                {query ? (
+                  <Link
+                    className="admin-user-search-reset"
+                    href="/admin?view=notifications"
+                  >
+                    {t("notifications.search.clear")}
+                  </Link>
+                ) : null}
+              </form>
+
+              <div className="admin-users-list">
+                {sortedNotifications.map((notification) => (
+                  <details className="admin-user-row" key={notification.id}>
+                    <summary className="admin-user-summary admin-notification-summary">
+                      <div className="admin-user-identity">
+                        <strong>{notification.title}</strong>
+                        <span>
+                          {notification.user.displayName?.trim() ||
+                            notification.user.email}
+                        </span>
+                      </div>
+
+                      <span className="admin-user-badges">
+                        <span className="admin-role-badge admin-role-badge-analyst">
+                          {getNotificationTypeLabel(notification.type)}
+                        </span>
+
+                        <span
+                          className={`admin-status-badge ${
+                            notification.readAt
+                              ? "admin-status-badge-active"
+                              : "admin-status-badge-banned"
+                          }`}
+                        >
+                          {notification.readAt
+                            ? t("notifications.status.read")
+                            : t("notifications.status.unread")}
+                        </span>
+                      </span>
+                    </summary>
+
+                    <div className="admin-user-details">
+                      <dl className="admin-user-detail-grid admin-notification-detail-grid">
+                        <div>
+                          <dt>{t("notifications.columns.user")}</dt>
+                          <dd>{notification.user.email}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("notifications.columns.role")}</dt>
+                          <dd>{notification.user.role}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("notifications.columns.created")}</dt>
+                          <dd>{dateFormatter.format(notification.createdAt)}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("notifications.columns.updated")}</dt>
+                          <dd>{dateFormatter.format(notification.updatedAt)}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("notifications.columns.entityType")}</dt>
+                          <dd>{notification.entityType || commonT("na")}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("notifications.columns.entityId")}</dt>
+                          <dd>{notification.entityId || commonT("na")}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("notifications.columns.readAt")}</dt>
+                          <dd>
+                            {notification.readAt
+                              ? dateFormatter.format(notification.readAt)
+                              : commonT("na")}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{t("notifications.columns.type")}</dt>
+                          <dd>{notification.type}</dd>
+                        </div>
+                      </dl>
+
+                      <div className="admin-notification-body">
+                        <span>{t("notifications.columns.body")}</span>
+                        <p>{notification.body || commonT("na")}</p>
+                      </div>
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
