@@ -1,5 +1,7 @@
 "use client";
 
+import type { NotificationType } from "@/generated/prisma/enums";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   type ReactNode,
@@ -10,7 +12,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { usePathname } from "next/navigation";
 import { Toast } from "./Toast";
 
 export type NotificationTone = "error" | "info" | "success" | "warning";
@@ -18,12 +19,20 @@ export type NotificationTone = "error" | "info" | "success" | "warning";
 export type NotificationInput = {
   body?: string;
   durationMs?: number;
+  entityId?: string;
+  entityType?: string;
+  persist?: boolean;
   title: string;
   tone?: NotificationTone;
+  type?: NotificationType;
 };
 
-type NotificationItem = Required<NotificationInput> & {
+type NotificationItem = {
+  body: string;
+  durationMs: number;
   id: string;
+  title: string;
+  tone: NotificationTone;
 };
 
 type NotificationContextValue = {
@@ -36,6 +45,7 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 
 const defaultNotificationDurationMs = 5_000;
 const queuedNotificationStorageKey = "cleartrend-next-notification";
+const notificationLogEndpoint = "/api/notifications";
 
 function createNotificationId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -43,6 +53,27 @@ function createNotificationId() {
   }
 
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function logNotification(notification: NotificationInput) {
+  if (notification.persist === false) {
+    return;
+  }
+
+  fetch(notificationLogEndpoint, {
+    body: JSON.stringify({
+      body: notification.body ?? null,
+      entityId: notification.entityId ?? null,
+      entityType: notification.entityType ?? null,
+      title: notification.title,
+      type: notification.type ?? "SYSTEM",
+    }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    keepalive: true,
+    method: "POST",
+  }).catch(() => null);
 }
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
@@ -81,6 +112,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           tone: notification.tone ?? "info",
         },
       ]);
+      logNotification(notification);
 
       if (durationMs > 0) {
         const timeout = setTimeout(() => dismissNotification(id), durationMs);
