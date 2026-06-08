@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 PREDICTION_DIR = BASE_DATA_DIR / "ml_predictions"
 PREDICTION_SCHEMA_VERSION = 1
-MODEL_VERSION = "ridge100-reddit50-i18n-v4"
+MODEL_VERSION = "ridge100-reddit50-daily-social-calendar-v8"
 _REFRESH_LOCK = threading.Lock()
 
 
@@ -103,27 +103,39 @@ def save_prediction(
     return path
 
 
+def _timestamp_is_today(value: object) -> bool:
+    try:
+        timestamp = datetime.fromisoformat(
+            str(value or "").replace("Z", "+00:00")
+        )
+    except ValueError:
+        return False
+
+    return (
+        timestamp.astimezone(timezone.utc).date()
+        == datetime.now(timezone.utc).date()
+    )
+
+
 def prediction_is_current(ticker: str, payload: dict | None) -> bool:
     if payload is None:
         return False
 
     try:
-        trained_at = datetime.fromisoformat(
-            str(payload.get("trainedAt", "")).replace("Z", "+00:00")
-        )
-        trained_today = (
-            trained_at.astimezone(timezone.utc).date()
-            == datetime.now(timezone.utc).date()
+        social_configured = bool(os.getenv("GEMINI_API_KEY", "").strip())
+        social_attempt_is_current = (
+            not social_configured
+            or _timestamp_is_today(payload.get("socialAttemptedAt"))
         )
 
         return (
-            trained_today
+            _timestamp_is_today(payload.get("trainedAt"))
             and payload.get("modelVersion") == MODEL_VERSION
             and payload.get("marketDataAsOf") == market_data_as_of(ticker)
-            and payload.get("socialEnabled")
-            == bool(os.getenv("GEMINI_API_KEY", "").strip())
+            and payload.get("socialEnabled") == social_configured
+            and social_attempt_is_current
         )
-    except (TypeError, ValueError):
+    except TypeError:
         return False
 
 
@@ -156,12 +168,16 @@ def train_asset_prediction(
         include_social=include_social,
     )
     trained_at = datetime.now(timezone.utc).isoformat()
+    social_enabled = (
+        include_social and bool(os.getenv("GEMINI_API_KEY", "").strip())
+    )
     snapshot = {
         **analysis,
         "schemaVersion": PREDICTION_SCHEMA_VERSION,
         "marketDataAsOf": data_as_of,
         "modelVersion": MODEL_VERSION,
-        "socialEnabled": bool(os.getenv("GEMINI_API_KEY", "").strip()),
+        "socialAttemptedAt": trained_at if social_enabled else None,
+        "socialEnabled": social_enabled,
         "trainedAt": trained_at,
         "trainingMode": "daily_backend_job",
     }

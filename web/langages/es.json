@@ -94,7 +94,6 @@
     "mlSentimentneutral": "Opinión dividida · {score}/100",
     "mlSentimentScoreHelp": "Índice de intención de inversión: 0 indica vender o retirar, 50 esperar y 100 comprar o invertir. No es una probabilidad.",
     "mlSentimentScoreLabel": "Índice de sentimiento",
-    "mlSentimentSummary": "Resumen de Gemini: {summary}",
     "mlSentimentUnavailableReason": "No hay mensajes recientes y relevantes de Reddit para analizar.",
     "mlTrendbearish": "Bajista",
     "mlTrendbullish": "Alcista",

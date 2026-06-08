@@ -23,10 +23,6 @@ export type MlSentiment = {
   postCount: number;
   reason?: string;
   score?: number;
-  summary?: string;
-  summaryEn?: string;
-  summaryEs?: string;
-  summaryFr?: string;
 };
 
 export type MlAttention = {

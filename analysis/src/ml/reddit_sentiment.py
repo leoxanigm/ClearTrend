@@ -279,24 +279,6 @@ def _gemini_schema() -> dict[str, Any]:
             "bullishCount": {"type": "integer"},
             "neutralCount": {"type": "integer"},
             "bearishCount": {"type": "integer"},
-            "summaryEn": {
-                "type": "string",
-                "description": (
-                    "Factual English summary in at most 25 words."
-                ),
-            },
-            "summaryFr": {
-                "type": "string",
-                "description": (
-                    "Resume factuel en francais de 25 mots maximum."
-                ),
-            },
-            "summaryEs": {
-                "type": "string",
-                "description": (
-                    "Resumen factual en espanol de 25 palabras como maximo."
-                ),
-            },
         },
         "required": [
             "score",
@@ -304,9 +286,6 @@ def _gemini_schema() -> dict[str, Any]:
             "bullishCount",
             "neutralCount",
             "bearishCount",
-            "summaryEn",
-            "summaryFr",
-            "summaryEs",
         ],
     }
 
@@ -346,9 +325,8 @@ def _analyze_with_gemini(
         "seven days. Ignore jokes, spam, unrelated uses of the ticker and "
         "unsupported certainty. Determine whether authors mostly express an "
         "intention to invest/buy, wait, or withdraw/sell. Do not provide "
-        "financial advice. Return the same factual finding as three short "
-        "summaries: English, French and Spanish. Each summary must contain "
-        "at most 25 words.\n\nPosts:\n"
+        "financial advice or summarize the posts. Return only the structured "
+        "sentiment measurements requested by the JSON schema.\n\nPosts:\n"
         + "\n".join(post_lines)
     )
     response = requests.post(
@@ -376,18 +354,12 @@ def _analyze_with_gemini(
     except (KeyError, IndexError, TypeError, json.JSONDecodeError) as error:
         raise ValueError("Gemini returned an invalid sentiment response") from error
 
-    summary_en = str(result.get("summaryEn", "")).strip()[:240]
-
     return {
         "score": round(_clamp(result.get("score")), 4),
         "agreement": round(_clamp(result.get("agreement")), 4),
         "bullishCount": max(0, int(result.get("bullishCount", 0))),
         "neutralCount": max(0, int(result.get("neutralCount", 0))),
         "bearishCount": max(0, int(result.get("bearishCount", 0))),
-        "summary": summary_en,
-        "summaryEn": summary_en,
-        "summaryFr": str(result.get("summaryFr", "")).strip()[:240],
-        "summaryEs": str(result.get("summaryEs", "")).strip()[:240],
         "model": model,
     }
 
@@ -405,6 +377,8 @@ def reddit_sentiment(ticker: str) -> dict:
             "reason": "GEMINI_API_KEY is not configured",
             "postCount": 0,
         }
+
+    posts: list[dict] = []
 
     try:
         posts = fetch_reddit_posts(ticker)
@@ -432,6 +406,7 @@ def reddit_sentiment(ticker: str) -> dict:
     ) as error:
         result = {
             "available": False,
+            "collectedPostCount": len(posts),
             "reason": str(error),
             "postCount": 0,
         }
