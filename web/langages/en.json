@@ -94,7 +94,6 @@
     "mlSentimentneutral": "Mixed opinion · {score}/100",
     "mlSentimentScoreHelp": "Investment-intent index: 0 leans toward selling or withdrawing, 50 toward waiting, and 100 toward buying or investing. It is not a probability.",
     "mlSentimentScoreLabel": "Sentiment index",
-    "mlSentimentSummary": "Gemini summary: {summary}",
     "mlSentimentUnavailableReason": "No recent and relevant Reddit posts were available to analyze.",
     "mlTrendbearish": "Bearish",
     "mlTrendbullish": "Bullish",

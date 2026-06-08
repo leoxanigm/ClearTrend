@@ -19,6 +19,15 @@ HORIZON_SESSIONS = {
     "1W": 5,
     "1M": 21,
 }
+CONTINUOUS_HORIZON_SESSIONS = {
+    "1D": 1,
+    "1W": 7,
+    "1M": 30,
+}
+CONTINUOUS_MARKET_TICKERS = {
+    "BTC-USD",
+    "ETH-USD",
+}
 
 FEATURE_COLUMNS = [
     "return_1",
@@ -50,6 +59,29 @@ class RegressionMetrics:
 
 def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
     return max(minimum, min(maximum, value))
+
+
+def _horizon_sessions(horizon: str, market_calendar: str) -> int:
+    calendars = {
+        "exchange": HORIZON_SESSIONS,
+        "continuous": CONTINUOUS_HORIZON_SESSIONS,
+    }
+
+    if market_calendar not in calendars:
+        raise ValueError(
+            f"Unsupported market calendar '{market_calendar}'. "
+            "Expected 'exchange' or 'continuous'"
+        )
+
+    return calendars[market_calendar][horizon]
+
+
+def _market_calendar_for_ticker(ticker: str) -> str:
+    return (
+        "continuous"
+        if ticker.strip().upper() in CONTINUOUS_MARKET_TICKERS
+        else "exchange"
+    )
 
 
 def clean_completed_market_frame(frame: pd.DataFrame) -> pd.DataFrame:
@@ -184,7 +216,7 @@ def _validation_snapshot(
     if len(clean) < 240 + sessions:
         return None
 
-    cutoff_position = len(clean) - 22
+    cutoff_position = len(clean) - max(22, sessions + 1)
     cutoff_date = clean.index[cutoff_position]
     target_position = cutoff_position + sessions
 
@@ -231,6 +263,8 @@ def _validation_snapshot(
 def analyze_history_frame(
     frame: pd.DataFrame,
     horizon: str,
+    *,
+    market_calendar: str = "exchange",
 ) -> dict:
     normalized_horizon = horizon.upper()
 
@@ -240,7 +274,7 @@ def analyze_history_frame(
             f"Expected one of {sorted(HORIZON_SESSIONS)}"
         )
 
-    sessions = HORIZON_SESSIONS[normalized_horizon]
+    sessions = _horizon_sessions(normalized_horizon, market_calendar)
     clean = clean_completed_market_frame(frame)
     features = build_feature_frame(clean)
     target = _target_returns(clean, sessions)
@@ -286,6 +320,8 @@ def analyze_history_frame(
         "available": True,
         "method": "ridge_regression",
         "horizon": normalized_horizon,
+        "marketCalendar": market_calendar,
+        "observationCount": sessions,
         "sessions": sessions,
         "asOf": pd.Timestamp(clean.index[-1]).date().isoformat(),
         "currentPrice": round(current_price, 4),
@@ -319,4 +355,8 @@ def analyze_history_frame(
 
 
 def analyze_history(ticker: str, horizon: str) -> dict:
-    return analyze_history_frame(load_daily_history(ticker), horizon)
+    return analyze_history_frame(
+        load_daily_history(ticker),
+        horizon,
+        market_calendar=_market_calendar_for_ticker(ticker),
+    )

@@ -11,10 +11,12 @@ import numpy as np
 import pandas as pd
 
 from src.ml.attention_signal import score_attention_record
-from src.ml.historical_regression import analyze_history_frame
+from src.ml.historical_regression import analyze_history, analyze_history_frame
 from src.ml.reddit_sentiment import _gemini_schema, parse_reddit_feed
 from src.ml.prediction_store import (
+    MODEL_VERSION,
     load_prediction,
+    prediction_is_current,
     save_prediction,
     select_prediction_horizon,
     train_asset_prediction,
@@ -49,6 +51,8 @@ class HistoricalRegressionTests(unittest.TestCase):
         result = analyze_history_frame(synthetic_market_frame(), "1W")
 
         self.assertEqual(result["method"], "ridge_regression")
+        self.assertEqual(result["marketCalendar"], "exchange")
+        self.assertEqual(result["observationCount"], 5)
         self.assertGreater(result["predictedPrice"], 0)
         self.assertGreaterEqual(result["score"], 0)
         self.assertLessEqual(result["score"], 1)
@@ -70,14 +74,38 @@ class HistoricalRegressionTests(unittest.TestCase):
 
         self.assertNotEqual(result["asOf"], today.date().isoformat())
 
+    @patch(
+        "src.ml.historical_regression.load_daily_history",
+        return_value=synthetic_market_frame(),
+    )
+    def test_crypto_horizons_use_calendar_days(self, _) -> None:
+        weekly = analyze_history("BTC-USD", "1W")
+        monthly = analyze_history("ETH-USD", "1M")
+
+        self.assertEqual(weekly["marketCalendar"], "continuous")
+        self.assertEqual(weekly["observationCount"], 7)
+        self.assertEqual(monthly["marketCalendar"], "continuous")
+        self.assertEqual(monthly["observationCount"], 30)
+        self.assertIsNotNone(monthly["validationSnapshot"])
+
 
 class RedditFeedTests(unittest.TestCase):
-    def test_gemini_schema_requires_all_supported_languages(self) -> None:
+    def test_gemini_schema_only_requests_sentiment_measurements(self) -> None:
         schema = _gemini_schema()
 
-        self.assertIn("summaryEn", schema["required"])
-        self.assertIn("summaryFr", schema["required"])
-        self.assertIn("summaryEs", schema["required"])
+        self.assertEqual(
+            set(schema["required"]),
+            {
+                "score",
+                "agreement",
+                "bullishCount",
+                "neutralCount",
+                "bearishCount",
+            },
+        )
+        self.assertFalse(
+            any(key.startswith("summary") for key in schema["properties"])
+        )
 
     def test_keeps_recent_posts_and_ignores_subreddit_entries(self) -> None:
         payload = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -215,6 +243,50 @@ class PredictionStoreTests(unittest.TestCase):
                 load_prediction("BTC-USD", directory=directory)["ticker"],
                 "BTC-USD",
             )
+
+    @patch("src.ml.prediction_store.market_data_as_of")
+    @patch.dict("os.environ", {"GEMINI_API_KEY": "configured"})
+    def test_failed_social_attempt_is_not_repeated_the_same_day(
+        self,
+        market_data_as_of_mock,
+    ) -> None:
+        today = datetime.now(timezone.utc).isoformat()
+        market_data_as_of_mock.return_value = "2026-06-08"
+        payload = {
+            "marketDataAsOf": "2026-06-08",
+            "modelVersion": MODEL_VERSION,
+            "predictions": [{"horizon": "1D", "score": 0.5}],
+            "schemaVersion": 1,
+            "social": {
+                "sentiment": {
+                    "available": False,
+                    "reason": "429 Too Many Requests",
+                },
+            },
+            "socialAttemptedAt": today,
+            "socialEnabled": True,
+            "trainedAt": today,
+        }
+
+        self.assertTrue(prediction_is_current("NVDA", payload))
+
+    @patch("src.ml.prediction_store.market_data_as_of")
+    @patch.dict("os.environ", {"GEMINI_API_KEY": "configured"})
+    def test_missing_social_attempt_is_retried_at_startup(
+        self,
+        market_data_as_of_mock,
+    ) -> None:
+        market_data_as_of_mock.return_value = "2026-06-08"
+        payload = {
+            "marketDataAsOf": "2026-06-08",
+            "modelVersion": MODEL_VERSION,
+            "predictions": [{"horizon": "1D", "score": 0.5}],
+            "schemaVersion": 1,
+            "socialEnabled": True,
+            "trainedAt": datetime.now(timezone.utc).isoformat(),
+        }
+
+        self.assertFalse(prediction_is_current("NVDA", payload))
 
     @patch("src.ml.prediction_store.prediction_is_current")
     @patch("src.ml.prediction_store.market_data_as_of")

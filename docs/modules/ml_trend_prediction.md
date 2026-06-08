@@ -5,8 +5,9 @@
 Implementation terminee pour la regression, Reddit RSS, ApeWisdom, la fusion,
 l'API et le dashboard.
 
-Le module ne doit pas encore etre annonce comme valide tant qu'un appel reel
-Gemini n'a pas ete teste avec `GEMINI_API_KEY`.
+L'integration Gemini a ete testee avec une cle reelle. Un cycle quotidien
+complet sur les sept assets reste a confirmer apres renouvellement du quota:
+les premiers appels ont fonctionne, puis Gemini a retourne HTTP `429`.
 
 ## Pourquoi ce module
 
@@ -41,13 +42,17 @@ Les predictions sont limitees aux assets disposant de cinq annees d'historique:
 | Alphabet | `GOOGL` | `GOOGL`, `Alphabet stock` |
 | Nvidia | `NVDA` | `NVDA`, `Nvidia` |
 
-Les horizons sont:
+Les horizons dependent du calendrier de l'asset:
 
-| Horizon | Sessions utilisees |
-|---|---:|
-| `1D` | 1 |
-| `1W` | 5 |
-| `1M` | 21 |
+| Horizon | Marches avec cloture | Crypto 24 h/24 |
+|---|---:|---:|
+| `1D` | 1 jour de cotation | 1 jour calendaire |
+| `1W` | 5 jours de cotation | 7 jours calendaires |
+| `1M` | 21 jours de cotation | 30 jours calendaires |
+
+Bitcoin et Ethereum cotent tous les jours. Leurs horizons incluent donc les
+samedis et dimanches. Les actions, indices et contrats sur l'or utilisent les
+jours de cotation disponibles dans leur historique.
 
 ## Architecture
 
@@ -90,14 +95,15 @@ le modele `BTC-USD/1W` n'apprend jamais avec l'historique de NVDA ou de l'or.
 Cette separation est necessaire car les niveaux de volatilite, calendriers,
 volumes et comportements de marche sont tres differents.
 
-Variables historiques:
+Variables historiques, calculees sur les observations quotidiennes propres au
+calendrier de chaque asset:
 
-- rendements sur 1, 2, 5, 10 et 20 sessions;
+- rendements sur 1, 2, 5, 10 et 20 observations;
 - distance aux moyennes mobiles 5, 10, 20 et 50;
-- volatilite sur 5 et 20 sessions;
+- volatilite sur 5 et 20 observations;
 - amplitude High/Low;
 - variation et niveau relatif du volume;
-- RSI sur 14 sessions.
+- RSI sur 14 observations.
 
 ### Validation temporelle
 
@@ -160,8 +166,11 @@ Sorties:
 - sentiment `0..1`;
 - accord entre les messages `0..1`;
 - nombre de messages haussiers, neutres et baissiers;
-- resume court en francais, anglais et espagnol dans le meme appel;
 - nombre de publications analysees.
+
+Gemini ne produit aucun texte destine au frontend. Les publications nettoyees
+et limitees en taille lui sont envoyees uniquement pour obtenir ces mesures
+structurees de sentiment.
 
 La cle n'est jamais exposee au navigateur et ne doit pas etre versionnee.
 
@@ -172,6 +181,10 @@ GEMINI_MODEL=gemini-2.5-flash-lite
 
 Sans cle, le signal est marque indisponible et la prediction historique continue
 de fonctionner.
+
+Si Gemini refuse un appel, le snapshot conserve le nombre de publications
+collectees dans `collectedPostCount`. Cela permet de distinguer une limite API
+d'une absence de messages Reddit, sans multiplier les nouvelles tentatives.
 
 ### 3. Attention ApeWisdom
 
@@ -274,11 +287,14 @@ Un asset est recalcule si au moins une condition est vraie:
 - le snapshot n'a pas ete entraine aujourd'hui;
 - une nouvelle date daily est disponible pour cet asset;
 - la version du modele a change;
-- Gemini vient d'etre configure ou retire.
+- Gemini vient d'etre configure ou retire;
+- aucune tentative de sentiment n'a encore ete enregistree aujourd'hui.
 
-Il est ignore lorsque toutes ces informations sont deja courantes. Cela evite
-un nouvel entrainement apres un refresh navigateur ou un simple redemarrage du
-service.
+Le demarrage du serveur constitue la premiere occasion de remplir les sentiments
+manquants. `socialAttemptedAt` est enregistre meme si Reddit ne retourne aucun
+message ou si Gemini repond `429`. Une seule tentative est donc effectuee par
+asset et par jour; la suivante attend le job quotidien. Un refresh navigateur
+ou un redemarrage supplementaire le meme jour ne lance aucun appel.
 
 Le verrou du processus empeche deux jobs ML locaux de tourner en parallele. Les
 fichiers sont remplaces atomiquement: un client voit soit l'ancien resultat
@@ -350,9 +366,7 @@ Les valeurs sont explicables au survol:
 - le score rappelle que `0` signifie plutot vendre, `50` attendre et `100`
   plutot acheter, sans representer une probabilite;
 - l'accord indique seulement si les messages vont dans la meme direction;
-- les mentions mesurent l'activite autour du sujet, pas une direction;
-- le score affiche aussi le resume court produit par Gemini dans la langue
-  active de l'interface.
+- les mentions mesurent l'activite autour du sujet, pas une direction.
 
 Les assets hors du perimetre affichent `Non disponible`.
 

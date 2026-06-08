@@ -31,7 +31,7 @@ import {
   type MlPrediction,
 } from "@/lib/ml-analysis";
 import type { UserProfile } from "@/lib/profile-types";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { signOut } from "next-auth/react";
 
 type DashboardClientProps = {
@@ -145,7 +145,6 @@ export function DashboardClient({
 }: DashboardClientProps) {
   const t = useTranslations("dashboard");
   const commonT = useTranslations("common");
-  const locale = useLocale();
   const userMenuRef = useRef<HTMLDetailsElement>(null);
   const { notifyAfterNavigation } = useNotifications();
   const { notify } = useNotifications();
@@ -231,27 +230,13 @@ export function DashboardClient({
         : sentimentScore <= 0.43
         ? "bearish"
         : "neutral";
-  const sentimentSummary =
-    locale === "fr"
-      ? mlSentiment?.summaryFr
-      : locale === "es"
-        ? mlSentiment?.summaryEs
-        : mlSentiment?.summaryEn;
-  const activeSentimentSummary =
-    sentimentSummary ?? mlSentiment?.summary;
-  const sentimentHelp =
-    activeSentimentSummary
-      ? `${t("mlSentimentScoreHelp")} ${t("mlSentimentSummary", {
-          summary: activeSentimentSummary,
-        })}`
-      : t("mlSentimentScoreHelp");
   const mlSentimentValue =
     mlAnalysis.status === "loading"
       ? t("mlLoading")
       : sentimentScore !== null && sentimentTrend
         ? (
             <Tooltip
-              content={sentimentHelp}
+              content={t("mlSentimentScoreHelp")}
               label={t("mlSentimentScoreLabel")}
             >
               {t(`mlSentiment${sentimentTrend}`, {
