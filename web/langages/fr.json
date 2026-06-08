@@ -74,6 +74,7 @@
     "openWatchlist": "Ouvrir la watchlist",
     "overview": "Vue d'ensemble",
     "adminPage": "Admin",
+    "analystPage": "Analyst",
     "apiDocs": "Documentation API",
     "apiSettings": "Clé API",
     "profileSettings": "Paramètres du profil",
@@ -419,10 +420,68 @@
         "active": "Actif",
         "banned": "Banni"
       },
+      "roles": {
+        "user": "Utilisateur",
+        "analyst": "Analyste",
+        "admin": "Admin"
+      },
       "actions": {
         "ban": "Bannir",
-        "unban": "Débannir"
+        "delete": "Supprimer",
+        "displayNameLabel": "Nom affiché",
+        "emailLabel": "Email",
+        "unban": "Débannir",
+        "roleLabel": "Rôle",
+        "updateProfile": "Modifier le profil",
+        "updateRole": "Modifier le rôle"
       }
+    }
+  },
+  "analystPage": {
+    "eyebrow": "Droit analyste",
+    "title": "Vue d'analyse",
+    "description": "Tableau opérationnel réservé aux rôles ANALYST et ADMIN. Les utilisateurs standards ne peuvent pas accéder à ces métriques.",
+    "cards": {
+      "role": "Rôle courant",
+      "scopeValue": "Accès autorisé aux indicateurs d'analyse globaux."
+    },
+    "metrics": {
+      "totalAnalyses": "Analyses",
+      "completionRate": "Réussite",
+      "activeQueue": "File active",
+      "failedAnalyses": "Échecs",
+      "trackedAssets": "Actifs analysés",
+      "reports": "Rapports",
+      "percent": "{value}%"
+    },
+    "recent": {
+      "title": "Dernières analyses",
+      "description": "Vue transversale des derniers traitements, visible uniquement par les analystes et admins.",
+      "empty": "Aucune analyse enregistrée pour le moment.",
+      "columns": {
+        "status": "Statut",
+        "trend": "Tendance",
+        "recommendation": "Reco",
+        "confidence": "Confiance",
+        "created": "Créé"
+      }
+    },
+    "statuses": {
+      "queued": "En attente",
+      "running": "En cours",
+      "succeeded": "Réussie",
+      "failed": "Échouée"
+    },
+    "trends": {
+      "bullish": "Haussière",
+      "neutral": "Neutre",
+      "bearish": "Baissière"
+    },
+    "recommendations": {
+      "buy": "Acheter",
+      "hold": "Conserver",
+      "sell": "Vendre",
+      "watch": "Surveiller"
     }
   },
   "legal": {

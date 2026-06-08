@@ -74,6 +74,7 @@
     "openWatchlist": "Open watchlist",
     "overview": "Overview",
     "adminPage": "Admin",
+    "analystPage": "Analyst",
     "apiDocs": "API documentation",
     "apiSettings": "API key settings",
     "profileSettings": "Profile settings",
@@ -419,10 +420,68 @@
         "active": "Active",
         "banned": "Banned"
       },
+      "roles": {
+        "user": "User",
+        "analyst": "Analyst",
+        "admin": "Admin"
+      },
       "actions": {
         "ban": "Ban",
-        "unban": "Unban"
+        "delete": "Delete",
+        "displayNameLabel": "Display name",
+        "emailLabel": "Email",
+        "unban": "Unban",
+        "roleLabel": "Role",
+        "updateProfile": "Update profile",
+        "updateRole": "Update role"
       }
+    }
+  },
+  "analystPage": {
+    "eyebrow": "Analyst permission",
+    "title": "Analysis view",
+    "description": "Operations dashboard reserved for ANALYST and ADMIN roles. Standard users cannot access these metrics.",
+    "cards": {
+      "role": "Current role",
+      "scopeValue": "Authorized access to global analysis indicators."
+    },
+    "metrics": {
+      "totalAnalyses": "Analyses",
+      "completionRate": "Success",
+      "activeQueue": "Active queue",
+      "failedAnalyses": "Failures",
+      "trackedAssets": "Analyzed assets",
+      "reports": "Reports",
+      "percent": "{value}%"
+    },
+    "recent": {
+      "title": "Recent analyses",
+      "description": "Cross-account view of the latest processing runs, visible only to analysts and admins.",
+      "empty": "No analyses have been recorded yet.",
+      "columns": {
+        "status": "Status",
+        "trend": "Trend",
+        "recommendation": "Reco",
+        "confidence": "Confidence",
+        "created": "Created"
+      }
+    },
+    "statuses": {
+      "queued": "Queued",
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "failed": "Failed"
+    },
+    "trends": {
+      "bullish": "Bullish",
+      "neutral": "Neutral",
+      "bearish": "Bearish"
+    },
+    "recommendations": {
+      "buy": "Buy",
+      "hold": "Hold",
+      "sell": "Sell",
+      "watch": "Watch"
     }
   },
   "legal": {
