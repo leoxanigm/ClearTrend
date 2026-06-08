@@ -371,6 +371,10 @@
       "email": "Email",
       "role": "Role"
     },
+    "views": {
+      "users": "Users",
+      "notifications": "Notification log"
+    },
     "refreshRate": {
       "label": "Finance refresh rate",
       "ariaLabel": "Choose finance refresh rate",
@@ -434,6 +438,40 @@
         "roleLabel": "Role",
         "updateProfile": "Update profile",
         "updateRole": "Update role"
+      }
+    },
+    "notifications": {
+      "title": "Notification log",
+      "total": "{count, plural, =0 {No notifications} =1 {# notification} other {# notifications}}",
+      "search": {
+        "label": "Search notifications",
+        "placeholder": "Title, body, user, entity",
+        "submit": "Search",
+        "clear": "Clear"
+      },
+      "sort": {
+        "button": "Sort notifications",
+        "options": {
+          "created": "Created",
+          "type": "Type",
+          "user": "User",
+          "read": "Read"
+        }
+      },
+      "columns": {
+        "body": "Body",
+        "created": "Created",
+        "entityId": "Entity ID",
+        "entityType": "Entity",
+        "readAt": "Read at",
+        "role": "Role",
+        "type": "Type",
+        "updated": "Updated",
+        "user": "User"
+      },
+      "status": {
+        "read": "Read",
+        "unread": "Unread"
       }
     }
   },

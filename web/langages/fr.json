@@ -371,6 +371,10 @@
       "email": "Email",
       "role": "Rôle"
     },
+    "views": {
+      "users": "Utilisateurs",
+      "notifications": "Journal notifications"
+    },
     "refreshRate": {
       "label": "Fréquence de rafraîchissement finance",
       "ariaLabel": "Choisir la fréquence de rafraîchissement finance",
@@ -434,6 +438,40 @@
         "roleLabel": "Rôle",
         "updateProfile": "Modifier le profil",
         "updateRole": "Modifier le rôle"
+      }
+    },
+    "notifications": {
+      "title": "Journal des notifications",
+      "total": "{count, plural, =0 {Aucune notification} =1 {# notification} other {# notifications}}",
+      "search": {
+        "label": "Rechercher des notifications",
+        "placeholder": "Titre, contenu, utilisateur, entité",
+        "submit": "Rechercher",
+        "clear": "Effacer"
+      },
+      "sort": {
+        "button": "Trier les notifications",
+        "options": {
+          "created": "Création",
+          "type": "Type",
+          "user": "Utilisateur",
+          "read": "Lecture"
+        }
+      },
+      "columns": {
+        "body": "Contenu",
+        "created": "Créé",
+        "entityId": "ID entité",
+        "entityType": "Entité",
+        "readAt": "Lu le",
+        "role": "Rôle",
+        "type": "Type",
+        "updated": "Mis à jour",
+        "user": "Utilisateur"
+      },
+      "status": {
+        "read": "Lu",
+        "unread": "Non lu"
       }
     }
   },
