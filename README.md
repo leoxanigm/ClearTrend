@@ -391,7 +391,8 @@ buttons directly on the login page.
 Current progress:
 
 - OAuth providers are configured for Google, GitHub, and 42 School.
-- The login page displays one button per provider.
+- The login page displays only providers that are configured in the current
+  environment.
 - OAuth users are stored in the Prisma `User` model with provider name and
   provider account id.
 - The sign-in callback creates or updates the user, stores the display name, and
@@ -399,6 +400,9 @@ Current progress:
 - The session and JWT callbacks expose the internal user id and OAuth identity.
 - `.env.example` lists client id/client secret variables for Google, GitHub, and
   42 School.
+- OAuth accounts are intentionally keyed by provider and provider account id.
+  They are not automatically linked to an existing email/password account with
+  the same email.
 
 Validation:
 
@@ -406,13 +410,11 @@ Validation:
 - GitHub OAuth works for account creation and login.
 - 42 School OAuth works for account creation and login.
 
-Small cleanup still useful:
+Setup notes:
 
-- Fix `.env.example` so `AUTH_SECRET` is documented once with a clear example
-  value.
-- Document the required callback URLs for Google, GitHub, and 42 School.
-- Decide whether OAuth accounts should be linked to existing email/password
-  accounts with the same email.
+- Generate `AUTH_SECRET` with `openssl rand -base64 32`.
+- Configure only the OAuth providers you want to expose; missing or placeholder
+  credentials are ignored by NextAuth and hidden on the login page.
 
 ### Minor - Notifications CRUD
 

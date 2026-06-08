@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 
 const oauthProviders = [
   {
@@ -25,8 +26,56 @@ const oauthProviders = [
   },
 ] as const;
 
+type NextAuthProvider = {
+  id: string;
+};
+
 export function OAuthButtons() {
   const t = useTranslations("oauth");
+  const [configuredProviderIds, setConfiguredProviderIds] = useState<
+    Set<string> | null
+  >(null);
+  const visibleProviders = oauthProviders.filter((provider) =>
+    configuredProviderIds?.has(provider.id)
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadConfiguredProviders() {
+      const response = await fetch("/api/auth/providers", {
+        cache: "no-store",
+      }).catch(() => null);
+
+      if (!response?.ok) {
+        if (!cancelled) {
+          setConfiguredProviderIds(new Set());
+        }
+        return;
+      }
+
+      const providers = (await response.json().catch(() => null)) as Record<
+        string,
+        NextAuthProvider
+      > | null;
+
+      if (!cancelled) {
+        setConfiguredProviderIds(
+          new Set(Object.values(providers ?? {}).map((provider) => provider.id))
+        );
+      }
+    }
+
+    void loadConfiguredProviders();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!configuredProviderIds || visibleProviders.length === 0) {
+    return null;
+  }
 
   return (
     <div
@@ -34,7 +83,7 @@ export function OAuthButtons() {
       className="oauth-actions"
       role="group"
     >
-      {oauthProviders.map((provider) => (
+      {visibleProviders.map((provider) => (
         <button
           aria-label={t("continueWith", {
             provider: provider.label,

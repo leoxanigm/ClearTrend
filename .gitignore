@@ -24,6 +24,7 @@ npm-debug.log*
 
 # Python
 analysis/.venv/
+analysis/data/
 __pycache__/
 *.py[cod]
 .pytest_cache/
