@@ -14,11 +14,8 @@ import requests
 
 REDDIT_SEARCH_URL = "https://old.reddit.com/search.rss"
 REDDIT_USER_AGENT = "ClearTrend academic project/1.0"
-GEMINI_API_URL = (
-    "https://generativelanguage.googleapis.com/v1beta/models/"
-    "{model}:generateContent"
-)
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite"
+QWEN_API_URL = "https://kss-api.mbinc.tech/api/chat"
+DEFAULT_QWEN_MODEL = "gemma3:1b"
 MAX_POSTS = 50
 MAX_TITLE_CHARS = 180
 MAX_EXCERPT_CHARS = 360
@@ -258,7 +255,7 @@ def fetch_reddit_posts(
     )
 
 
-def _gemini_schema() -> dict[str, Any]:
+def _qwen_schema() -> dict[str, Any]:
     return {
         "type": "object",
         "properties": {
@@ -299,60 +296,84 @@ def _clamp(value: object) -> float:
     return max(0.0, min(1.0, number))
 
 
-def _analyze_with_gemini(
+def _analyze_with_qwen(
     ticker: str,
     posts: list[dict],
     *,
-    timeout: float = 45,
+    timeout: float = 200,
 ) -> dict:
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    api_key = os.getenv("QWEN_API_KEY", "").strip()
 
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not configured")
+        raise RuntimeError("QWEN_API_KEY is not configured")
 
-    model = os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL).strip()
+    model = os.getenv("QWEN_MODEL", DEFAULT_QWEN_MODEL).strip()
     post_lines = []
 
-    for index, post in enumerate(posts, start=1):
+    for index, post in enumerate(posts[:10], start=1):
         post_lines.append(
             f"{index}. {post['title']}\n"
             f"   {post['excerpt'][:MAX_EXCERPT_CHARS]}"
         )
 
+    # OMG it's fricking slow, I'll have to optimize that...
+    safe = _safe_ticker(ticker)
     prompt = (
-        "You classify current retail-market sentiment. Analyze only the "
-        f"following Reddit posts about {_safe_ticker(ticker)} from the last "
-        "seven days. Ignore jokes, spam, unrelated uses of the ticker and "
-        "unsupported certainty. Determine whether authors mostly express an "
-        "intention to invest/buy, wait, or withdraw/sell. Do not provide "
-        "financial advice or summarize the posts. Return only the structured "
-        "sentiment measurements requested by the JSON schema.\n\nPosts:\n"
-        + "\n".join(post_lines)
+        f"Analyze these {len(post_lines)} Reddit posts about {safe} "
+        "from the past 7 days and fill in the JSON fields:\n"
+        "- score: float 0.0 (strongly bearish/selling) to 1.0 (strongly bullish/buying), 0.5 = neutral\n"
+        "- agreement: float 0.0 (divided opinions) to 1.0 (everyone agrees)\n"
+        "- bullishCount: number of bullish posts\n"
+        "- neutralCount: number of neutral posts\n"
+        "- bearishCount: number of bearish posts\n\n"
+        "Posts:\n" + "\n".join(post_lines)
     )
-    response = requests.post(
-        GEMINI_API_URL.format(model=model),
-        headers={
-            "Content-Type": "application/json",
-            "x-goog-api-key": api_key,
-        },
-        json={
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "responseMimeType": "application/json",
-                "responseJsonSchema": _gemini_schema(),
-                "temperature": 0.1,
-            },
-        },
-        timeout=timeout,
-    )
-    response.raise_for_status()
-    payload = response.json()
+    body = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": True,
+        "format": _qwen_schema(),
+        "think": False,
+        "options": {"temperature": 0.1, "think": False},
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
 
-    try:
-        text = payload["candidates"][0]["content"]["parts"][0]["text"]
-        result = json.loads(text)
-    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as error:
-        raise ValueError("Gemini returned an invalid sentiment response") from error
+    last_error: Exception | None = None
+    for _attempt in range(3):
+        try:
+            response = requests.post(
+                QWEN_API_URL,
+                headers=headers,
+                json=body,
+                stream=True,
+                timeout=timeout,
+            )
+            response.raise_for_status()
+            content = ""
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                chunk = json.loads(line)
+                content += chunk.get("message", {}).get("content", "")
+                if chunk.get("done"):
+                    break
+            result = json.loads(content)
+            break
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 524:
+                last_error = exc
+                time.sleep(5)
+                continue
+            raise
+        except (requests.Timeout, json.JSONDecodeError) as exc:
+            last_error = exc
+            time.sleep(5)
+            continue
+    else:
+        raise RuntimeError(f"Qwen API failed after 3 attempts: {last_error}")
 
     return {
         "score": round(_clamp(result.get("score")), 4),
@@ -371,10 +392,10 @@ def reddit_sentiment(ticker: str) -> dict:
     if cached and cached[0] > time.monotonic():
         return cached[1]
 
-    if not os.getenv("GEMINI_API_KEY", "").strip():
+    if not os.getenv("QWEN_API_KEY", "").strip():
         return {
             "available": False,
-            "reason": "GEMINI_API_KEY is not configured",
+            "reason": "QWEN_API_KEY is not configured",
             "postCount": 0,
         }
 
@@ -390,7 +411,7 @@ def reddit_sentiment(ticker: str) -> dict:
                 "postCount": 0,
             }
         else:
-            analysis = _analyze_with_gemini(ticker, posts)
+            analysis = _analyze_with_qwen(ticker, posts)
             result = {
                 "available": True,
                 "source": "reddit_rss",
