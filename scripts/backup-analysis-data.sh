@@ -38,7 +38,7 @@ find "${backup_dir}" \
 printf 'Analysis data backup created: %s\n' "${backup_file}"
 
 if [ "${INFOMANIAK_S3_BUCKET:-}" != "" ]; then
-  remote_prefix="${INFOMANIAK_S3_PREFIX:-transcendence}"
+  remote_prefix="${INFOMANIAK_S3_PREFIX:-backup}"
   remote_path="${remote_prefix}/analysis_data"
   remote_key="${remote_path}/$(basename "${backup_file}")"
   s3_retention_days="${INFOMANIAK_S3_RETENTION_DAYS:-30}"
