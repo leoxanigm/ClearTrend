@@ -12,7 +12,7 @@ import pandas as pd
 
 from src.ml.attention_signal import score_attention_record
 from src.ml.historical_regression import analyze_history, analyze_history_frame
-from src.ml.reddit_sentiment import _gemini_schema, parse_reddit_feed
+from src.ml.reddit_sentiment import _qwen_schema, parse_reddit_feed
 from src.ml.prediction_store import (
     MODEL_VERSION,
     load_prediction,
@@ -90,8 +90,8 @@ class HistoricalRegressionTests(unittest.TestCase):
 
 
 class RedditFeedTests(unittest.TestCase):
-    def test_gemini_schema_only_requests_sentiment_measurements(self) -> None:
-        schema = _gemini_schema()
+    def test_qwen_schema_only_requests_sentiment_measurements(self) -> None:
+        schema = _qwen_schema()
 
         self.assertEqual(
             set(schema["required"]),
@@ -245,7 +245,7 @@ class PredictionStoreTests(unittest.TestCase):
             )
 
     @patch("src.ml.prediction_store.market_data_as_of")
-    @patch.dict("os.environ", {"GEMINI_API_KEY": "configured"})
+    @patch.dict("os.environ", {"QWEN_API_KEY": "configured"})
     def test_failed_social_attempt_is_not_repeated_the_same_day(
         self,
         market_data_as_of_mock,
@@ -271,7 +271,7 @@ class PredictionStoreTests(unittest.TestCase):
         self.assertTrue(prediction_is_current("NVDA", payload))
 
     @patch("src.ml.prediction_store.market_data_as_of")
-    @patch.dict("os.environ", {"GEMINI_API_KEY": "configured"})
+    @patch.dict("os.environ", {"QWEN_API_KEY": "configured"})
     def test_missing_social_attempt_is_retried_at_startup(
         self,
         market_data_as_of_mock,
