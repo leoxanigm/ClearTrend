@@ -256,8 +256,7 @@
       "all": "Todo",
       "assets": "Activos",
       "analyses": "Análisis",
-      "reports": "Informes",
-      "notifications": "Notificaciones"
+      "reports": "Informes"
     },
     "sortOptions": {
       "createdAt": "Fecha de creación",
@@ -285,8 +284,7 @@
     "resultTypes": {
       "asset": "Activo",
       "analysis": "Análisis",
-      "report": "Informe",
-      "notification": "Notificación"
+      "report": "Informe"
     },
     "states": {
       "loading": "Cargando...",

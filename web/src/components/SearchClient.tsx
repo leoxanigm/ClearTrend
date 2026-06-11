@@ -123,8 +123,7 @@ export function SearchClient() {
     { label: t('entityTypes.all'), value: 'all' },
     { label: t('entityTypes.assets'), value: 'assets' },
     { label: t('entityTypes.analyses'), value: 'analyses' },
-    { label: t('entityTypes.reports'), value: 'reports' },
-    { label: t('entityTypes.notifications'), value: 'notifications' }
+    { label: t('entityTypes.reports'), value: 'reports' }
   ];
 
   const sortOptions: Array<{ label: string; value: SearchSortKey }> = [
@@ -178,8 +177,6 @@ export function SearchClient() {
     if (type === 'report') {
       return t('resultTypes.report');
     }
-
-    return t('resultTypes.notification');
   }
 
   function SearchResultCard({ result }: { result: SearchResultItem }) {

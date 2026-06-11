@@ -384,76 +384,6 @@ async function searchReports(input: {
   return { results, total };
 }
 
-async function searchNotifications(input: {
-  dateFrom: Date | null;
-  dateTo: Date | null;
-  direction: SearchDirection;
-  limit: number;
-  page: number;
-  q: string;
-  userId: string;
-}) {
-  const prisma = getPrisma();
-  const skip = (input.page - 1) * input.limit;
-  const createdAt = getDateFilter(input.dateFrom, input.dateTo);
-
-  const where = {
-    userId: input.userId,
-    ...(createdAt ? { createdAt } : {}),
-    ...(input.q
-      ? {
-          OR: [
-            {
-              title: {
-                contains: input.q,
-                mode: 'insensitive' as const
-              }
-            },
-            {
-              body: {
-                contains: input.q,
-                mode: 'insensitive' as const
-              }
-            },
-            {
-              entityType: {
-                contains: input.q,
-                mode: 'insensitive' as const
-              }
-            }
-          ]
-        }
-      : {})
-  };
-
-  const [total, rows] = await Promise.all([
-    prisma.notification.count({ where }),
-    prisma.notification.findMany({
-      orderBy: getCreatedAtOrderBy(input.direction),
-      skip,
-      take: input.limit,
-      where
-    })
-  ]);
-
-  const results: SearchResultItem[] = rows.map(notification => ({
-    id: notification.id,
-    type: 'notification',
-    title: notification.title,
-    subtitle: notification.type,
-    description: notification.body,
-    href: null,
-    createdAt: toIso(notification.createdAt),
-    metadata: {
-      entityId: notification.entityId,
-      entityType: notification.entityType,
-      read: Boolean(notification.readAt)
-    }
-  }));
-
-  return { results, total };
-}
-
 function mergeSearchResults(
   groups: Array<{ results: SearchResultItem[]; total: number }>,
   limit: number,
@@ -537,14 +467,11 @@ export async function GET(req: Request) {
       searchResult = await searchAnalyses(input);
     } else if (type === 'reports') {
       searchResult = await searchReports(input);
-    } else if (type === 'notifications') {
-      searchResult = await searchNotifications(input);
     } else {
       const groups = await Promise.all([
         searchAssets(input),
         searchAnalyses(input),
-        searchReports(input),
-        searchNotifications(input)
+        searchReports(input)
       ]);
 
       searchResult = mergeSearchResults(groups, limit, page, direction);
