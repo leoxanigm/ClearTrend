@@ -68,35 +68,78 @@ write_state_timestamp() {
   printf '%s\n' "${timestamp}" > "${STATE_DIR}/${dataset}.timestamp"
 }
 
+make_backup_host_readable() {
+  local_file="$1"
+  file_name="$(basename "${local_file}")"
+
+  host_uid="$(id -u)"
+  host_gid="$(id -g)"
+
+  run_backup /bin/sh -c '
+    set -eu
+
+    file="/backups/$1"
+    host_uid="$2"
+    host_gid="$3"
+
+    chown "${host_uid}:${host_gid}" "${file}" 2>/dev/null || true
+    chmod 0644 "${file}"
+  ' sh "${file_name}" "${host_uid}" "${host_gid}"
+}
+
 download_if_missing() {
   remote_key="$1"
   local_file="$2"
 
   if [ -s "${local_file}" ]; then
     printf 'Already downloaded: %s\n' "${local_file}"
-    return 0
+  else
+    run_backup /scripts/download-infomaniak-s3.sh \
+      "${remote_key}" \
+      "/backups/$(basename "${local_file}")"
   fi
 
-  run_backup /scripts/download-infomaniak-s3.sh "${remote_key}" "/backups/$(basename "${local_file}")"
+  make_backup_host_readable "${local_file}"
 }
 
 restore_database() {
   sql_file="$1"
+  sql_name="$(basename "${sql_file}")"
 
   printf 'Checking database dump: %s\n' "${sql_file}"
-  ${COMPOSE_DEV} run --rm --no-deps backup /scripts/restore-check.sh "/backups/$(basename "${sql_file}")"
+  ${COMPOSE_DEV} run --rm --no-deps backup \
+    /scripts/restore-check.sh "/backups/${sql_name}"
 
   printf 'Restoring database from: %s\n' "${sql_file}"
   ${COMPOSE_DEV} stop web analysis >/dev/null 2>&1 || true
 
-  ${COMPOSE_DEV} exec -T db sh -c '
+  ${COMPOSE_DEV} run --rm --no-deps backup /bin/sh -c '
     set -eu
+
+    sql_file="/backups/$1"
+
     export PGPASSWORD="${POSTGRES_PASSWORD}"
 
-    dropdb --if-exists --force -U "${POSTGRES_USER}" "${POSTGRES_DB}"
-    createdb -U "${POSTGRES_USER}" "${POSTGRES_DB}"
-    psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" "${POSTGRES_DB}"
-  ' < "${sql_file}"
+    dropdb \
+      --host="${POSTGRES_HOST:-db}" \
+      --username="${POSTGRES_USER}" \
+      --if-exists \
+      --force \
+      "${POSTGRES_DB}"
+
+    createdb \
+      --host="${POSTGRES_HOST:-db}" \
+      --username="${POSTGRES_USER}" \
+      "${POSTGRES_DB}"
+
+    psql \
+      --host="${POSTGRES_HOST:-db}" \
+      --username="${POSTGRES_USER}" \
+      --dbname="${POSTGRES_DB}" \
+      --set=ON_ERROR_STOP=1 \
+      --file="${sql_file}" \
+      >/dev/null
+  ' sh "${sql_name}"
 }
 
 restore_archive_volume() {

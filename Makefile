@@ -59,7 +59,7 @@ backup:
 
 sync-dev-data: .env
 	$(COMPOSE_DEV) build backup
-	./scripts/sync-dev-from-infomaniak.sh
+	./scripts/sync-dev-data-infomaniak.sh
 
 restore:
 	@test -n "$(file)" || (echo "Usage: make restore file=backups/name.sql" && exit 1)
