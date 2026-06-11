@@ -3,7 +3,7 @@
 set -eu
 
 # repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-remote_path="${1:-${INFOMANIAK_S3_PREFIX:-backup}/analysis_data}"
+remote_path="${1:-${INFOMANIAK_S3_PREFIX:-backup}}"
 
 # cd "${repo_root}"
 

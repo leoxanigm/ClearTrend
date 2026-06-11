@@ -1,4 +1,4 @@
-.PHONY: dev up down logs ps health db-push db-shell db-studio reset-db backup restore restore-check test-file-upload clean fclean certs dev-info up-info
+.PHONY: dev up down logs ps health db-push db-shell db-studio reset-db backup restore restore-check test-file-upload clean fclean certs dev-info up-info sync-dev-data
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
@@ -7,15 +7,15 @@ COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 	cp .env.example .env
 
 # dev starts the coding environment: hot reload, exposed ports, plain HTTP.
-dev: .env
-	$(COMPOSE_DEV) up -d --build --remove-orphans db analysis backup
+dev: .env sync-dev-data
+	$(COMPOSE_DEV) up -d --build --remove-orphans db analysis
 	$(COMPOSE_DEV) build web
 	$(COMPOSE_DEV) run --rm --no-deps web npm run db:push
 	-$(COMPOSE_DEV) stop proxy
 	@printf '\nWaiting for the analysis API to be ready before starting the web app...\n'
 	$(COMPOSE_DEV) up -d web
 	$(MAKE) dev-info
-	$(COMPOSE_DEV) logs -f db analysis backup web
+	$(COMPOSE_DEV) logs -f db analysis web
 
 # up starts the evaluation-like environment: built containers and HTTPS through nginx.
 up: .env certs
@@ -56,6 +56,10 @@ backup:
 	$(COMPOSE) run --rm --no-deps backup /scripts/backup-db.sh
 	$(COMPOSE) run --rm --no-deps backup /scripts/backup-analysis-data.sh
 	$(COMPOSE) run --rm --no-deps backup /scripts/backup-avatar-uploads.sh
+
+sync-dev-data: .env
+	$(COMPOSE_DEV) build backup
+	./scripts/sync-dev-data-infomaniak.sh
 
 restore:
 	@test -n "$(file)" || (echo "Usage: make restore file=backups/name.sql" && exit 1)

@@ -5,6 +5,7 @@
 
 # Docker/runtime generated files
 nginx/certs/
+backups/.dev-sync-state
 backups/*.sql
 backups/*.dump
 backups/*.tar.gz
