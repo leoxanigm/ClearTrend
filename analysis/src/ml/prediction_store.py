@@ -122,7 +122,7 @@ def prediction_is_current(ticker: str, payload: dict | None) -> bool:
         return False
 
     try:
-        social_configured = bool(os.getenv("GEMINI_API_KEY", "").strip())
+        social_configured = bool(os.getenv("QWEN_API_KEY", "").strip())
         social_attempt_is_current = (
             not social_configured
             or _timestamp_is_today(payload.get("socialAttemptedAt"))
@@ -169,7 +169,7 @@ def train_asset_prediction(
     )
     trained_at = datetime.now(timezone.utc).isoformat()
     social_enabled = (
-        include_social and bool(os.getenv("GEMINI_API_KEY", "").strip())
+        include_social and bool(os.getenv("QWEN_API_KEY", "").strip())
     )
     snapshot = {
         **analysis,
