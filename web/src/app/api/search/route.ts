@@ -208,7 +208,6 @@ async function searchAnalyses(input: {
   const sourceKind = getSourceKind(input.source) as SourceKind;
 
   const where = {
-    userId: input.userId,
     ...(createdAt ? { createdAt } : {}),
     ...(trendLabel ? { trendLabel } : {}),
     ...(sourceKind
