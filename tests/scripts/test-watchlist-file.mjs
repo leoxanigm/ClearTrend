@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 
+// Run the complete authenticated import/export workflow against the web API.
 const baseUrl = process.env.TEST_BASE_URL ?? "http://127.0.0.1:3000";
 const email = `watchlist-file-test-${randomUUID()}@example.test`;
 const password = `Watchlist-${randomUUID()}`;
 const testIp = `watchlist-file-test-${randomUUID()}`;
 const cookies = new Map();
 
+// Persist session cookies returned by registration and NextAuth.
 function rememberCookies(response) {
   for (const value of response.headers.getSetCookie()) {
     const [pair] = value.split(";", 1);
@@ -22,6 +24,7 @@ function cookieHeader() {
   return Array.from(cookies, ([name, value]) => `${name}=${value}`).join("; ");
 }
 
+// Central request helper reproduces browser cookies and an isolated client IP.
 async function request(path, options = {}) {
   const headers = new Headers(options.headers);
   const cookie = cookieHeader();
@@ -41,6 +44,7 @@ async function request(path, options = {}) {
   return response;
 }
 
+// Raise detailed failures instead of hiding the API response body.
 async function assertStatus(response, expectedStatus) {
   if (response.status !== expectedStatus) {
     throw new Error(
@@ -49,6 +53,7 @@ async function assertStatus(response, expectedStatus) {
   }
 }
 
+// Wrap arbitrary content in the multipart field expected by the import route.
 async function uploadWatchlist(content, type = "application/json") {
   const formData = new FormData();
 
@@ -64,11 +69,13 @@ async function uploadWatchlist(content, type = "application/json") {
   });
 }
 
+// Export must remain unavailable before authentication.
 const unauthenticatedExport = await fetch(
   `${baseUrl}/api/assets/watchlist/file`
 );
 assert.equal(unauthenticatedExport.status, 401);
 
+// Create and authenticate a disposable user for isolated favorite data.
 const registerResponse = await request("/api/auth/register", {
   body: JSON.stringify({ email, password }),
   headers: {
@@ -101,6 +108,7 @@ assert.ok(
   Array.from(cookies.keys()).some((name) => name.includes("session-token"))
 );
 
+// A user with no favorites still receives a valid versioned document.
 const emptyExportResponse = await request("/api/assets/watchlist/file");
 await assertStatus(emptyExportResponse, 200);
 assert.match(
@@ -112,6 +120,7 @@ assert.equal(emptyExport.format, "cleartrend-watchlist");
 assert.equal(emptyExport.version, 1);
 assert.deepEqual(emptyExport.symbols, []);
 
+// Valid symbols are normalized and merged; invalid and unknown values are reported.
 const validPayload = JSON.stringify({
   format: "cleartrend-watchlist",
   symbols: ["aapl", "MSFT", "AAPL", "ZZZZZZ", 42],
@@ -126,11 +135,13 @@ assert.deepEqual(importResult.ignoredSymbols, ["ZZZZZZ"]);
 assert.equal(importResult.invalidEntries, 1);
 assert.deepEqual(importResult.favoriteSymbols.sort(), ["AAPL", "MSFT"]);
 
+// Re-export proves that only recognized favorites were persisted.
 const exportResponse = await request("/api/assets/watchlist/file");
 await assertStatus(exportResponse, 200);
 const exportedWatchlist = await exportResponse.json();
 assert.deepEqual(exportedWatchlist.symbols.sort(), ["AAPL", "MSFT"]);
 
+// Reimporting the same file is idempotent and reports existing favorites.
 const duplicateImportResponse = await uploadWatchlist(validPayload);
 await assertStatus(duplicateImportResponse, 200);
 const duplicateImport = await duplicateImportResponse.json();
@@ -140,6 +151,7 @@ assert.deepEqual(
   ["AAPL", "MSFT"]
 );
 
+// Exercise MIME, syntax, schema version, and byte-size rejection paths.
 const wrongTypeResponse = await uploadWatchlist(validPayload, "text/plain");
 assert.equal(wrongTypeResponse.status, 400);
 
@@ -170,6 +182,7 @@ assert.equal(
   "The watchlist file must be 64 KB or smaller."
 );
 
+// Remove the test account so the scenario leaves no persistent user data.
 const deleteResponse = await request("/api/account/delete", {
   method: "DELETE",
 });

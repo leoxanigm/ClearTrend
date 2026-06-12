@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Delete the database account first, then remove its private avatar file.
 export async function DELETE() {
   const profile = await getCurrentUserProfile();
 
@@ -22,6 +23,7 @@ export async function DELETE() {
     },
   });
 
+  // Missing files are ignored by the storage helper, keeping deletion idempotent.
   await deleteStoredAvatar(profile.avatarUrl);
 
   return new NextResponse(null, {

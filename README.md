@@ -160,9 +160,11 @@ Proofs:
 - CSV and JSON export for the selected asset and range, including OHLCV candles and candle variation.
 - Loading, unavailable-data, and empty-filter states.
 
-The Trend and Sentiment tiles are placeholders reserved for the future ML module. They are not used as proof for this analytics module.
+The Trend and Sentiment tiles are supplied by the separate ML module. They enrich
+the page but are not used as proof for this analytics module.
 
-Detailed operation and tests: `docs/modules/advanced_analytics_dashboard.md`.
+Detailed architecture, operation, limitations, and tests:
+[Advanced Analytics Dashboard](docs/modules/advanced_analytics_dashboard.md).
 
 ### Major - Real-time WebSocket/SSE
 
@@ -303,6 +305,9 @@ Proofs:
 - Firefox: same user flows display correctly.
 - Edge: same user flows display correctly.
 
+Validation scope and known limitations:
+[Additional Browsers](docs/modules/additional_browsers.md).
+
 ### Minor - Custom Design System
 
 The interface uses a small custom UI library with shared tokens and generic reusable components.
@@ -311,13 +316,21 @@ Proofs:
 
 The component library can be checked visually on `/ui-showcase`. This page is not linked in the product navigation and is meant to be opened only by direct URL.
 
-15 Reusable components:
+15 reusable generic components and services:
 
 - Button, IconButton, TextInput, SelectField, SegmentedControl.
 - Badge, Card, MetricTile, Avatar, DropdownMenu.
 - Modal, Tooltip, Toast, ThemeSwitch, NotificationProvider.
 
-The design system also centralizes light/dark tokens, surfaces, borders, text colors, accent colors, and shared UI CSS. App screens reuse these primitives on login, dashboard, profile settings, menus, charts, and admin forms, with UI assets such as logo variants, OAuth icons, theme icons, and favorite icons.
+`LanguageSelect` is an additional application-level composition built from
+`SelectField`. The design system also centralizes light/dark tokens, surfaces,
+borders, text colors, accent colors, and shared UI CSS. App screens reuse these
+primitives on login, dashboard, profile settings, menus, charts, and admin
+forms, with UI assets such as logo variants, OAuth icons, theme icons, and
+favorite icons.
+
+Architecture, component inventory, and limitations:
+[Custom Design System](docs/modules/custom_design_system.md).
 
 ### Minor - ORM
 
@@ -475,7 +488,7 @@ The application supports English, French, and Spanish through `next-intl`.
 Proofs:
 
 - Translation files exist for `en`, `fr`, and `es`.
-- The three translation files expose the same 250 message keys.
+- The three translation files expose the same 399 message keys.
 - The active locale is resolved from the `cleartrend-locale` cookie or the
   browser `Accept-Language` header.
 - The root layout sets the HTML `lang` attribute from the active locale.
@@ -490,6 +503,9 @@ Validation:
 - The app refreshes after changing language and keeps the choice in a cookie.
 - Translation key parity was checked: no missing keys between `en`, `fr`, and
   `es`.
+
+Architecture, coverage, validation, and limitations:
+[3 Languages](docs/modules/three_languages.md).
 
 ### Minor - File Upload Management
 

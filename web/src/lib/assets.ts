@@ -6,6 +6,7 @@ import { getAssetDisplayName } from "@/lib/asset-labels";
 import { defaultWatchlistSymbols } from "@/lib/asset-symbols";
 import { getPrisma } from "@/lib/prisma";
 
+// Keep persisted and imported symbols within the provider-compatible syntax.
 const symbolPattern = /^[A-Z0-9.=-]{1,15}$/;
 
 export type WatchlistAsset = {
@@ -26,6 +27,7 @@ type WatchlistLoadOptions = {
   loadSnapshots?: boolean;
 };
 
+// Normalize all watchlist sources before they enter persistence or API queries.
 export function normalizeWatchlistSymbols(symbols: string[]) {
   return Array.from(
     new Set(
@@ -33,9 +35,10 @@ export function normalizeWatchlistSymbols(symbols: string[]) {
         .map((symbol) => symbol.trim().toUpperCase())
         .filter((symbol) => symbolPattern.test(symbol))
     )
-  ).slice(0, 999); // number of assets on the left bar
+  ).slice(0, 999); // Shared upper bound for the sidebar and JSON import.
 }
 
+// Parse an optional comma-separated configuration value with a safe fallback.
 export function parseWatchlistSymbols(value: string | null) {
   if (!value) {
     return defaultWatchlistSymbols;
@@ -46,6 +49,7 @@ export function parseWatchlistSymbols(value: string | null) {
   return symbols.length > 0 ? symbols : defaultWatchlistSymbols;
 }
 
+// Adapt a live analysis snapshot to the smaller watchlist display contract.
 function toWatchlistAsset(
   asset: AnalysisAssetSnapshot
 ): WatchlistAsset {
@@ -59,6 +63,7 @@ function toWatchlistAsset(
   };
 }
 
+// Preserve the symbol in the UI when the analysis service is unavailable.
 function fallbackAsset(symbol: string): WatchlistAsset {
   return {
     dayChangePercent: null,
@@ -70,6 +75,7 @@ function fallbackAsset(symbol: string): WatchlistAsset {
   };
 }
 
+// Read only the authenticated account's normalized favorites from PostgreSQL.
 export async function getUserFavoriteSymbols(userId: string) {
   const prisma = getPrisma();
   const rows = await prisma.$queryRaw<FavoriteSymbolsRow[]>`
@@ -82,6 +88,7 @@ export async function getUserFavoriteSymbols(userId: string) {
   return normalizeWatchlistSymbols(rows[0]?.favoriteSymbols ?? []);
 }
 
+// Add or remove one favorite atomically in PostgreSQL.
 export async function setUserFavoriteSymbol(
   userId: string,
   symbol: string,
@@ -94,6 +101,7 @@ export async function setUserFavoriteSymbol(
   }
 
   const prisma = getPrisma();
+  // CASE avoids duplicates while array_remove makes repeated deletion harmless.
   const rows = await prisma.$queryRaw<FavoriteSymbolsRow[]>`
     UPDATE users
     SET
@@ -114,6 +122,7 @@ export async function setUserFavoriteSymbol(
   return normalizeWatchlistSymbols(rows[0]?.favoriteSymbols ?? []);
 }
 
+// Merge a JSON import with existing favorites without replacing user data.
 export async function mergeUserFavoriteSymbols(
   userId: string,
   symbols: string[]
@@ -124,6 +133,7 @@ export async function mergeUserFavoriteSymbols(
     ...symbols,
   ]);
   const prisma = getPrisma();
+  // The normalized complete array is written once after the merge.
   const rows = await prisma.$queryRaw<FavoriteSymbolsRow[]>`
     UPDATE users
     SET
@@ -136,6 +146,7 @@ export async function mergeUserFavoriteSymbols(
   return normalizeWatchlistSymbols(rows[0]?.favoriteSymbols ?? []);
 }
 
+// Load market snapshots while retaining stable fallback rows on service failure.
 export async function getWatchlistAssets(
   symbols = defaultWatchlistSymbols,
   options: { loadSnapshots?: boolean } = {}
@@ -143,6 +154,7 @@ export async function getWatchlistAssets(
   const normalizedSymbols = normalizeWatchlistSymbols(symbols);
 
   if (options.loadSnapshots === false) {
+    // Some callers need labels and symbols without paying for market-data requests.
     return normalizedSymbols.map(fallbackAsset);
   }
 
@@ -162,6 +174,7 @@ export async function getWatchlistAssets(
   }
 }
 
+// Combine default assets and saved favorites, then mark ownership for the UI.
 export async function getUserWatchlistAssets(
   userId: string,
   symbols = defaultWatchlistSymbols,

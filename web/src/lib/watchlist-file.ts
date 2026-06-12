@@ -1,3 +1,4 @@
+// Public contract shared by browser preview, API validation, and JSON export.
 export const watchlistFileRules = {
   accept: "application/json,.json",
   format: "cleartrend-watchlist",
@@ -6,6 +7,7 @@ export const watchlistFileRules = {
   version: 1,
 };
 
+// Symbols use the same conservative character set as the application's watchlist.
 const symbolPattern = /^[A-Z0-9.=-]{1,15}$/;
 
 export type WatchlistFile = {
@@ -21,6 +23,7 @@ export type WatchlistFileValidation = {
   symbols: string[];
 };
 
+// Build the versioned document returned by the authenticated export endpoint.
 export function createWatchlistFile(symbols: string[]): WatchlistFile {
   return {
     exportedAt: new Date().toISOString(),
@@ -30,6 +33,7 @@ export function createWatchlistFile(symbols: string[]): WatchlistFile {
   };
 }
 
+// Validate unknown parsed JSON and return normalized symbols plus ignored counts.
 export function validateWatchlistFile(
   value: unknown
 ): WatchlistFileValidation {
@@ -43,6 +47,7 @@ export function validateWatchlistFile(
 
   const payload = value as Record<string, unknown>;
 
+  // Format and version prevent unrelated JSON documents from being imported.
   if (
     payload.format !== watchlistFileRules.format ||
     payload.version !== watchlistFileRules.version ||
@@ -55,6 +60,7 @@ export function validateWatchlistFile(
     };
   }
 
+  // Reject oversized arrays before normalization to keep processing bounded.
   if (payload.symbols.length > watchlistFileRules.maxSymbols) {
     return {
       error: `A watchlist file can contain at most ${watchlistFileRules.maxSymbols} symbols.`,
@@ -63,6 +69,7 @@ export function validateWatchlistFile(
     };
   }
 
+  // Normalize case, remove duplicates, and retain only syntactically valid symbols.
   const normalized = payload.symbols.map((symbol) =>
     typeof symbol === "string" ? symbol.trim().toUpperCase() : null
   );
@@ -78,6 +85,7 @@ export function validateWatchlistFile(
     (symbol) => !symbol || !symbolPattern.test(symbol)
   ).length;
 
+  // A structurally valid document still needs at least one usable symbol.
   if (symbols.length === 0) {
     return {
       error: "The watchlist file does not contain any valid symbol.",

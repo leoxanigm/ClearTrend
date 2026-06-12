@@ -1,38 +1,38 @@
-# Module Major personnalise - ML Trend Prediction
+# Module Major personnalisé - ML Trend Prediction
 
 ## Statut
 
-Implementation terminee pour la regression, Reddit RSS, ApeWisdom, la fusion,
+Implémentation terminée pour la régression, Reddit RSS, ApeWisdom, la fusion,
 l'API et le dashboard.
 
-L'integration Gemini a ete testee avec une cle reelle. Un cycle quotidien
-complet sur les sept assets reste a confirmer apres renouvellement du quota:
-les premiers appels ont fonctionne, puis Gemini a retourne HTTP `429`.
+L'intégration Gemini a été testée avec une clé réelle. Un cycle quotidien
+complet sur les sept assets reste à confirmer après renouvellement du quota:
+les premiers appels ont fonctionné, puis Gemini a retourné HTTP `429`.
 
 ## Pourquoi ce module
 
-Le sujet autorise un module Major personnalise s'il est substantiel, pertinent,
-techniquement complexe et correctement justifie dans le README.
+Le sujet autorise un module Major personnalisé s'il est substantiel, pertinent,
+techniquement complexe et correctement justifié dans le README.
 
-ClearTrend analyse des marches financiers. Un moteur de tendance multi-source
+ClearTrend analyse des marchés financiers. Un moteur de tendance multi-source
 apporte donc une fonction centrale au produit:
 
-- estimation de prix a plusieurs horizons;
-- tendance normalisee et comparable entre assets;
-- analyse de discussions recentes;
+- estimation de prix à plusieurs horizons;
+- tendance normalisée et comparable entre assets;
+- analyse de discussions récentes;
 - mesure de l'attention publique;
 - niveau de confiance explicable;
-- fonctionnement degrade quand une source externe ne repond pas.
+- fonctionnement dégradé quand une source externe ne répond pas.
 
-Ce module ne pretend pas etre le module officiel "Recommendation system using
+Ce module ne prétend pas être le module officiel "Recommendation system using
 machine learning". Il ne personnalise pas ses sorties selon le comportement
 utilisateur.
 
-## Perimetre
+## Périmètre
 
-Les predictions sont limitees aux assets disposant de cinq annees d'historique:
+Les prédictions sont limitées aux assets disposant de cinq années d'historique:
 
-| Asset | Ticker marche | Alias social |
+| Asset | Ticker marché | Alias social |
 |---|---|---|
 | S&P 500 | `^GSPC` / `GSPC` | `SPY`, `S&P 500` |
 | Nasdaq Composite | `^IXIC` / `IXIC` | `QQQ`, `Nasdaq Composite` |
@@ -42,9 +42,9 @@ Les predictions sont limitees aux assets disposant de cinq annees d'historique:
 | Alphabet | `GOOGL` | `GOOGL`, `Alphabet stock` |
 | Nvidia | `NVDA` | `NVDA`, `Nvidia` |
 
-Les horizons dependent du calendrier de l'asset:
+Les horizons dépendent du calendrier de l'asset:
 
-| Horizon | Marches avec cloture | Crypto 24 h/24 |
+| Horizon | Marchés avec clôture | Crypto 24 h/24 |
 |---|---:|---:|
 | `1D` | 1 jour de cotation | 1 jour calendaire |
 | `1W` | 5 jours de cotation | 7 jours calendaires |
@@ -56,94 +56,94 @@ jours de cotation disponibles dans leur historique.
 
 ## Architecture
 
-Le pipeline est separe en quatre methodes.
+Le pipeline est séparé en quatre méthodes.
 
-L'orchestration et le stockage sont isoles dans
-`analysis/src/ml/prediction_store.py`. Ce fichier ne constitue pas un cinquieme
-algorithme: il planifie les quatre methodes et persiste leurs sorties.
+L'orchestration et le stockage sont isolés dans
+`analysis/src/ml/prediction_store.py`. Ce fichier ne constitue pas un cinquième
+algorithme: il planifie les quatre méthodes et persiste leurs sorties.
 
-### 1. Regression historique
+### 1. Régression historique
 
 Fichier: `analysis/src/ml/historical_regression.py`.
 
-Le modele predit le log-rendement futur:
+Le modèle prédit le log-rendement futur:
 
 ```text
 log(prix futur / prix actuel)
 ```
 
-Le prix estime est ensuite:
+Le prix estimé est ensuite:
 
 ```text
-prix actuel * exp(rendement predit)
+prix actuel * exp(rendement prédit)
 ```
 
-Le modele utilise `Ridge Regression` avec une regularisation `alpha=100`.
-Cette valeur a ete retenue apres comparaison chronologique avec des valeurs
-Ridge plus faibles et une regression Gradient Boosting.
+Le modèle utilise `Ridge Regression` avec une régularisation `alpha=100`.
+Cette valeur a été retenue après comparaison chronologique avec des valeurs
+Ridge plus faibles et une régression Gradient Boosting.
 
-Ridge a ete conserve car il est:
+Ridge a été conservé car il est:
 
 - plus stable sur le petit dataset;
 - explicable;
-- rapide a entrainer;
-- moins sensible aux variables correlees;
+- rapide à entraîner;
+- moins sensible aux variables corrélées;
 - globalement meilleur sur l'erreur de prix du benchmark actuel.
 
-Un modele distinct est entraine pour chaque couple asset/horizon. Par exemple,
-le modele `BTC-USD/1W` n'apprend jamais avec l'historique de NVDA ou de l'or.
-Cette separation est necessaire car les niveaux de volatilite, calendriers,
-volumes et comportements de marche sont tres differents.
+Un modèle distinct est entraîné pour chaque couple asset/horizon. Par exemple,
+le modèle `BTC-USD/1W` n'apprend jamais avec l'historique de NVDA ou de l'or.
+Cette séparation est nécessaire car les niveaux de volatilité, calendriers,
+volumes et comportements de marché sont très différents.
 
-Variables historiques, calculees sur les observations quotidiennes propres au
+Variables historiques, calculées sur les observations quotidiennes propres au
 calendrier de chaque asset:
 
 - rendements sur 1, 2, 5, 10 et 20 observations;
 - distance aux moyennes mobiles 5, 10, 20 et 50;
-- volatilite sur 5 et 20 observations;
+- volatilité sur 5 et 20 observations;
 - amplitude High/Low;
 - variation et niveau relatif du volume;
 - RSI sur 14 observations.
 
 ### Validation temporelle
 
-`TimeSeriesSplit` conserve l'ordre chronologique. Le modele apprend uniquement
-sur le passe et est teste sur des periodes posterieures.
+`TimeSeriesSplit` conserve l'ordre chronologique. Le modèle apprend uniquement
+sur le passé et est testé sur des périodes postérieures.
 
-Une validation complementaire coupe les donnees environ un mois avant leur fin:
+Une validation complémentaire coupe les données environ un mois avant leur fin:
 
-1. entrainement avant la date de coupure;
-2. prediction depuis cette date;
-3. comparaison avec le prix reel 1D, 1W ou 1M plus tard.
+1. entraînement avant la date de coupure;
+2. prédiction depuis cette date;
+3. comparaison avec le prix réel 1D, 1W ou 1M plus tard.
 
-La reponse expose:
+La réponse expose:
 
 - `directionalAccuracy`;
 - erreur absolue moyenne du rendement;
 - erreur du baseline sans mouvement;
-- dispersion des residus;
+- dispersion des résidus;
 - nombre d'exemples;
-- snapshot de validation avec prix predit et prix reel.
+- snapshot de validation avec prix prédit et prix réel.
 
-Une precision proche de 50 % ou une erreur superieure au baseline produit
+Une précision proche de 50 % ou une erreur supérieure au baseline produit
 volontairement une confiance faible.
 
-### Normalisation 0 a 1
+### Normalisation 0 à 1
 
-Le rendement predit est compare a la volatilite habituelle de l'asset et de
+Le rendement prédit est comparé à la volatilité habituelle de l'asset et de
 l'horizon.
 
 ```text
-0.0 -> forte tendance baissiere
+0.0 -> forte tendance baissière
 0.5 -> tendance neutre
-1.0 -> forte tendance haussiere
+1.0 -> forte tendance haussière
 ```
 
-Le rendement est limite a trois fois la volatilite attendue afin qu'une sortie
-extreme du modele ne produise pas un prix absurde.
+Le rendement est limité à trois fois la volatilité attendue afin qu'une sortie
+extrême du modèle ne produise pas un prix absurde.
 
-Le prix estime reste indicatif. Pour un asset volatil et un horizon mensuel,
-l'intervalle peut etre large.
+Le prix estimé reste indicatif. Pour un asset volatil et un horizon mensuel,
+l'intervalle peut être large.
 
 ### 2. Sentiment Reddit et Gemini
 
@@ -153,37 +153,37 @@ Flux:
 
 1. recherche de maximum 100 candidats dans le RSS public Reddit;
 2. conservation des publications de moins de sept jours;
-3. filtrage par aliases de l'asset et vocabulaire marche;
+3. filtrage par aliases de l'asset et vocabulaire marché;
 4. suppression des doublons;
 5. limite de 50 publications pertinentes;
-6. titre limite a 180 caracteres;
-7. extrait limite a 360 caracteres;
-8. envoi temporaire a Gemini;
-9. reponse JSON structuree.
+6. titre limité à 180 caractères;
+7. extrait limité à 360 caractères;
+8. envoi temporaire à Gemini;
+9. réponse JSON structurée.
 
 Sorties:
 
 - sentiment `0..1`;
 - accord entre les messages `0..1`;
 - nombre de messages haussiers, neutres et baissiers;
-- nombre de publications analysees.
+- nombre de publications analysées.
 
-Gemini ne produit aucun texte destine au frontend. Les publications nettoyees
-et limitees en taille lui sont envoyees uniquement pour obtenir ces mesures
-structurees de sentiment.
+Gemini ne produit aucun texte destiné au frontend. Les publications nettoyées
+et limitées en taille lui sont envoyées uniquement pour obtenir ces mesures
+structurées de sentiment.
 
-La cle n'est jamais exposee au navigateur et ne doit pas etre versionnee.
+La clé n'est jamais exposée au navigateur et ne doit pas être versionnée.
 
 ```dotenv
 GEMINI_API_KEY=...
 GEMINI_MODEL=gemini-2.5-flash-lite
 ```
 
-Sans cle, le signal est marque indisponible et la prediction historique continue
+Sans clé, le signal est marqué indisponible et la prédiction historique continue
 de fonctionner.
 
 Si Gemini refuse un appel, le snapshot conserve le nombre de publications
-collectees dans `collectedPostCount`. Cela permet de distinguer une limite API
+collectées dans `collectedPostCount`. Cela permet de distinguer une limite API
 d'une absence de messages Reddit, sans multiplier les nouvelles tentatives.
 
 ### 3. Attention ApeWisdom
@@ -199,9 +199,9 @@ ApeWisdom fournit notamment:
 
 Le score d'attention `0..1` combine le volume de mentions et le rang.
 
-Une hausse du nombre de messages n'est pas consideree comme haussiere: un crash
-peut aussi provoquer beaucoup de discussions. L'attention sert a augmenter ou
-reduire le poids et la confiance du sentiment Gemini.
+Une hausse du nombre de messages n'est pas considérée comme haussière: un crash
+peut aussi provoquer beaucoup de discussions. L'attention sert à augmenter ou
+réduire le poids et la confiance du sentiment Gemini.
 
 ### 4. Fusion des signaux
 
@@ -215,7 +215,7 @@ Poids de base:
 | `1W` | 0.65 | 0.35 |
 | `1M` | 0.80 | 0.20 |
 
-Le poids social est reduit lorsque ApeWisdom montre peu d'attention.
+Le poids social est réduit lorsque ApeWisdom montre peu d'attention.
 
 Le score final devient:
 
@@ -233,39 +233,39 @@ Labels:
 
 La confiance combine:
 
-- qualite du backtest;
-- erreur residuelle;
-- quantite de donnees;
+- qualité du backtest;
+- erreur résiduelle;
+- quantité de données;
 - accord des publications;
 - nombre de publications;
 - attention ApeWisdom;
 - accord entre historique et sentiment;
-- disponibilite des sources.
+- disponibilité des sources.
 
-La confiance est un indice de qualite de la prediction. Ce n'est pas une
-probabilite de gain.
+La confiance est un indice de qualité de la prédiction. Ce n'est pas une
+probabilité de gain.
 
-## Entrainement quotidien et partage
+## Entraînement quotidien et partagé
 
-Le calcul n'est jamais lance par un utilisateur.
+Le calcul n'est jamais lancé par un utilisateur.
 
 Cycle normal:
 
-1. le scheduler verifie si l'historique daily doit etre rafraichi;
-2. les nouveaux CSV daily sont telecharges;
+1. le scheduler vérifie si l'historique daily doit être rafraîchi;
+2. les nouveaux CSV daily sont téléchargés;
 3. le job ML parcourt les sept assets;
-4. chaque asset entraine independamment ses modeles `1D`, `1W` et `1M`;
-5. Reddit, Gemini et ApeWisdom sont appeles une seule fois pour cet asset;
-6. un snapshot JSON temporaire est ecrit;
+4. chaque asset entraîne indépendamment ses modèles `1D`, `1W` et `1M`;
+5. Reddit, Gemini et ApeWisdom sont appelés une seule fois pour cet asset;
+6. un snapshot JSON temporaire est écrit;
 7. le snapshot remplace atomiquement l'ancien fichier;
-8. les clients lisent tous ce meme resultat.
+8. les clients lisent tous ce même résultat.
 
-La bougie portant la date UTC en cours est exclue de l'entrainement, car Yahoo
-peut la fournir avant sa cloture. Le modele utilise uniquement des daily
-terminees. Cela evite qu'une variation intraday partielle soit prise pour le
-resultat definitif de la journee.
+La bougie portant la date UTC en cours est exclue de l'entraînement, car Yahoo
+peut la fournir avant sa clôture. Le modèle utilise uniquement des daily
+terminées. Cela évite qu'une variation intraday partielle soit prise pour le
+résultat définitif de la journée.
 
-Repertoire persistant:
+Répertoire persistant:
 
 ```text
 /app/data/ml_predictions/
@@ -278,31 +278,31 @@ Repertoire persistant:
   NVDA.json
 ```
 
-Le repertoire appartient au volume Docker `analysis_data`. Les predictions
-survivent donc au redemarrage du conteneur.
+Le répertoire appartient au volume Docker `analysis_data`. Les prédictions
+survivent donc au redémarrage du conteneur.
 
-Un asset est recalcule si au moins une condition est vraie:
+Un asset est recalculé si au moins une condition est vraie:
 
 - aucun snapshot n'existe;
-- le snapshot n'a pas ete entraine aujourd'hui;
+- le snapshot n'a pas été entraîné aujourd'hui;
 - une nouvelle date daily est disponible pour cet asset;
-- la version du modele a change;
-- Gemini vient d'etre configure ou retire;
-- aucune tentative de sentiment n'a encore ete enregistree aujourd'hui.
+- la version du modèle a changé;
+- Gemini vient d'être configuré ou retiré;
+- aucune tentative de sentiment n'a encore été enregistrée aujourd'hui.
 
-Le demarrage du serveur constitue la premiere occasion de remplir les sentiments
-manquants. `socialAttemptedAt` est enregistre meme si Reddit ne retourne aucun
-message ou si Gemini repond `429`. Une seule tentative est donc effectuee par
+Le démarrage du serveur constitue la première occasion de remplir les sentiments
+manquants. `socialAttemptedAt` est enregistré même si Reddit ne retourne aucun
+message ou si Gemini répond `429`. Une seule tentative est donc effectuée par
 asset et par jour; la suivante attend le job quotidien. Un refresh navigateur
-ou un redemarrage supplementaire le meme jour ne lance aucun appel.
+ou un redémarrage supplémentaire le même jour ne lance aucun appel.
 
-Le verrou du processus empeche deux jobs ML locaux de tourner en parallele. Les
-fichiers sont remplaces atomiquement: un client voit soit l'ancien resultat
-complet, soit le nouveau, jamais un JSON partiellement ecrit.
+Le verrou du processus empêche deux jobs ML locaux de tourner en parallèle. Les
+fichiers sont remplacés atomiquement: un client voit soit l'ancien résultat
+complet, soit le nouveau, jamais un JSON partiellement écrit.
 
 ## API
 
-### Assets supportes
+### Assets supportés
 
 ```http
 GET /ml/assets
@@ -315,9 +315,9 @@ GET /ml/analyse/NVDA
 GET /ml/analyse/NVDA?horizon=1W
 ```
 
-Cet endpoint lit uniquement le snapshot persiste. Il ne relance aucun calcul.
+Cet endpoint lit uniquement le snapshot persisté. Il ne relance aucun calcul.
 
-### Etat du cache
+### État du cache
 
 ```http
 GET /ml/status
@@ -325,12 +325,12 @@ GET /ml/status
 
 Pour chaque asset, cette route indique:
 
-- disponibilite du snapshot;
-- date de la daily utilisee;
-- date d'entrainement;
-- etat courant ou obsolete.
+- disponibilité du snapshot;
+- date de la daily utilisée;
+- date d'entraînement;
+- état courant ou obsolète.
 
-Le frontend utilise une route authentifiee:
+Le frontend utilise une route authentifiée:
 
 ```http
 GET /api/ml/analyse?symbol=NVDA&horizon=1D
@@ -345,7 +345,7 @@ La tuile Tendance affiche:
 - label bearish, neutral ou bullish;
 - score;
 - horizon;
-- prix estime;
+- prix estimé;
 - confiance.
 
 La tuile Sentiment affiche:
@@ -355,34 +355,34 @@ La tuile Sentiment affiche:
 - accord entre les messages.
 - mentions ApeWisdom et variation sur 24 heures.
 
-Les deux tuiles sont regroupees dans un cadre `Analyse IA`. Ce cadre est
-absent pour les assets hors du perimetre ML. Dans la watchlist, une pastille
-`IA` distingue les sept assets disposant d'une analyse calculee en backend.
-Ces sept assets sont presents dans la watchlist par defaut de tous les
-utilisateurs et restent regroupes en tete, quel que soit le tri choisi.
+Les deux tuiles sont regroupées dans un cadre `Analyse IA`. Ce cadre est
+absent pour les assets hors du périmètre ML. Dans la watchlist, une pastille
+`IA` distingue les sept assets disposant d'une analyse calculée en backend.
+Ces sept assets sont présents dans la watchlist par défaut de tous les
+utilisateurs et restent regroupés en tête, quel que soit le tri choisi.
 
 Les valeurs sont explicables au survol:
 
-- le score rappelle que `0` signifie plutot vendre, `50` attendre et `100`
-  plutot acheter, sans representer une probabilite;
-- l'accord indique seulement si les messages vont dans la meme direction;
-- les mentions mesurent l'activite autour du sujet, pas une direction.
+- le score rappelle que `0` signifie plutôt vendre, `50` attendre et `100`
+  plutôt acheter, sans représenter une probabilité;
+- l'accord indique seulement si les messages vont dans la même direction;
+- les mentions mesurent l'activité autour du sujet, pas une direction.
 
-Les assets hors du perimetre affichent `Non disponible`.
+Les assets hors du périmètre affichent `Non disponible`.
 
-## Cache et cout
+## Cache et coût
 
-- un calcul planifie par asset et par jour;
-- aucun appel externe lors d'une requete utilisateur;
-- sentiment Reddit/Gemini garde en memoire 30 minutes pendant un meme job;
-- attention ApeWisdom gardee en memoire 15 minutes pendant un meme job;
-- maximum 100 candidats recuperes par recherche;
-- maximum 50 publications pertinentes envoyees a Gemini;
-- maximum 180 caracteres de titre;
-- maximum 360 caracteres d'extrait.
+- un calcul planifié par asset et par jour;
+- aucun appel externe lors d'une requête utilisateur;
+- sentiment Reddit/Gemini garde en mémoire 30 minutes pendant un même job;
+- attention ApeWisdom gardée en mémoire 15 minutes pendant un même job;
+- maximum 100 candidats récupérés par recherche;
+- maximum 50 publications pertinentes envoyées à Gemini;
+- maximum 180 caractères de titre;
+- maximum 360 caractères d'extrait.
 
-Les trois horizons reutilisent le meme sentiment recent. Tous les utilisateurs
-reutilisent ensuite le snapshot daily au lieu d'appeler Gemini.
+Les trois horizons réutilisent le même sentiment récent. Tous les utilisateurs
+réutilisent ensuite le snapshot daily au lieu d'appeler Gemini.
 
 ## Tests
 
@@ -393,30 +393,30 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml \
   exec -T analysis python -m unittest discover -s tests -v
 ```
 
-Ils verifient:
+Ils vérifient:
 
-- regression et validation chronologique;
+- régression et validation chronologique;
 - parsing et filtrage RSS;
-- rejet d'un faux resultat Google;
+- rejet d'un faux résultat Google;
 - normalisation de l'attention;
 - influence de l'attention sur le poids social.
 - isolation des snapshots par asset;
-- absence de second entrainement pour un snapshot courant;
+- absence de second entraînement pour un snapshot courant;
 - ordre refresh daily puis job ML.
 
-Test API du snapshot partage:
+Test API du snapshot partagé:
 
 ```bash
 curl "http://localhost:8000/ml/analyse/NVDA"
 ```
 
-Script d'integration:
+Script d'intégration:
 
 ```bash
 node tests/scripts/test-ml-analysis.mjs
 ```
 
-Controles frontend:
+Contrôles frontend:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml \
@@ -426,30 +426,30 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml \
   exec -T web npx tsc --noEmit
 ```
 
-## Scenario de validation
+## Scénario de validation
 
 1. Configurer `GEMINI_API_KEY`.
-2. Recreer le service `analysis`.
-3. Selectionner NVDA sur le dashboard.
-4. Montrer le resultat `1D`.
-5. Passer le chart a `1W`, puis `1M`.
-6. Montrer score, prix estime, intervalle et confiance.
+2. Recréer le service `analysis`.
+3. Sélectionner NVDA sur le dashboard.
+4. Montrer le résultat `1D`.
+5. Passer le chart à `1W`, puis `1M`.
+6. Montrer score, prix estimé, intervalle et confiance.
 7. Montrer le nombre de messages et leur accord.
-8. Rafraichir plusieurs fois la page et montrer que `trainedAt` ne change pas.
+8. Rafraîchir plusieurs fois la page et montrer que `trainedAt` ne change pas.
 9. Montrer `/ml/status` et les sept snapshots distincts.
-10. Expliquer une confiance basse avec les metriques du backtest.
+10. Expliquer une confiance basse avec les métriques du backtest.
 
-## Limites assumees
+## Limites assumées
 
-- Les marches restent tres difficiles a predire.
-- Le prix estime n'est pas un conseil financier.
-- Reddit n'est pas representatif de tous les investisseurs.
+- Les marchés restent très difficiles à prédire.
+- Le prix estimé n'est pas un conseil financier.
+- Reddit n'est pas représentatif de tous les investisseurs.
 - ApeWisdom mesure l'attention, pas la direction.
 - Le flux RSS peut changer ou devenir indisponible.
 - Gemini peut mal classer un message ambigu.
-- Les poids sont explicites et non appris, faute d'historique social aligne avec
+- Les poids sont explicites et non appris, faute d'historique social aligné avec
   les prix.
 
-Une Random Forest de fusion ne serait defendable qu'apres plusieurs semaines ou
-mois de stockage des trois signaux et de leurs resultats reels. Elle n'est donc
-pas utilisee dans cette premiere version.
+Une Random Forest de fusion ne serait défendable qu'après plusieurs semaines ou
+mois de stockage des trois signaux et de leurs résultats réels. Elle n'est donc
+pas utilisée dans cette première version.

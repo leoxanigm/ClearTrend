@@ -16,6 +16,7 @@ type AvatarRouteContext = {
   }>;
 };
 
+// Serve only the active avatar owned by the authenticated user.
 export async function GET(_request: Request, context: AvatarRouteContext) {
   const profile = await getCurrentUserProfile();
 
@@ -26,6 +27,8 @@ export async function GET(_request: Request, context: AvatarRouteContext) {
   const { fileName } = await context.params;
   const expectedFileName = getPrivateAvatarFileName(profile.avatarUrl);
 
+  // Exact equality prevents users from requesting another account's avatar.
+  // basename additionally rejects path components such as ../.
   if (
     !expectedFileName ||
     fileName !== expectedFileName ||
@@ -44,6 +47,7 @@ export async function GET(_request: Request, context: AvatarRouteContext) {
     return NextResponse.json({ error: "Avatar not found." }, { status: 404 });
   }
 
+  // UUID filenames make long private caching safe after avatar replacement.
   return new NextResponse(new Uint8Array(avatar), {
     headers: {
       "Cache-Control": "private, max-age=31536000, immutable",

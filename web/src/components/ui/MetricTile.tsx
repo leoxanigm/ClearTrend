@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 import { Card } from "./Card";
 import { cx } from "./cx";
 
+// Compact dashboard statistic composed from the generic Card primitive.
 type MetricTone = "accent" | "default" | "negative" | "positive" | "secondary";
 
+// ReactNode values allow metrics to contain tooltips or formatted fragments.
 type MetricTileProps = {
   className?: string;
   description?: ReactNode;
@@ -12,6 +14,7 @@ type MetricTileProps = {
   value: ReactNode;
 };
 
+// Label, value, and optional description keep metric hierarchy consistent.
 export function MetricTile({
   className,
   description,
