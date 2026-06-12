@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
+// Public metadata excludes the full secret, which is only returned at creation.
 type ApiKeyMetadata = {
   createdAt: string;
   lastUsedAt: string | null;
@@ -16,6 +17,7 @@ type ApiKeyResponse = {
   secret?: string;
 };
 
+// Dates are formatted only in the browser, using its active locale.
 function formatDate(value: string | null, locale: string) {
   if (!value) {
     return null;
@@ -28,6 +30,7 @@ function formatDate(value: string | null, locale: string) {
 }
 
 export function ApiKeySettingsClient() {
+  // Page state
   const t = useTranslations('apiKeyPage');
   const dashboardT = useTranslations('dashboard');
   const commonT = useTranslations('common');
@@ -38,9 +41,11 @@ export function ApiKeySettingsClient() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Initial API key metadata loading
   useEffect(() => {
     async function loadApiKey() {
       try {
+        // no-store prevents stale key metadata after creation or deletion.
         const response = await fetch('/api/account/api-key', {
           cache: 'no-store'
         });
@@ -62,7 +67,9 @@ export function ApiKeySettingsClient() {
     loadApiKey();
   }, [t]);
 
+  // API key lifecycle actions
   async function createApiKey() {
+    // Clear previous transient feedback before starting a new request.
     setIsSaving(true);
     setError(null);
     setCopied(false);
@@ -79,6 +86,7 @@ export function ApiKeySettingsClient() {
       const body = (await response.json()) as ApiKeyResponse;
 
       setApiKey(body.apiKey);
+      // The complete secret is intentionally kept only in transient component state.
       setSecret(body.secret ?? null);
     } catch {
       setError(t('errors.create'));
@@ -88,6 +96,7 @@ export function ApiKeySettingsClient() {
   }
 
   async function deleteApiKey() {
+    // Deletion removes both persisted metadata and any locally displayed secret.
     setIsSaving(true);
     setError(null);
     setCopied(false);
@@ -116,6 +125,7 @@ export function ApiKeySettingsClient() {
     }
 
     try {
+      // Clipboard access may fail if browser permissions or HTTPS requirements block it.
       await navigator.clipboard.writeText(secret);
       setCopied(true);
     } catch {
@@ -123,6 +133,7 @@ export function ApiKeySettingsClient() {
     }
   }
 
+  // Page rendering
   return (
     <main className='api-key-page'>
       <header className='api-key-page-header'>
@@ -153,6 +164,7 @@ export function ApiKeySettingsClient() {
           {isLoading ? <p>{t('states.loading')}</p> : null}
 
           {!isLoading && !apiKey ? (
+            // A user can hold at most one active public API key.
             <>
               <p>{t('states.noKey')}</p>
               <Button
@@ -198,6 +210,7 @@ export function ApiKeySettingsClient() {
           ) : null}
 
           {secret ? (
+            // The backend returns this block only immediately after key creation.
             <div className='api-key-secret'>
               <p>{t('states.secretWarning')}</p>
               <code>{secret}</code>

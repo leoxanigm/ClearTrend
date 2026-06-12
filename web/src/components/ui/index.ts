@@ -1,3 +1,5 @@
+// Public entry point for the reusable UI component library.
+// Keeping exports centralized shortens imports and defines the supported primitives.
 export { Avatar } from "./Avatar";
 export { Badge } from "./Badge";
 export { Button } from "./Button";

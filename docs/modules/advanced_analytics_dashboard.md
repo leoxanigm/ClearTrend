@@ -18,8 +18,40 @@ Le sujet demande :
 ClearTrend couvre ce perimetre avec des donnees financieres OHLCV fournies par
 le service FastAPI `analysis`.
 
-Les tuiles `Trend` et `Sentiment` ne font pas partie de cette validation. Elles
-restent reservees au futur module ML.
+Les tuiles `Tendance` et `Sentiment` sont maintenant alimentees par le module ML.
+Elles enrichissent le dashboard, mais ne sont pas necessaires pour justifier ce
+module : la validation repose sur les graphiques, les filtres, le
+rafraichissement et les exports.
+
+## Architecture generale
+
+Le dashboard traverse les trois couches suivantes :
+
+```text
+Navigateur React
+  AssetChart / DashboardClient
+            |
+            | GET /api/assets/candles
+            v
+Backend Next.js
+  authentification, validation, normalisation
+            |
+            | REST interne Docker
+            v
+Service FastAPI analysis
+  lecture des caches OHLCV et metadonnees
+```
+
+Le navigateur ne contacte jamais directement FastAPI. Les routes Next.js
+verifient d'abord la session utilisateur ou la cle API, puis transmettent une
+requete limitee aux symboles et periodes acceptes.
+
+Cette separation permet :
+
+- de ne pas exposer l'adresse du microservice `analysis` au client ;
+- de centraliser l'authentification dans le backend web ;
+- de normaliser les donnees avant leur utilisation par React ;
+- de conserver FastAPI specialise dans les donnees financieres.
 
 ## Parcours utilisateur
 
@@ -68,6 +100,15 @@ volume
 ```
 
 ## Visualisations
+
+Le graphique est dessine directement en SVG par React. Aucune bibliotheque de
+visualisation externe n'est utilisee.
+
+Ce choix donne un controle precis sur les axes, la largeur des bougies, les
+tooltips et le rendu mobile. Il evite aussi d'ajouter une dependance lourde pour
+deux representations financieres bien definies. En contrepartie, les calculs de
+coordonnees, de domaines et de placement des tooltips sont maintenus dans le
+projet.
 
 ### Courbe de prix
 
@@ -123,6 +164,11 @@ Le filtre debut/fin travaille ensuite localement sur ces bougies. Pour `1D` et
 `1W`, il accepte aussi l'heure. Le graphique, le nombre de points et les exports
 utilisent uniquement les bougies restantes.
 
+Le filtrage local a ete choisi parce que la periode produit est deja bornee et
+chargee dans le navigateur. Modifier une date ne provoque donc pas une nouvelle
+requete serveur et le resultat est immediat. Ce filtre ne permet toutefois pas
+de demander une periode arbitraire situee en dehors de la plage chargee.
+
 Les snapshots `1D` et les performances de watchlist sont charges par lots de
 20 symboles, avec deux lots simultanes. Les requetes identiques en cours sont
 partagees entre utilisateurs et les resultats sont gardes 30 secondes cote
@@ -154,6 +200,10 @@ feries NYSE, puis affiche le resultat dans le fuseau local du navigateur.
 Ce rafraichissement automatique valide la mise a jour des donnees du dashboard.
 Il ne doit pas etre confondu avec le module distinct WebSocket/SSE, qui reste a
 implementer.
+
+Le controle leger utilise d'abord l'endpoint de metadonnees
+`/api/assets/candles/meta`. Les bougies completes ne sont rechargees que lorsque
+`updatedAt` a change. Cela evite de transferer plusieurs fois le meme historique.
 
 ## Export CSV
 
@@ -207,6 +257,9 @@ bougie.
 Les fichiers sont generes localement dans le navigateur a partir des donnees
 deja authentifiees. Aucun fichier temporaire n'est stocke sur le serveur.
 
+Cette approche evite un stockage serveur inutile et garantit que l'export
+correspond exactement au filtre actuellement visible.
+
 ## Etats geres
 
 Le graphique gere :
@@ -234,17 +287,20 @@ des labels accessibles pour les visualisations et les exports.
 
 ## Fichiers principaux
 
-```text
-web/src/components/AssetChart.tsx
-web/src/components/DashboardClient.tsx
-web/src/lib/analysis-data.ts
-web/src/lib/chart-analytics.ts
-web/src/lib/chart-layout.ts
-web/src/lib/market-calendar.ts
-web/src/app/api/assets/candles/route.ts
-analysis/src/market_data_views.py
-tests/scripts/test-chart-export.mjs
-```
+| Fichier | Role |
+|---|---|
+| `web/src/components/AssetChart.tsx` | Etat du graphique, SVG, interactions, filtres, polling et telechargement |
+| `web/src/components/DashboardClient.tsx` | Selection de l'asset, periode active et integration dans le dashboard |
+| `web/src/lib/analysis-data.ts` | Contrat des bougies, validation, normalisation et appels au service `analysis` |
+| `web/src/lib/chart-analytics.ts` | Generation CSV/JSON et noms de fichiers |
+| `web/src/lib/chart-layout.ts` | Calcul robuste de la largeur des bougies |
+| `web/src/lib/market-calendar.ts` | Calcul de la prochaine ouverture reguliere americaine |
+| `web/src/app/api/assets/candles/route.ts` | Endpoint authentifie retournant les bougies |
+| `web/src/app/api/assets/candles/meta/route.ts` | Endpoint leger de controle de fraicheur |
+| `analysis/src/market_data_views.py` | Choix des caches et conversion en bougies OHLCV |
+| `analysis/src/market_data_history.py` | Lecture et composition des historiques |
+| `analysis/src/scheduler.py` | Mise a jour periodique des caches |
+| `tests/scripts/test-chart-export.mjs` | Tests des exports, du calendrier et du layout |
 
 La largeur des bougies utilise l'espacement median entre les points. En `1D`,
 elle est plafonnee pour eviter des bougies trop larges en debut de seance ou
@@ -270,6 +326,9 @@ Le test verifie :
 - la prochaine ouverture avant et apres 9h30 a New York ;
 - le passage des week-ends, d'un jour ferie NYSE et du changement
   heure d'hiver/heure d'ete.
+
+Le script couvre les calculs purs les plus sensibles. Le rendu visuel et les
+interactions souris/tactiles restent verifies manuellement.
 
 Verification globale :
 
@@ -297,8 +356,13 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T web npm r
 - Le dashboard utilise du polling et non WebSocket/SSE.
 - Les exports disponibles sont CSV et JSON, pas PDF.
 - Le filtre debut/fin reste borne par la periode produit chargee.
-- Le sentiment, le trend score et les recommandations seront relies au module
-  ML plus tard.
+- Les visualisations sont une courbe et des bougies OHLC ; il n'existe pas de
+  graphique en barres ou en secteurs.
+- La prochaine ouverture utilise le calendrier regulier americain. Cette
+  indication n'est pas adaptee au Bitcoin et a Ethereum, qui cotent 24 h/24, ni
+  a tous les calendriers internationaux ou contrats futures.
+- Les tests automatises ne realisent pas de comparaison de captures d'ecran
+  multi-navigateurs.
 
 Ces limites ne retirent aucun des parcours principaux du module : plusieurs
 visualisations interactives, filtres, periodes, mises a jour et export sont

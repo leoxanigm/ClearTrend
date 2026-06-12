@@ -5,7 +5,9 @@ import {
 } from "react";
 import { cx } from "./cx";
 
+// Native details/summary provides keyboard and open-state behavior without JS.
 type DropdownMenuProps = Omit<ComponentPropsWithoutRef<"details">, "children"> & {
+  // Menu content and trigger stay independent so each can use rich markup.
   children: ReactNode;
   label: string;
   panelClassName?: string;
@@ -13,6 +15,7 @@ type DropdownMenuProps = Omit<ComponentPropsWithoutRef<"details">, "children"> &
   triggerClassName?: string;
 };
 
+// Forwarding the details ref lets parents close the menu after an action.
 export const DropdownMenu = forwardRef<HTMLDetailsElement, DropdownMenuProps>(
   function DropdownMenu(
     {
@@ -26,6 +29,7 @@ export const DropdownMenu = forwardRef<HTMLDetailsElement, DropdownMenuProps>(
     },
     ref
   ) {
+    // The summary is the accessible interactive control for the native details.
     return (
       <details className={cx("ui-dropdown", className)} ref={ref} {...props}>
         <summary
@@ -41,4 +45,3 @@ export const DropdownMenu = forwardRef<HTMLDetailsElement, DropdownMenuProps>(
     );
   }
 );
-

@@ -14,9 +14,11 @@ import {
 } from "react";
 import { Toast } from "./Toast";
 
+// Public notification contract used by any component through the context hook.
 export type NotificationTone = "error" | "info" | "success" | "warning";
 
 export type NotificationInput = {
+  // durationMs <= 0 creates a persistent toast requiring manual dismissal.
   body?: string;
   durationMs?: number;
   entityId?: string;
@@ -27,6 +29,7 @@ export type NotificationInput = {
   type?: NotificationType;
 };
 
+// Internal items contain normalized required values and a generated identifier.
 type NotificationItem = {
   body: string;
   durationMs: number;
@@ -41,12 +44,14 @@ type NotificationContextValue = {
   dismissNotification: (id: string) => void;
 };
 
+// A nullable default lets the hook detect use outside the provider.
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
 const defaultNotificationDurationMs = 5_000;
 const queuedNotificationStorageKey = "cleartrend-next-notification";
 const notificationLogEndpoint = "/api/notifications";
 
+// Prefer browser UUIDs, with a deterministic-enough fallback for older runtimes.
 function createNotificationId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -56,6 +61,7 @@ function createNotificationId() {
 }
 
 function logNotification(notification: NotificationInput) {
+  // Local-only messages can explicitly opt out of database persistence.
   if (notification.persist === false) {
     return;
   }
@@ -71,17 +77,20 @@ function logNotification(notification: NotificationInput) {
     headers: {
       "Content-Type": "application/json",
     },
+    // Allow logging to finish even when the notification triggers navigation.
     keepalive: true,
     method: "POST",
   }).catch(() => null);
 }
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
+  // Path changes trigger consumption of notifications queued before navigation.
   const pathname = usePathname();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const timeoutRefs = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   const dismissNotification = useCallback((id: string) => {
+    // Clear both the visual item and its pending automatic-dismiss timer.
     const timeout = timeoutRefs.current.get(id);
 
     if (timeout) {
@@ -96,6 +105,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const notify = useCallback(
     (notification: NotificationInput) => {
+      // Normalize optional input once before storing and rendering the toast.
       const id = createNotificationId();
       const durationMs =
         notification.durationMs === undefined
@@ -103,6 +113,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           : notification.durationMs;
 
       setNotifications((currentNotifications) => [
+        // Preserve display order by appending new notifications.
         ...currentNotifications,
         {
           body: notification.body ?? "",
@@ -115,6 +126,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       logNotification(notification);
 
       if (durationMs > 0) {
+        // A non-positive duration keeps the toast visible until manual dismissal.
         const timeout = setTimeout(() => dismissNotification(id), durationMs);
         timeoutRefs.current.set(id, timeout);
       }
@@ -129,6 +141,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Queue one message for the provider mounted after the next navigation.
     window.sessionStorage.setItem(
       queuedNotificationStorageKey,
       JSON.stringify(notification)
@@ -136,6 +149,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const contextValue = useMemo(
+    // Keep context identity stable unless one of its callable actions changes.
     () => ({
       dismissNotification,
       notify,
@@ -147,6 +161,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const timeouts = timeoutRefs.current;
 
+    // Prevent timers from updating an unmounted provider.
     return () => {
       timeouts.forEach((timeout) => clearTimeout(timeout));
       timeouts.clear();
@@ -154,6 +169,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Consume a notification queued by the previous route.
     const queuedNotification = window.sessionStorage.getItem(
       queuedNotificationStorageKey
     );
@@ -178,6 +194,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   return (
     <NotificationContext.Provider value={contextValue}>
       {children}
+      {/* One polite live region announces newly mounted toast content. */}
       <div
         aria-live="polite"
         aria-relevant="additions text"
@@ -198,6 +215,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 }
 
 export function useNotifications() {
+  // Centralizing the guard produces a clearer error than a null dereference.
   const context = useContext(NotificationContext);
 
   if (!context) {

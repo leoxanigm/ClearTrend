@@ -6,8 +6,10 @@ import {
 } from "react";
 import { cx } from "./cx";
 
+// The panel element can adapt to content semantics while sharing one modal shell.
 type ModalPanelElement = "div" | "form" | "section";
 
+// Backdrop dismissal remains controlled by the caller because busy dialogs differ.
 type ModalProps = {
   ariaLabel?: string;
   ariaLabelledBy?: string;
@@ -20,6 +22,7 @@ type ModalProps = {
   role?: "alertdialog" | "dialog";
 };
 
+// The primitive supplies dialog semantics but leaves header/body/footer composition free.
 export function Modal({
   ariaLabel,
   ariaLabelledBy,
@@ -31,11 +34,13 @@ export function Modal({
   onSubmit,
   role = "dialog",
 }: ModalProps) {
+  // Pointer handling belongs to the backdrop; callers verify the exact target.
   return (
     <div
       className={cx("ui-modal-backdrop", backdropClassName)}
       onPointerDown={onBackdropPointerDown}
     >
+      {/* createElement keeps the wrapper configurable without duplicating markup. */}
       {createElement(
         as,
         {

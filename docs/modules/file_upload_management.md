@@ -21,6 +21,28 @@ ClearTrend couvre ces exigences avec deux parcours complementaires :
 1. gestion d'une image d'avatar ;
 2. import et export d'une watchlist JSON.
 
+## Architecture generale
+
+Les deux parcours utilisent la meme regle de securite :
+
+```text
+Validation rapide dans le navigateur
+                |
+                v
+Endpoint Next.js authentifie
+                |
+                v
+Validation complete cote serveur
+                |
+                +--> avatar : traitement et stockage prive
+                |
+                +--> JSON : lecture, fusion en base, aucun stockage du fichier
+```
+
+La validation client ameliore l'experience utilisateur, mais elle n'est jamais
+consideree comme une protection suffisante. Toutes les contraintes importantes
+sont appliquees a nouveau par le backend.
+
 ## Partie 1 - Avatar
 
 ### Parcours utilisateur
@@ -81,6 +103,27 @@ JPEG / PNG / WebP
 Toutes les nouvelles images sont stockees en WebP. Cela limite les formats
 servis par l'application et retire notamment les metadonnees EXIF ou GPS.
 
+Sharp normalise l'image complete, mais n'applique pas destructivement le
+recadrage choisi par l'utilisateur. Le zoom et les offsets sont enregistres en
+base, puis appliques en CSS par `UserAvatar`. L'utilisateur peut donc modifier
+son cadrage plus tard sans reencoder plusieurs fois l'image.
+
+### Pourquoi Sharp
+
+Une verification du MIME ou de l'extension ne prouve pas qu'un fichier contient
+une image valide. Sharp decode les octets avec une bibliotheque specialisee et
+permet dans un seul pipeline :
+
+- de comparer le format reel au MIME annonce ;
+- de limiter le nombre de pixels avant traitement ;
+- de corriger l'orientation ;
+- de redimensionner sans deformer ;
+- de supprimer les metadonnees ;
+- de produire un format unique.
+
+Le format WebP a ete retenu pour reduire la taille de stockage tout en gardant
+une qualite suffisante pour un avatar.
+
 ### Stockage prive
 
 Les nouveaux avatars ne sont plus enregistres dans `public/`.
@@ -134,6 +177,11 @@ devinant son nom.
 Les anciennes URLs locales sous `/uploads/avatars/` restent compatibles pendant
 la transition. Un nouvel upload les remplace par le stockage prive.
 
+Le header `Cache-Control: private, max-age=31536000, immutable` est compatible
+avec ce fonctionnement : chaque remplacement genere un nouveau nom UUID, donc
+le navigateur peut conserver longtemps une ancienne reponse sans confondre les
+versions.
+
 ### Remplacement et suppression
 
 Lors d'un remplacement :
@@ -182,6 +230,17 @@ Champs obligatoires :
 
 `exportedAt` est informatif.
 
+### Pourquoi JSON
+
+JSON correspond directement a une liste de symboles et permet d'ajouter des
+champs sans ambiguite dans une future version. Les champs `format` et `version`
+evitent d'interpreter par erreur un autre document JSON comme une watchlist
+ClearTrend.
+
+L'import fusionne les favoris au lieu de remplacer la liste existante. Cette
+strategie est plus sure pour un fichier transmis entre utilisateurs : un import
+ne peut pas supprimer silencieusement les favoris deja enregistres.
+
 ### Export
 
 Endpoint :
@@ -224,6 +283,9 @@ L'interface affiche un apercu :
 
 L'utilisateur confirme ensuite explicitement l'ajout aux favoris.
 
+L'apercu est construit localement avant l'envoi. Il permet de reperer un mauvais
+fichier et de connaitre le nombre d'entrees invalides sans modifier la base.
+
 ### Progression
 
 L'import utilise `XMLHttpRequest` et `request.upload.progress`.
@@ -260,6 +322,10 @@ Il controle :
 Les symboles reconnus sont fusionnes avec les favoris existants. Les doublons
 ne creent pas de nouvelle entree et les symboles inconnus sont retournes comme
 ignores.
+
+Le fichier JSON lui-meme n'est pas conserve. Seuls les symboles valides sont
+enregistres dans la watchlist de l'utilisateur. Il n'existe donc aucun document
+importe a proteger ou supprimer apres le traitement.
 
 Exemple de reponse :
 
@@ -403,11 +469,15 @@ Le test :
 |---|---|
 | `web/src/lib/avatar-images.ts` | Pipeline Sharp |
 | `web/src/lib/avatar-storage.ts` | Stockage et suppression prives |
+| `web/src/lib/profile-rules.ts` | Limites du fichier et bornes du recadrage |
 | `web/src/app/api/profile/route.ts` | Upload et metadata avatar |
 | `web/src/app/api/profile/avatar/[fileName]/route.ts` | Lecture authentifiee |
 | `web/src/components/ProfileSettingsDialog.tsx` | Apercus, progression et actions |
+| `web/src/components/UserAvatar.tsx` | Application visuelle du zoom et des offsets |
 | `web/src/lib/watchlist-file.ts` | Format et validation JSON |
 | `web/src/app/api/assets/watchlist/file/route.ts` | Import et export |
+| `web/src/lib/assets.ts` | Lecture et fusion des favoris en base |
+| `web/src/app/api/account/delete/route.ts` | Nettoyage de l'avatar a la suppression du compte |
 | `docker-compose.yml` | Volume persistant `avatar_uploads` |
 | `tests/scripts/` | Scenarios automatises |
 
@@ -417,6 +487,13 @@ Le test :
 - Le JSON importe uniquement des favoris, pas des prix ou donnees financieres.
 - Les JSON ne sont pas conserves sur le serveur apres traitement.
 - Les symboles doivent exister dans le cache FastAPI au moment de l'import.
-- Le stockage local Docker convient au projet, mais un stockage objet externe
-  serait preferable pour une production distribuee.
-
+- Le MIME JSON doit etre exactement `application/json`. Certains systemes
+  peuvent fournir un fichier `.json` avec un MIME vide ou `text/plain`, qui sera
+  alors refuse meme si son contenu est valide.
+- Les anciens avatars deja presents sous `/public/uploads/avatars` restent
+  accessibles publiquement jusqu'a leur remplacement ou suppression. Tous les
+  nouveaux uploads utilisent le stockage prive.
+- Le recadrage est applique a l'affichage et non integre dans le fichier WebP.
+  Un autre consommateur du fichier brut ne retrouverait donc pas le meme cadre.
+- Le volume Docker est partage par une seule instance web. Une architecture
+  horizontale avec plusieurs serveurs necessiterait un stockage objet commun.

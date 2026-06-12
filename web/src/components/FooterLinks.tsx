@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
+// Shared legal footer with translated defaults and optional custom links.
 type FooterLink = {
   href: string;
   label: string;
@@ -11,11 +12,13 @@ type FooterLinksProps = {
   items?: FooterLink[];
 };
 
+// Supplying items replaces the translated privacy/terms defaults.
 export function FooterLinks({
   className = "footer-links",
   items,
 }: FooterLinksProps) {
   const t = useTranslations("footer");
+  // Resolve defaults during render so they follow the active locale.
   const resolvedItems = items ?? [
     {
       href: "/privacy",

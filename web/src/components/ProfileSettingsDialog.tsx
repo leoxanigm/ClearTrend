@@ -41,6 +41,7 @@ import {
 } from "@/lib/watchlist-file";
 import { useTranslations } from "next-intl";
 
+// Dialog contracts and temporary upload/crop structures
 type ProfileSettingsDialogProps = {
   onClose: () => void;
   onProfileSave: (profile: UserProfile) => void;
@@ -61,12 +62,14 @@ type WatchlistImportResponse = {
 };
 
 type WatchlistPreview = {
+  // The original File is retained for upload after the user confirms the preview.
   file: File;
   invalidEntries: number;
   symbols: string[];
 };
 
 type DragState = {
+  // Pointer origin and viewport size convert drag pixels into persisted percentages.
   height: number;
   offsetX: number;
   offsetY: number;
@@ -78,11 +81,13 @@ type DragState = {
 
 const allowedAvatarMimeTypes = new Set(avatarUploadRules.allowedMimeTypes);
 
+// Display helpers used by client-side validation.
 function formatMegabytes(bytes: number) {
   return `${Math.round(bytes / 1024 / 1024)} MB`;
 }
 
 function hasNumberChanged(currentValue: number, nextValue: number) {
+  // Ignore tiny floating-point differences introduced by sliders and transforms.
   return Math.abs(currentValue - nextValue) > 0.001;
 }
 
@@ -92,6 +97,7 @@ export function ProfileSettingsDialog({
   onWatchlistImport,
   profile,
 }: ProfileSettingsDialogProps) {
+  // DOM references, persisted profile values, and temporary editing state
   const t = useTranslations("profile");
   const commonT = useTranslations("common");
   const { notify } = useNotifications();
@@ -101,15 +107,18 @@ export function ProfileSettingsDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const watchlistFileInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  // Drag and object-URL refs store mutable resources that should not rerender.
   const dragStateRef = useRef<DragState | null>(null);
   const localPreviewUrlRef = useRef<string | null>(null);
   const [displayName, setDisplayName] = useState(profile.displayName);
+  // Avatar file and committed crop values
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [avatarScale, setAvatarScale] = useState(profile.avatarScale);
   const [avatarOffsetX, setAvatarOffsetX] = useState(profile.avatarOffsetX);
   const [avatarOffsetY, setAvatarOffsetY] = useState(profile.avatarOffsetY);
+  // Nested crop editor draft values are committed only when its Save is pressed.
   const [isCropEditorOpen, setIsCropEditorOpen] = useState(false);
   const [cropDraftScale, setCropDraftScale] = useState(profile.avatarScale);
   const [cropDraftOffsetX, setCropDraftOffsetX] = useState(
@@ -121,18 +130,23 @@ export function ProfileSettingsDialog({
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
+  // Watchlist transfer state remains independent from profile saving state.
   const [isWatchlistExporting, setIsWatchlistExporting] = useState(false);
   const [isWatchlistImporting, setIsWatchlistImporting] = useState(false);
   const [watchlistImportProgress, setWatchlistImportProgress] = useState(0);
   const [watchlistPreview, setWatchlistPreview] =
     useState<WatchlistPreview | null>(null);
   const [watchlistError, setWatchlistError] = useState<string | null>(null);
+
+  // Derived preview models and dirty-state detection
   const isDialogBusy =
     isSaving || isWatchlistExporting || isWatchlistImporting;
   const previewAvatarUrl = removeAvatar
+    // Removal overrides both the stored avatar and any local preview.
     ? null
     : localPreviewUrl ?? profile.avatarUrl;
   const profileWithPreview = {
+    // UserAvatar accepts profile-shaped data, so draft values are projected here.
     ...profile,
     avatarOffsetX,
     avatarOffsetY,
@@ -156,6 +170,7 @@ export function ProfileSettingsDialog({
       hasNumberChanged(profile.avatarOffsetY, avatarOffsetY);
 
     return (
+      // New files and explicit removal always count as pending modifications.
       normalizedDisplayName !== profile.displayName ||
       Boolean(selectedFile) ||
       removeAvatar ||
@@ -175,14 +190,17 @@ export function ProfileSettingsDialog({
     selectedFile,
   ]);
 
+  // Release browser object URLs created for local image previews.
   useEffect(() => {
     return () => {
+      // Object URLs pin browser memory until explicitly revoked.
       if (localPreviewUrlRef.current) {
         URL.revokeObjectURL(localPreviewUrlRef.current);
       }
     };
   }, []);
 
+  // Escape closes the nested crop editor first, then the main dialog.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape" && isCropEditorOpen) {
@@ -200,7 +218,9 @@ export function ProfileSettingsDialog({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isCropEditorOpen, isDialogBusy, onClose]);
 
+  // Avatar crop draft management
   function resetCrop() {
+    // A new image starts centered at the shared default zoom.
     setAvatarOffsetX(0);
     setAvatarOffsetY(0);
     setAvatarScale(getDefaultAvatarScale());
@@ -212,6 +232,7 @@ export function ProfileSettingsDialog({
   function setCropDraftScaleValue(nextValue: unknown) {
     const nextScale = clampAvatarScale(nextValue);
 
+    // Zoom changes can reduce the legal translation range, so offsets are reclamped.
     setCropDraftScale(nextScale);
     setCropDraftOffsetX((currentOffset) =>
       clampAvatarOffsetForScale(currentOffset, nextScale)
@@ -226,6 +247,7 @@ export function ProfileSettingsDialog({
       return;
     }
 
+    // Start the nested editor from the last committed crop, not stale draft state.
     const nextScale = clampAvatarScale(avatarScale);
 
     setCropDraftOffsetX(clampAvatarOffsetForScale(avatarOffsetX, nextScale));
@@ -237,6 +259,7 @@ export function ProfileSettingsDialog({
   function saveCropDraft() {
     const nextScale = clampAvatarScale(cropDraftScale);
 
+    // Commit a fully clamped draft back to the main profile form.
     setAvatarOffsetX(clampAvatarOffsetForScale(cropDraftOffsetX, nextScale));
     setAvatarOffsetY(clampAvatarOffsetForScale(cropDraftOffsetY, nextScale));
     setAvatarScale(nextScale);
@@ -252,8 +275,10 @@ export function ProfileSettingsDialog({
     setLocalPreviewUrl(null);
   }
 
+  // Avatar file selection and removal
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0];
+    // Reset the input so selecting the same file again still emits change.
     event.currentTarget.value = "";
 
     if (!file) {
@@ -261,6 +286,7 @@ export function ProfileSettingsDialog({
     }
 
     if (!allowedAvatarMimeTypes.has(file.type)) {
+      // Client checks improve feedback; the server repeats all security validation.
       setError(t("errors.imageType"));
       return;
     }
@@ -278,6 +304,7 @@ export function ProfileSettingsDialog({
     setRemoveAvatar(false);
     clearLocalPreviewUrl();
     const nextPreviewUrl = URL.createObjectURL(file);
+    // The preview renders immediately without uploading the file yet.
     localPreviewUrlRef.current = nextPreviewUrl;
     setLocalPreviewUrl(nextPreviewUrl);
     setSelectedFile(file);
@@ -294,6 +321,7 @@ export function ProfileSettingsDialog({
     resetCrop();
   }
 
+  // Watchlist file preview, export, and confirmed import
   async function handleWatchlistFileChange(
     event: ChangeEvent<HTMLInputElement>
   ) {
@@ -319,6 +347,7 @@ export function ProfileSettingsDialog({
       return;
     }
 
+    // Parse locally to show a preview before any database mutation.
     const payload = await file.text()
       .then((text) => JSON.parse(text) as unknown)
       .catch(() => null);
@@ -331,6 +360,7 @@ export function ProfileSettingsDialog({
 
     const validation = validateWatchlistFile(payload);
 
+    // Shared validation mirrors the expected versioned ClearTrend JSON structure.
     if (validation.error) {
       setWatchlistPreview(null);
       setWatchlistError(t("watchlistFile.errors.format"));
@@ -362,6 +392,7 @@ export function ProfileSettingsDialog({
       const downloadUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const disposition = response.headers.get("content-disposition") ?? "";
+      // Prefer the backend-provided dated filename, with a stable fallback.
       const fileName = disposition.match(/filename="([^"]+)"/)?.[1] ??
         "cleartrend-watchlist.json";
 
@@ -392,6 +423,7 @@ export function ProfileSettingsDialog({
     setIsWatchlistImporting(true);
 
     const formData = new FormData();
+    // Only the confirmed preview file is sent to the authenticated endpoint.
     formData.set("watchlist", watchlistPreview.file);
 
     try {
@@ -399,6 +431,7 @@ export function ProfileSettingsDialog({
         body: WatchlistImportResponse | null;
         status: number;
       }>((resolve, reject) => {
+        // XMLHttpRequest is used here because fetch does not expose upload progress.
         const request = new XMLHttpRequest();
 
         request.open("POST", "/api/assets/watchlist/file");
@@ -425,6 +458,7 @@ export function ProfileSettingsDialog({
       }
 
       const importedCount = result.body?.importedSymbols?.length ?? 0;
+      // Report malformed entries and unknown symbols together as ignored.
       const ignoredCount =
         (result.body?.ignoredSymbols?.length ?? 0) +
         (result.body?.invalidEntries ?? 0);
@@ -449,9 +483,11 @@ export function ProfileSettingsDialog({
     }
   }
 
+  // Modal dismissal and pointer-driven avatar positioning
   function handleBackdropPointerDown(
     event: ReactPointerEvent<HTMLDivElement>
   ) {
+    // Ignore pointer events originating from the panel or its children.
     if (event.target === event.currentTarget && !isDialogBusy) {
       onClose();
     }
@@ -476,11 +512,13 @@ export function ProfileSettingsDialog({
     event.stopPropagation();
 
     if (getAvatarMaxOffset(cropDraftScale) <= 0) {
+      // At minimum zoom there may be no excess image area available to move.
       setCropDraftOffsetX(0);
       setCropDraftOffsetY(0);
       return;
     }
 
+    // Store the drag origin so movements can be converted into crop percentages.
     const rect = previewRef.current.getBoundingClientRect();
     dragStateRef.current = {
       height: rect.height,
@@ -493,6 +531,7 @@ export function ProfileSettingsDialog({
     };
 
     if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      // Pointer capture keeps dragging active when the cursor leaves the circle.
       event.currentTarget.setPointerCapture(event.pointerId);
     }
   }
@@ -508,6 +547,7 @@ export function ProfileSettingsDialog({
 
     event.preventDefault();
 
+    // Convert viewport pixels to percentages in the scaled image coordinate space.
     const cropRatio = Math.max(getAvatarCropRatio(cropDraftScale), 0.001);
     const deltaX =
       ((event.clientX - dragState.startX) / (dragState.width * cropRatio)) *
@@ -536,10 +576,12 @@ export function ProfileSettingsDialog({
     }
   }
 
+  // Profile validation and upload
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!hasChanges) {
+      // Avoid an unnecessary API call when the user submits untouched values.
       onClose();
       return;
     }
@@ -552,6 +594,7 @@ export function ProfileSettingsDialog({
     }
 
     const nextAvatarScale = clampAvatarScale(avatarScale);
+    // Revalidate crop values before crossing the client/server boundary.
     const nextAvatarOffsetX = clampAvatarOffsetForScale(
       avatarOffsetX,
       nextAvatarScale
@@ -568,6 +611,7 @@ export function ProfileSettingsDialog({
     formData.set("removeAvatar", String(removeAvatar));
 
     if (selectedFile) {
+      // Multipart FormData carries binary image bytes and scalar profile fields.
       formData.set("avatar", selectedFile);
     }
 
@@ -580,6 +624,7 @@ export function ProfileSettingsDialog({
         body: ProfileResponse | null;
         status: number;
       }>((resolve, reject) => {
+        // Keep XMLHttpRequest to report avatar upload progress in the dialog.
         const request = new XMLHttpRequest();
 
         request.open("PATCH", "/api/profile");
@@ -621,6 +666,7 @@ export function ProfileSettingsDialog({
       }
 
       onProfileSave(body.profile);
+      // Parent state receives the canonical profile returned after Sharp processing.
       setAvatarUploadProgress(100);
       notify({
         title: "Profile updated",
@@ -641,6 +687,7 @@ export function ProfileSettingsDialog({
     }
   }
 
+  // Translate stable backend validation messages into the active locale.
   function translateDisplayNameError(error: string | null | undefined) {
     const messages: Record<string, string> = {
       "Display name contains unsupported characters.": t(
@@ -665,6 +712,7 @@ export function ProfileSettingsDialog({
       return t("errors.profileSave");
     }
 
+    // Backend messages are stable identifiers mapped to localized UI text.
     const messages: Record<string, string> = {
       "Avatar must be 5 MB or smaller.": t("errors.tooLarge", {
         size: formatMegabytes(avatarUploadRules.maxSize),
@@ -687,6 +735,7 @@ export function ProfileSettingsDialog({
     return messages[error] ?? translateDisplayNameError(error);
   }
 
+  // Main settings form and nested crop editor
   return (
     <Modal
       ariaLabelledBy="profile-dialog-title"
@@ -696,6 +745,7 @@ export function ProfileSettingsDialog({
       onBackdropPointerDown={handleBackdropPointerDown}
       onSubmit={handleSubmit}
     >
+        {/* Main header and close command */}
         <header className="profile-dialog-header">
           <div>
             <h2 className="profile-dialog-title" id="profile-dialog-title">
@@ -715,6 +765,7 @@ export function ProfileSettingsDialog({
         </header>
 
         <div className="profile-dialog-body">
+          {/* Avatar upload and current crop preview */}
           <section className="profile-section profile-avatar-section">
             <div className="profile-avatar-summary">
               <div className="profile-avatar-preview-shell">
@@ -772,6 +823,7 @@ export function ProfileSettingsDialog({
           </section>
 
           <section className="profile-section">
+            {/* Display-name editing */}
             <TextInput
               id={displayNameId}
               label={t("displayName")}
@@ -783,6 +835,7 @@ export function ProfileSettingsDialog({
           </section>
 
           <section className="profile-section">
+            {/* Versioned watchlist JSON import and export */}
             <h3 className="profile-section-title">{t("watchlist")}</h3>
             <div className="profile-watchlist-actions">
               <Button
@@ -889,6 +942,7 @@ export function ProfileSettingsDialog({
         </footer>
 
         {isCropEditorOpen && previewAvatarUrl ? (
+          // The crop editor is a nested modal with isolated draft state.
           <Modal
             ariaLabel={t("aria.editCrop")}
             backdropClassName="profile-crop-backdrop"
