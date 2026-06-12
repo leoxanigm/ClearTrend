@@ -4,18 +4,18 @@
 
 - Type : module minor
 - Valeur : 1 point
-- Etat : implemente et valide
-- Demonstration : `/ui-showcase`
+- État : implémenté et validé
+- Démonstration : `/ui-showcase`
 
 Le sujet demande un design system realise pour le projet avec :
 
-- une palette de couleurs coherente ;
-- une typographie coherente ;
-- un systeme d'icones ;
-- au moins dix composants reutilisables.
+- une palette de couleurs cohérente ;
+- une typographie cohérente ;
+- un système d'icônes ;
+- au moins dix composants réutilisables.
 
-ClearTrend fournit une bibliotheque interne de composants React, des tokens de
-theme clair/sombre et une page de demonstration accessible directement par son
+ClearTrend fournit une bibliothèque interne de composants React, des tokens de
+thème clair/sombre et une page de démonstration accessible directement par son
 URL.
 
 ## Organisation
@@ -32,19 +32,19 @@ Primitives generiques
       |
       v
 Compositions applicatives
-  LanguageSelect, UserAvatar, formulaires et ecrans
+  LanguageSelect, UserAvatar, formulaires et écrans
 ```
 
-Les composants utilisent les elements HTML natifs lorsque cela est possible.
+Les composants utilisent les éléments HTML natifs lorsque cela est possible.
 Par exemple, `Button` reste un vrai bouton, `SelectField` un vrai `select` et
 `DropdownMenu` s'appuie sur `details/summary`.
 
 Ce choix conserve les comportements clavier et navigateur de base, limite les
-dependances externes et rend les composants faciles a lire.
+dépendances externes et rend les composants faciles à lire.
 
-## Palette et themes
+## Palette et thèmes
 
-Les couleurs principales sont declarees comme variables CSS :
+Les couleurs principales sont déclarées comme variables CSS :
 
 | Token | Utilisation |
 |---|---|
@@ -58,50 +58,50 @@ Les couleurs principales sont declarees comme variables CSS :
 | `--app-secondary` | Deuxieme couleur fonctionnelle |
 | `--app-accent-contrast` | Texte place sur la couleur d'accent |
 
-Deux palettes completes sont disponibles :
+Deux palettes complètes sont disponibles :
 
-- theme clair dans `:root` ;
-- theme sombre dans `:root[data-theme="dark"]`.
+- thème clair dans `:root` ;
+- thème sombre dans `:root[data-theme="dark"]`.
 
-Sans choix utilisateur, `prefers-color-scheme` reprend le theme du systeme. Le
+Sans choix utilisateur, `prefers-color-scheme` reprend le thème du système. Le
 composant `ThemeSwitch` enregistre ensuite le choix dans
-`localStorage` sous la cle `cleartrend-theme`.
+`localStorage` sous la clé `cleartrend-theme`.
 
-La page `/ui-showcase` affiche les tokens sous forme d'echantillons afin de
-controler rapidement leur rendu dans les deux themes.
+La page `/ui-showcase` affiche les tokens sous forme d'échantillons afin de
+controler rapidement leur rendu dans les deux thèmes.
 
 ## Typographie
 
 Le projet utilise la pile sans-serif fournie par Tailwind et le navigateur,
-sans charger de police distante. Les composants heritent de la typographie
+sans charger de police distante. Les composants héritent de la typographie
 globale avec `font: inherit`.
 
-La hierarchie repose sur :
+La hiérarchie repose sur :
 
 - des tailles distinctes pour titres, valeurs, labels et aide ;
-- des graisses coherentes pour les actions et donnees importantes ;
-- `letter-spacing: 0` pour conserver une lecture reguliere ;
-- des textes secondaires relies au token `--app-muted`.
+- des graisses cohérentes pour les actions et données importantes ;
+- `letter-spacing: 0` pour conserver une lecture régulière ;
+- des textes secondaires reliés au token `--app-muted`.
 
-L'absence de police distante accelere le chargement et evite un changement de
-mise en page pendant son telechargement.
+L'absence de police distante accelere le chargement et évite un changement de
+mise en page pendant son téléchargement.
 
-## Composants reutilisables
+## Composants réutilisables
 
 ### Primitives
 
-| Composant | Role principal |
+| Composant | Rôle principal |
 |---|---|
 | `Avatar` | Image circulaire ou fallback textuel |
-| `Badge` | Etat court avec tons default, accent, success, warning et danger |
+| `Badge` | État court avec tons default, accent, success, warning et danger |
 | `Button` | Bouton primary, outline, plain, sidebar ou tab |
 | `Card` | Surface encadree avec padding optionnel |
-| `DropdownMenu` | Menu generique base sur `details/summary` |
-| `IconButton` | Bouton carre avec label accessible, tailles et etat presse |
+| `DropdownMenu` | Menu générique base sur `details/summary` |
+| `IconButton` | Bouton carre avec label accessible, tailles et état presse |
 | `MetricTile` | Carte de statistique avec label, valeur, description et ton |
 | `Modal` | Backdrop et panneau dialog/form/section |
 | `SegmentedControl` | Selection exclusive composee de boutons onglets |
-| `SelectField` | Champ select generique type et labelle |
+| `SelectField` | Champ select générique type et labelle |
 | `TextInput` | Champ input avec label et classes configurables |
 | `ThemeSwitch` | Bascule clair/sombre persistante |
 | `Toast` | Message temporaire info, success, warning ou error |
@@ -111,15 +111,15 @@ mise en page pendant son telechargement.
 
 | Composant ou service | Composition |
 |---|---|
-| `LanguageSelect` | `SelectField`, cookie de locale et rafraichissement Next.js |
+| `LanguageSelect` | `SelectField`, cookie de locale et rafraîchissement Next.js |
 | `NotificationProvider` | Contexte React, file de notifications et rendu de `Toast` |
 
 Le minimum de dix composants est donc depasse sans compter les composants
-metier tels que le graphique, la watchlist ou le formulaire de profil.
+métier tels que le graphique, la watchlist ou le formulaire de profil.
 
-## Reutilisation dans l'application
+## Réutilisation dans l'application
 
-Le design system n'est pas limite a la showcase :
+Le design system n'est pas limité à la showcase :
 
 - la page de connexion utilise `Card`, `Button`, `TextInput`,
   `SegmentedControl` et `LanguageSelect` ;
@@ -127,24 +127,24 @@ Le design system n'est pas limite a la showcase :
   `Tooltip`, `ThemeSwitch` et `LanguageSelect` ;
 - le graphique utilise `Button`, `IconButton`, `SegmentedControl` et
   `Tooltip` ;
-- les parametres du profil utilisent `Modal`, `TextInput`, `Button`,
+- les paramètres du profil utilisent `Modal`, `TextInput`, `Button`,
   `IconButton` et les notifications ;
-- la recherche utilise les champs et boutons generiques ;
-- l'administration reutilise `Button` et `SelectField` ;
-- `UserAvatar` compose le composant generique `Avatar`.
+- la recherche utilise les champs et boutons génériques ;
+- l'administration réutilise `Button` et `SelectField` ;
+- `UserAvatar` compose le composant générique `Avatar`.
 
 Le fichier `components/ui/index.ts` permet aussi d'importer plusieurs primitives
-depuis une seule entree.
+depuis une seule entrée.
 
-## Systeme d'icones et assets
+## Système d'icônes et assets
 
-Le projet utilise plusieurs familles d'icones :
+Le projet utilise plusieurs familles d'icônes :
 
 - SVG officiels pour Google, GitHub et 42 School ;
-- deux variantes bitmap du logo ClearTrend pour les themes clair et sombre ;
-- petites icones SVG internes pour le theme ;
+- deux variantes bitmap du logo ClearTrend pour les thèmes clair et sombre ;
+- petites icônes SVG internes pour le thème ;
 - symboles CSS pour fermer, ajouter, retirer et ouvrir le menu mobile ;
-- etoile de favori et pastille IA dans la watchlist.
+- étoile de favori et pastille IA dans la watchlist.
 
 Les boutons uniquement visuels utilisent un `aria-label` fourni par
 `IconButton` ou directement par le composant appelant.
@@ -161,8 +161,8 @@ presente :
 
 - les couleurs de base ;
 - les variantes de boutons ;
-- un controle segmente ;
-- les boutons d'icones ;
+- un contrôle segmente ;
+- les boutons d'icônes ;
 - les champs de formulaire ;
 - les badges ;
 - les cartes de metriques ;
@@ -171,61 +171,61 @@ presente :
 - le tooltip ;
 - une notification ;
 - une modale ;
-- le changement de theme.
+- le changement de thème.
 
-Cette page n'est pas liee dans la navigation produit. Elle sert de catalogue
-visuel et de support de verification pendant le developpement.
+Cette page n'est pas liée dans la navigation produit. Elle sert de catalogue
+visuel et de support de vérification pendant le développement.
 
-## Accessibilite integree
+## Accessibilité intégrée
 
 Les primitives fournissent plusieurs bases communes :
 
-- vrais elements `button`, `input`, `select`, `label`, `details` et `summary` ;
+- vrais éléments `button`, `input`, `select`, `label`, `details` et `summary` ;
 - `aria-label` obligatoire pour `IconButton` ;
-- `aria-pressed` pour les etats binaires ;
+- `aria-pressed` pour les états binaires ;
 - `role="dialog"` et `aria-modal` pour `Modal` ;
 - `role="status"` ou `role="alert"` pour `Toast` ;
 - region `aria-live` pour les notifications ;
 - tooltip visible au survol et au `focus-visible` ;
-- classe `sr-only` pour les labels conserves uniquement pour les lecteurs
-  d'ecran.
+- classe `sr-only` pour les labels conservés uniquement pour les lecteurs
+  d'écran.
 
-Ces elements ameliorent la base semantique, mais le module ne revendique pas a
-lui seul une conformite WCAG 2.1 AA complete.
+Ces éléments améliorent la base sémantique, mais le module ne revendique pas à
+lui seul une conformité WCAG 2.1 AA complète.
 
 ## Fichiers principaux
 
-| Fichier | Role |
+| Fichier | Rôle |
 |---|---|
-| `web/src/components/ui/` | Composants React reutilisables |
-| `web/src/components/ui/ui.css` | Styles des primitives, formulaires, themes, selecteurs et notifications |
+| `web/src/components/ui/` | Composants React réutilisables |
+| `web/src/components/ui/ui.css` | Styles des primitives, formulaires, thèmes, sélecteurs et notifications |
 | `web/src/components/ui/index.ts` | Point d'export groupe |
 | `web/src/components/ui/cx.ts` | Assemblage simple des classes conditionnelles |
-| `web/src/app/globals.css` | Tokens de couleurs, structure des pages et surcharges propres aux ecrans |
-| `web/src/app/ui-showcase/page.tsx` | Route de demonstration |
+| `web/src/app/globals.css` | Tokens de couleurs, structure des pages et surcharges propres aux écrans |
+| `web/src/app/ui-showcase/page.tsx` | Route de démonstration |
 | `web/src/app/ui-showcase/UiShowcaseClient.tsx` | Catalogue interactif |
-| `web/public/` | Logos et icones OAuth |
+| `web/public/` | Logos et icônes OAuth |
 
-## Verification
+## Vérification
 
-### Verification manuelle
+### Vérification manuelle
 
 1. Ouvrir `/ui-showcase`.
-2. Controler chaque composant dans le theme clair.
-3. Basculer vers le theme sombre.
-4. Reduire la largeur de la fenetre.
+2. Controler chaque composant dans le thème clair.
+3. Basculer vers le thème sombre.
+4. Réduire la largeur de la fenêtre.
 5. Tester les boutons, le select, le menu, le tooltip, le toast et la modale.
-6. Parcourir les controles au clavier avec `Tab`.
-7. Verifier ensuite leur reutilisation sur `/login` et `/dashboard`.
+6. Parcourir les contrôles au clavier avec `Tab`.
+7. Vérifier ensuite leur réutilisation sur `/login` et `/dashboard`.
 
-### Verification technique
+### Vérification technique
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml \
   exec -T web npm run lint
 ```
 
-ESLint analyse la qualite du code et signale certaines erreurs ou mauvaises
+ESLint analyse la qualité du code et signale certaines erreurs ou mauvaises
 pratiques.
 
 ```bash
@@ -233,24 +233,24 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml \
   exec -T web npx tsc --noEmit
 ```
 
-TypeScript verifie les types sans generer de fichier.
+TypeScript vérifie les types sans generer de fichier.
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml \
   exec -T web npm run build
 ```
 
-Le build compile l'application Next.js comme pour la production et detecte les
-erreurs qui empecheraient son deploiement.
+Le build compile l'application Next.js comme pour la production et détecte les
+erreurs qui empêcheraient son déploiement.
 
 ## Limites
 
-- Il n'existe pas de tests visuels automatises ou de snapshots des composants.
-- Le systeme d'icones n'utilise pas une bibliotheque unique : il combine assets,
-  SVG internes, caracteres et formes CSS.
-- La typographie repose sur la pile sans-serif du systeme, sans famille de
-  police de marque dediee.
+- Il n'existe pas de tests visuels automatisés ou de snapshots des composants.
+- Le système d'icônes n'utilise pas une bibliothèque unique : il combine assets,
+  SVG internes, caractères et formes CSS.
+- La typographie repose sur la pile sans-serif du système, sans famille de
+  police de marque dédiée.
 
 Ces limites concernent surtout l'industrialisation du design system. Les
-tokens, les themes, le catalogue et plus de dix composants reutilisables sont
-deja utilises par les ecrans du produit.
+tokens, les thèmes, le catalogue et plus de dix composants réutilisables sont
+déjà utilisés par les écrans du produit.

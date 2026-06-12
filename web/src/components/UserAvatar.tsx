@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
+// Render a stored avatar with the non-destructive crop saved in the user profile.
+
 import type { CSSProperties } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { getAvatarCropRatio } from "@/lib/profile-rules";

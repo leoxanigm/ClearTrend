@@ -15,6 +15,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+// Require both the expected extension and browser-declared JSON MIME type.
 function isJsonFile(value: FormDataEntryValue | null): value is File {
   return (
     typeof File !== "undefined" &&
@@ -24,6 +25,7 @@ function isJsonFile(value: FormDataEntryValue | null): value is File {
   );
 }
 
+// Export the current user's favorites as a generated, non-stored JSON attachment.
 export async function GET(req: Request) {
   const { profile, response } = await getApiUserProfile(req);
 
@@ -33,6 +35,7 @@ export async function GET(req: Request) {
 
   const favoriteSymbols = await getUserFavoriteSymbols(profile.id);
   const payload = createWatchlistFile(favoriteSymbols);
+  // The date makes successive exports easy to identify on the user's machine.
   const date = new Date().toISOString().slice(0, 10);
 
   return new NextResponse(`${JSON.stringify(payload, null, 2)}\n`, {
@@ -45,6 +48,7 @@ export async function GET(req: Request) {
   });
 }
 
+// Validate an uploaded watchlist and merge recognized symbols into the account.
 export async function POST(req: Request) {
   const { profile, response } = await getApiUserProfile(req);
 
@@ -58,6 +62,7 @@ export async function POST(req: Request) {
     return apiError("Expected multipart form data.", 415);
   }
 
+  // Multipart parsing is guarded because malformed bodies can throw.
   const formData = await req.formData().catch(() => null);
   const file = formData?.get("watchlist") ?? null;
 
@@ -73,6 +78,7 @@ export async function POST(req: Request) {
     return apiError("The watchlist file must be 64 KB or smaller.", 400);
   }
 
+  // The uploaded file is read in memory and is never written to server storage.
   const payload = await file.text()
     .then((text) => JSON.parse(text) as unknown)
     .catch(() => null);
@@ -90,6 +96,7 @@ export async function POST(req: Request) {
   let knownTickers: string[];
 
   try {
+    // Syntax alone is insufficient: imported symbols must exist in analysis data.
     knownTickers = await fetchAnalysisTickers();
   } catch {
     return apiError("Ticker validation service is unavailable.", 503);
@@ -103,12 +110,14 @@ export async function POST(req: Request) {
     (symbol) => !knownTickerSet.has(symbol)
   );
 
+  // Avoid a successful response that did not add or recognize any asset.
   if (recognizedSymbols.length === 0) {
     return apiError("No recognized symbol was found in the watchlist file.", 400);
   }
 
   const currentFavoriteSymbols = await getUserFavoriteSymbols(profile.id);
   const currentFavoriteSet = new Set(currentFavoriteSymbols);
+  // Separate result categories so the UI can explain exactly what happened.
   const importedSymbols = recognizedSymbols.filter(
     (symbol) => !currentFavoriteSet.has(symbol)
   );
@@ -120,6 +129,7 @@ export async function POST(req: Request) {
     recognizedSymbols
   );
 
+  // The response is a processing report; the source JSON is discarded.
   return NextResponse.json({
     alreadyFavoriteSymbols,
     favoriteSymbols,

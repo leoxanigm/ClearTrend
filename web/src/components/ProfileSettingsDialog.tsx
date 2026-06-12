@@ -2,6 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+// Profile dialog owning avatar upload/crop and watchlist JSON transfer workflows.
+
 import {
   type ChangeEvent,
   type FormEvent,

@@ -1,8 +1,10 @@
 import type { ChartCandle, ChartRange } from "@/lib/analysis-data";
 
+// JSON exports identify their schema so future readers can reject incompatible files.
 export const chartExportFormat = "cleartrend-chart";
 export const chartExportVersion = 1;
 
+// Metadata captured from the currently displayed dashboard chart.
 export type ChartExportContext = {
   candles: ChartCandle[];
   interval: string | null;
@@ -12,6 +14,7 @@ export type ChartExportContext = {
   updatedAt: string | null;
 };
 
+// Common row shape keeps CSV and JSON values consistent.
 type ChartExportRow = {
   changePercent: number | null;
   close: number;
@@ -22,12 +25,14 @@ type ChartExportRow = {
   volume: number | null;
 };
 
+// Limit floating-point noise while retaining useful financial precision.
 function round(value: number, digits = 6) {
   const factor = 10 ** digits;
 
   return Math.round(value * factor) / factor;
 }
 
+// Express each candle's movement relative to its opening value.
 function getCandleChangePercent(candle: ChartCandle) {
   if (candle.open <= 0) {
     return null;
@@ -36,6 +41,7 @@ function getCandleChangePercent(candle: ChartCandle) {
   return round(((candle.close - candle.open) / candle.open) * 100);
 }
 
+// Project provider candles onto the stable public export fields.
 function createExportRows(candles: ChartCandle[]): ChartExportRow[] {
   return candles.map((candle) => ({
     changePercent: getCandleChangePercent(candle),
@@ -48,6 +54,7 @@ function createExportRows(candles: ChartCandle[]): ChartExportRow[] {
   }));
 }
 
+// Create a readable, versioned JSON snapshot with chart metadata.
 export function createChartJsonExport(context: ChartExportContext) {
   return JSON.stringify(
     {
@@ -66,6 +73,7 @@ export function createChartJsonExport(context: ChartExportContext) {
   );
 }
 
+// Escape RFC-style CSV values only when delimiters, quotes, or line breaks require it.
 function escapeCsvValue(value: string | number | null) {
   if (value === null) {
     return "";
@@ -76,6 +84,7 @@ function escapeCsvValue(value: string | number | null) {
   return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
+// Create one flat CSV row per visible candle for spreadsheet use.
 export function createChartCsvExport(context: ChartExportContext) {
   const rows = createExportRows(context.candles);
   const header = [
@@ -108,6 +117,7 @@ export function createChartCsvExport(context: ChartExportContext) {
   return [header.join(","), ...lines].join("\n");
 }
 
+// Include asset, selected range, and export date in a filesystem-safe name.
 export function createChartExportFileName(
   symbol: string,
   range: ChartRange,

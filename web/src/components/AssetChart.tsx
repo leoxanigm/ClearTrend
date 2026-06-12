@@ -1,5 +1,7 @@
 "use client";
 
+// Interactive financial chart, including local CSV/JSON export of visible candles.
+
 import {
   useCallback,
   useEffect,
