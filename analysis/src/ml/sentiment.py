@@ -12,6 +12,9 @@ from typing import Any
 
 import requests
 
+from ..market_data.config import sanitize_ticker
+from .utils import safe_clamp
+
 REDDIT_SEARCH_URL = "https://old.reddit.com/search.rss"
 REDDIT_USER_AGENT = "ClearTrend academic project/1.0"
 QWEN_API_URL = "https://kss-api.mbinc.tech/api/chat"
@@ -111,18 +114,14 @@ def _strip_html(value: str) -> str:
     return " ".join(html.unescape(" ".join(parser.parts)).split())
 
 
-def _safe_ticker(ticker: str) -> str:
-    return ticker.replace("^", "").upper()
-
-
 def _query_for_ticker(ticker: str) -> str:
-    safe = _safe_ticker(ticker)
+    safe = sanitize_ticker(ticker)
 
     return ASSET_SEARCH_QUERIES.get(safe, safe)
 
 
 def _matches_asset(ticker: str, title: str, excerpt: str) -> bool:
-    safe = _safe_ticker(ticker)
+    safe = sanitize_ticker(ticker)
     terms = ASSET_MATCH_TERMS.get(safe, (safe,))
     text = re.sub(r"https?://\S+", " ", f"{title} {excerpt}".lower())
     has_asset = any(
@@ -287,14 +286,6 @@ def _qwen_schema() -> dict[str, Any]:
     }
 
 
-def _clamp(value: object) -> float:
-    try:
-        number = float(value)
-    except (TypeError, ValueError):
-        return 0.5
-
-    return max(0.0, min(1.0, number))
-
 
 def _analyze_with_qwen(
     ticker: str,
@@ -317,7 +308,7 @@ def _analyze_with_qwen(
         )
 
     # OMG it's fricking slow, I'll have to optimize that...
-    safe = _safe_ticker(ticker)
+    safe = sanitize_ticker(ticker)
     prompt = (
         f"Analyze these {len(post_lines)} Reddit posts about {safe} "
         "from the past 7 days and fill in the JSON fields:\n"
@@ -364,20 +355,20 @@ def _analyze_with_qwen(
             break
         except requests.HTTPError as exc:
             if exc.response is not None and exc.response.status_code == 524:
+                # 524 = Cloudflare gateway timeout; the model is still running, retry.
                 last_error = exc
                 time.sleep(5)
-                continue
-            raise
+            else:
+                raise
         except (requests.Timeout, json.JSONDecodeError) as exc:
             last_error = exc
             time.sleep(5)
-            continue
     else:
         raise RuntimeError(f"Qwen API failed after 3 attempts: {last_error}")
 
     return {
-        "score": round(_clamp(result.get("score")), 4),
-        "agreement": round(_clamp(result.get("agreement")), 4),
+        "score": round(safe_clamp(result.get("score")), 4),
+        "agreement": round(safe_clamp(result.get("agreement")), 4),
         "bullishCount": max(0, int(result.get("bullishCount", 0))),
         "neutralCount": max(0, int(result.get("neutralCount", 0))),
         "bearishCount": max(0, int(result.get("bearishCount", 0))),
@@ -386,7 +377,7 @@ def _analyze_with_qwen(
 
 
 def reddit_sentiment(ticker: str) -> dict:
-    cache_key = _safe_ticker(ticker)
+    cache_key = sanitize_ticker(ticker)
     cached = _CACHE.get(cache_key)
 
     if cached and cached[0] > time.monotonic():
