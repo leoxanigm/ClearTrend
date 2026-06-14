@@ -9,9 +9,12 @@ from .market_data import (
     latest_payload,
     list_cached_tickers,
     performance_payloads,
+    resolve_intraday_interval,
     sanitize_ticker,
     snapshot_payloads,
 )
+from .config import get_finance_refresh_rate_duration
+from .market_data.config import intraday_interval_for_refresh_seconds
 from .scheduler import run_market_data_scheduler
 from .ml.store import (
     load_prediction,
@@ -42,6 +45,34 @@ app = FastAPI(
     title="Transcendence Analysis Service",
     lifespan=lifespan,
 )
+
+
+def _configured_intraday_interval() -> str:
+    """Resolve the admin setting once per API request into a Yahoo interval."""
+    refresh_duration = get_finance_refresh_rate_duration()
+
+    return intraday_interval_for_refresh_seconds(
+        int(refresh_duration.total_seconds())
+    )
+
+
+def _chart_interval(
+    ticker: str,
+    range_name: str | None,
+    configured_intraday_interval: str,
+) -> str:
+    """Describe the granularity actually served to the dashboard."""
+    normalized_range = range_name.upper() if range_name else None
+
+    if normalized_range == "1D":
+        return resolve_intraday_interval(
+            ticker,
+            configured_intraday_interval,
+        )
+    if normalized_range == "1W":
+        return "1h"
+
+    return "1d"
 
 
 @app.get("/")
@@ -109,7 +140,10 @@ def ml_analyse(
 
 @app.get("/history/{ticker}/latest")
 def latest(ticker: str) -> dict:
-    return latest_payload(ticker)
+    return latest_payload(
+        ticker,
+        intraday_interval=_configured_intraday_interval(),
+    )
 
 
 @app.get("/snapshots")
@@ -121,7 +155,12 @@ def snapshots(symbols: str = Query("")) -> dict[str, list[dict]]:
         if symbol.strip()
     ][:999]
 
-    return {"snapshots": snapshot_payloads(tickers)}
+    return {
+        "snapshots": snapshot_payloads(
+            tickers,
+            intraday_interval=_configured_intraday_interval(),
+        )
+    }
 
 
 @app.get("/performances")
@@ -137,7 +176,11 @@ def performances(
     ][:999]
 
     return {
-        "performances": performance_payloads(tickers, range_name),
+        "performances": performance_payloads(
+            tickers,
+            range_name,
+            intraday_interval=_configured_intraday_interval(),
+        ),
     }
 
 
@@ -147,10 +190,20 @@ def candles_meta(
     range_name: str | None = Query(None, alias="range"),
 ) -> dict:
     """Expose only cache freshness metadata for lightweight client polling."""
-    updated_at = get_data_updated_at(ticker, range_name=range_name)
+    configured_interval = _configured_intraday_interval()
+    updated_at = get_data_updated_at(
+        ticker,
+        intraday_interval=configured_interval,
+        range_name=range_name,
+    )
 
     return {
         "ticker": sanitize_ticker(ticker),
+        "interval": _chart_interval(
+            ticker,
+            range_name,
+            configured_interval,
+        ),
         "updatedAt": updated_at.isoformat() if updated_at else None,
     }
 
@@ -164,16 +217,27 @@ def candles(
     start: str | None = Query(None),
 ) -> dict:
     """Serve normalized OHLCV candles for one ticker and product range."""
-    updated_at = get_data_updated_at(ticker, range_name=range_name)
+    configured_interval = _configured_intraday_interval()
+    updated_at = get_data_updated_at(
+        ticker,
+        intraday_interval=configured_interval,
+        range_name=range_name,
+    )
 
     # Keep endpoint behavior thin; range selection, intraday overlay, and CSV
     # normalization live behind the market_data facade.
     return {
         "ticker": sanitize_ticker(ticker),
+        "interval": _chart_interval(
+            ticker,
+            range_name,
+            configured_interval,
+        ),
         "updatedAt": updated_at.isoformat() if updated_at else None,
         "candles": get_candles(
             ticker,
             end=end,
+            intraday_interval=configured_interval,
             limit=limit,
             range_name=range_name,
             start=start,

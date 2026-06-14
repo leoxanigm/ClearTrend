@@ -6,6 +6,7 @@ from .history import (
     build_intraday_history,
     build_weekly_intraday_history,
     refresh_weekly_intraday_from_1d,
+    resolve_intraday_interval,
 )
 from .storage import (
     latest_daily_csv_date,
@@ -34,6 +35,7 @@ __all__ = [
     "list_cached_tickers",
     "performance_payloads",
     "refresh_weekly_intraday_from_1d",
+    "resolve_intraday_interval",
     "sanitize_ticker",
     "snapshot_payloads",
 ]
