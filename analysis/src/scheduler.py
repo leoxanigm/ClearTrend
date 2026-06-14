@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from .market_data.config import (
     ACTIVE_INTRADAY_REFRESH_DELAY,
     INTRADAY_CANDLE_DURATION,
+    intraday_interval_for_refresh_seconds,
 )
 from .config import get_finance_refresh_rate_duration
 from .market_data import (
@@ -18,6 +19,7 @@ from .market_data import (
 from .ml.store import refresh_all_predictions
 
 logger = logging.getLogger(__name__)
+REFRESH_SETTING_POLL_SECONDS = 60
 
 
 def _refreshed_today(refresh_date) -> bool:
@@ -82,10 +84,10 @@ async def refresh_weekly_intraday_history_if_needed() -> bool:
     return True
 
 
-async def refresh_intraday_history() -> bool:
+async def refresh_intraday_history(interval: str) -> bool:
     """Refresh current intraday candles on every configured scheduler cycle."""
-    logger.info("Intraday history refresh started.")
-    await asyncio.to_thread(build_intraday_history)
+    logger.info("Intraday history refresh started at %s.", interval)
+    await asyncio.to_thread(build_intraday_history, interval=interval)
     logger.info("Intraday history refresh completed.")
     return True
 
@@ -96,23 +98,45 @@ async def run_market_data_scheduler() -> None:
         refresh_duration = await asyncio.to_thread(
             get_finance_refresh_rate_duration
         )
+        intraday_interval = intraday_interval_for_refresh_seconds(
+            int(refresh_duration.total_seconds())
+        )
         logger.info(
-            "Next intraday refresh cadence: %s seconds.",
+            "Next intraday refresh cadence: %s seconds (%s candles).",
             int(refresh_duration.total_seconds()),
+            intraday_interval,
+        )
+        next_refresh_delay = seconds_until_next_intraday_refresh(
+            refresh_duration=refresh_duration
         )
         await asyncio.sleep(
-            seconds_until_next_intraday_refresh(
-                refresh_duration=refresh_duration
-            )
+            min(next_refresh_delay, REFRESH_SETTING_POLL_SECONDS)
         )
 
         try:
+            # Re-read the setting after waking up. When the administrator changes
+            # it, the next loop adopts the new interval within one minute.
+            current_refresh_duration = await asyncio.to_thread(
+                get_finance_refresh_rate_duration
+            )
+
+            if current_refresh_duration != refresh_duration:
+                continue
+
+            if next_refresh_delay > REFRESH_SETTING_POLL_SECONDS:
+                continue
+
             await refresh_daily_history_if_needed()
             weekly_refreshed = await refresh_weekly_intraday_history_if_needed()
-            intraday_refreshed = await refresh_intraday_history()
+            intraday_refreshed = await refresh_intraday_history(
+                intraday_interval
+            )
 
             if weekly_refreshed or intraday_refreshed:
-                await asyncio.to_thread(refresh_weekly_intraday_from_1d)
+                await asyncio.to_thread(
+                    refresh_weekly_intraday_from_1d,
+                    interval=intraday_interval,
+                )
         except asyncio.CancelledError:
             raise
         except Exception:

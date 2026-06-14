@@ -1,9 +1,15 @@
 import { getAssetDisplayName } from "@/lib/asset-labels";
 
+// Server-side adapter between the FastAPI analysis service and the Next.js
+// routes consumed by the dashboard. This module validates every external value
+// before exposing a stable, frontend-friendly contract.
 export const chartRanges = ["1D", "1W", "1M", "3M", "1Y"] as const;
 
+// The union is derived from chartRanges so runtime validation and TypeScript
+// always accept the same set of ranges.
 export type ChartRange = (typeof chartRanges)[number];
 
+// Complete candle shape expected by AssetChart after API normalization.
 export type ChartCandle = {
   close: number;
   datetime: string;
@@ -14,6 +20,8 @@ export type ChartCandle = {
   volume: number | null;
 };
 
+// Raw FastAPI transport types intentionally use unknown. A successful HTTP
+// response does not guarantee that each JSON property has the expected type.
 type AnalysisCandle = {
   c?: unknown;
   h?: unknown;
@@ -25,11 +33,13 @@ type AnalysisCandle = {
 
 type AnalysisCandlesResponse = {
   candles?: unknown;
+  interval?: unknown;
   ticker?: unknown;
   updatedAt?: unknown;
 };
 
 type AnalysisCandlesMetaResponse = {
+  interval?: unknown;
   ticker?: unknown;
   updatedAt?: unknown;
 };
@@ -61,7 +71,8 @@ type AnalysisTickersResponse = {
   tickers?: unknown;
 };
 
-// Public types below are normalized contracts safe for React components.
+// Public snapshot contracts are safe for React components: identifiers are
+// guaranteed, while genuinely unavailable market values remain nullable.
 export type AnalysisAssetSnapshot = {
   dayChange: number | null;
   dayChangePercent: number | null;
@@ -89,48 +100,36 @@ const emptyDailyChange: AnalysisDailyChange = {
   lastPrice: null,
 };
 
-const chartRangeConfig: Record<
-  ChartRange,
-  {
-    interval: string;
-  }
-> = {
-  "1D": {
-    interval: "5min",
-  },
-  "1W": {
-    interval: "1h",
-  },
-  "1M": {
-    interval: "1day",
-  },
-  "3M": {
-    interval: "1day",
-  },
-  "1Y": {
-    interval: "1day",
-  },
-};
-
-// Ticker list changes only after analysis refreshes its daily universe.
+// The ticker universe changes rarely, so a dedicated long-lived cache avoids
+// reading the same complete list for every search input.
 let tickerCache:
   | {
       expiresAt: number;
       tickers: string[];
-    }
+  }
   | null = null;
 
+// Watchlist requests are intentionally bounded. Each HTTP call carries at most
+// 20 symbols and only two calls run together, limiting FastAPI and disk load.
 const analysisBatchSize = 20;
 const analysisBatchConcurrency = 2;
 const analysisBatchCacheMs = 30 * 1000;
 const analysisBatchTimeoutMs = 15 * 1000;
+
+// Short response cache shared by server-side Next.js requests. The in-flight
+// map is separate: it deduplicates simultaneous requests even when cacheMs is 0.
 const analysisJsonCache = new Map<
   string,
   { expiresAt: number; value: unknown }
 >();
 const analysisJsonInFlight = new Map<string, Promise<unknown>>();
 
-// Resolve every internal analysis request from the Docker service base URL.
+/**
+ * Resolve a FastAPI endpoint against the internal Docker service URL.
+ *
+ * ANALYSIS_URL normally points to http://analysis:8000 and is never exposed to
+ * the browser because this function only runs in Next.js server code.
+ */
 function getAnalysisUrl(path: string) {
   const analysisUrl = process.env.ANALYSIS_URL;
 
@@ -141,7 +140,8 @@ function getAnalysisUrl(path: string) {
   return new URL(path, analysisUrl);
 }
 
-// Runtime readers reject malformed provider values before they enter UI state.
+// Runtime readers form the first validation layer. Invalid values become null
+// instead of propagating NaN, empty identifiers, or unexpected JSON types.
 function readString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -160,9 +160,13 @@ function readNumber(value: unknown) {
   return null;
 }
 
+/**
+ * Convert the date formats emitted by FastAPI into milliseconds since epoch.
+ *
+ * Daily candles only contain a date, while intraday candles contain a date and
+ * time. Adding UTC midnight to a date-only value makes parsing deterministic.
+ */
 function getTimestamp(datetime: string) {
-  // Analysis returns dates for daily candles and ISO-ish datetimes for intraday
-  // candles, so normalize both shapes before Date.parse.
   const normalizedDateTime = datetime.includes("T")
     ? datetime
     : datetime.includes(" ")
@@ -173,7 +177,12 @@ function getTimestamp(datetime: string) {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
-// Convert the compact FastAPI OHLCV shape into the frontend candle contract.
+/**
+ * Convert compact FastAPI keys (t, o, h, l, c, v) into a ChartCandle.
+ *
+ * A malformed OHLC value invalidates the entire candle because it cannot be
+ * drawn reliably. Volume is optional because some providers omit it.
+ */
 function normalizeAnalysisCandle(value: AnalysisCandle): ChartCandle | null {
   const close = readNumber(value.c);
   const datetime = readString(value.t);
@@ -192,6 +201,7 @@ function normalizeAnalysisCandle(value: AnalysisCandle): ChartCandle | null {
     open === null ||
     open <= 0
   ) {
+    // Reject incomplete or non-positive price data before chart calculations.
     return null;
   }
 
@@ -212,7 +222,12 @@ function normalizeAnalysisCandle(value: AnalysisCandle): ChartCandle | null {
   };
 }
 
-// Shared internal fetcher provides timeouts, short caching, and in-flight deduplication.
+/**
+ * Fetch JSON from FastAPI with a timeout and optional short-lived cache.
+ *
+ * Requests are keyed by their complete URL, including query parameters. Two
+ * callers requesting the same URL concurrently await the same Promise.
+ */
 async function fetchAnalysisJson(
   path: string,
   params?: Record<string, string>,
@@ -230,6 +245,7 @@ async function fetchAnalysisJson(
   const cacheKey = url.toString();
   const cached = analysisJsonCache.get(cacheKey);
 
+  // Return a completed response while its caller-defined TTL is still valid.
   if (cached && cached.expiresAt > Date.now()) {
     return cached.value;
   }
@@ -246,6 +262,8 @@ async function fetchAnalysisJson(
   }
 
   const request = (async () => {
+    // no-store prevents Next.js from adding another implicit cache layer. Cache
+    // lifetime remains explicit and local to this adapter.
     const response = await fetch(url, {
       cache: "no-store",
       signal: AbortSignal.timeout(options.timeoutMs ?? 5000),
@@ -259,6 +277,7 @@ async function fetchAnalysisJson(
 
     const value = await response.json() as unknown;
 
+    // Candle requests normally skip this cache; watchlist batches use 30 seconds.
     if ((options.cacheMs ?? 0) > 0) {
       analysisJsonCache.set(cacheKey, {
         expiresAt: Date.now() + (options.cacheMs ?? 0),
@@ -274,11 +293,13 @@ async function fetchAnalysisJson(
   try {
     return await request;
   } finally {
+    // A failed request must also leave the map, otherwise later calls would
+    // remain attached to an already rejected Promise.
     analysisJsonInFlight.delete(cacheKey);
   }
 }
 
-// Large watchlists are split to keep query strings and analysis work bounded.
+/** Split a large watchlist into predictable query and processing units. */
 function splitIntoBatches<T>(values: T[], batchSize: number) {
   const batches: T[][] = [];
 
@@ -289,7 +310,13 @@ function splitIntoBatches<T>(values: T[], batchSize: number) {
   return batches;
 }
 
-// Process a small number of batches concurrently and keep successful partial results.
+/**
+ * Process watchlist batches with bounded concurrency.
+ *
+ * Promise.allSettled deliberately preserves successful batches if one request
+ * times out. The UI can therefore show partial market data instead of failing
+ * the complete watchlist.
+ */
 async function loadAnalysisInBatches<T>(
   symbols: string[],
   loader: (batchSymbols: string[]) => Promise<T[]>
@@ -312,6 +339,8 @@ async function loadAnalysisInBatches<T>(
       )
     );
 
+    // Rejected groups are omitted; callers later provide explicit null
+    // placeholders where preserving the requested symbol order matters.
     for (const result of groupResults) {
       if (result.status === "fulfilled") {
         values.push(...result.value);
@@ -322,7 +351,9 @@ async function loadAnalysisInBatches<T>(
   return values;
 }
 
-// Load, normalize, sort, and reject an unusable candle response.
+/**
+ * Load one chart series, normalize every candle, and order it chronologically.
+ */
 async function fetchAnalysisCandlesByParams(
   symbol: string,
   params: Record<string, string>
@@ -332,6 +363,9 @@ async function fetchAnalysisCandlesByParams(
     `/candles/${encodeURIComponent(normalizedSymbol)}`,
     params
   )) as AnalysisCandlesResponse;
+
+  // Bad individual rows are discarded. A completely unusable response remains
+  // an error so the route can report that the chart is unavailable.
   const candles = Array.isArray(body.candles)
     ? body.candles
         .map((value) => normalizeAnalysisCandle(value as AnalysisCandle))
@@ -345,11 +379,15 @@ async function fetchAnalysisCandlesByParams(
 
   return {
     candles,
+    interval: readString(body.interval),
     symbol: readString(body.ticker) ?? normalizedSymbol,
     updatedAt: readString(body.updatedAt),
   };
 }
 
+/**
+ * Read the latest price and daily variation independently from chart candles.
+ */
 async function fetchDailyChange(symbol: string) {
   // Yahoo-style daily movement needs the previous daily close, even when the
   // visible chart uses intraday candles or a longer range window.
@@ -368,10 +406,13 @@ async function fetchDailyChange(symbol: string) {
   }
 }
 
+/**
+ * Return all information required to render one selected chart range.
+ */
 export async function fetchAnalysisCandles(symbol: string, range: ChartRange) {
-  const config = chartRangeConfig[range];
-  // The backend owns range windows: 1D maps to 5m, 1W maps to persisted 1h,
-  // and longer ranges map to daily candles with the current day updated.
+  // The backend owns range windows and cache selection. The frontend only sends
+  // the semantic range selected by the user, then displays the actual interval
+  // returned by FastAPI.
   const data = await fetchAnalysisCandlesByParams(symbol, {
     range,
   });
@@ -381,7 +422,7 @@ export async function fetchAnalysisCandles(symbol: string, range: ChartRange) {
     candles: data.candles,
     currency: null,
     dayChangePercent: dailyChange.dayChangePercent,
-    interval: config.interval,
+    interval: data.interval,
     lastPrice: dailyChange.lastPrice,
     range,
     source: "Analysis",
@@ -390,7 +431,12 @@ export async function fetchAnalysisCandles(symbol: string, range: ChartRange) {
   };
 }
 
-// Metadata requests support lightweight browser polling without OHLCV transfer.
+/**
+ * Read only cache freshness metadata for lightweight browser polling.
+ *
+ * AssetChart compares updatedAt and interval before downloading the complete
+ * OHLCV series.
+ */
 export async function fetchAnalysisCandlesMeta(
   symbol: string,
   range: ChartRange
@@ -404,11 +450,13 @@ export async function fetchAnalysisCandlesMeta(
   )) as AnalysisCandlesMetaResponse;
 
   return {
+    interval: readString(body.interval),
     symbol: readString(body.ticker) ?? normalizedSymbol,
     updatedAt: readString(body.updatedAt),
   };
 }
 
+/** Normalize one watchlist snapshot returned by FastAPI. */
 function normalizeAnalysisSnapshot(
   value: AnalysisSnapshot
 ): AnalysisAssetSnapshot | null {
@@ -428,9 +476,14 @@ function normalizeAnalysisSnapshot(
   };
 }
 
+/**
+ * Load latest price snapshots for a potentially large set of watchlist assets.
+ */
 export async function fetchAnalysisAssetSnapshots(
   symbols: string[]
 ) {
+  // Normalize and deduplicate before batching so aliases such as " aapl " and
+  // "AAPL" cannot generate duplicate upstream work.
   const normalizedSymbols = Array.from(
     new Set(
       symbols
@@ -443,6 +496,8 @@ export async function fetchAnalysisAssetSnapshots(
     return [];
   }
 
+  // Sorting creates stable URLs, which improves cache hits across users whose
+  // watchlists contain the same symbols in a different order.
   return loadAnalysisInBatches(
     [...normalizedSymbols].sort(),
     async (batchSymbols) => {
@@ -470,6 +525,7 @@ export async function fetchAnalysisAssetSnapshots(
   );
 }
 
+/** Normalize one first-to-last close performance returned by FastAPI. */
 function normalizeAnalysisPerformance(
   value: AnalysisPerformance
 ): AnalysisAssetPerformance | null {
@@ -486,6 +542,9 @@ function normalizeAnalysisPerformance(
   };
 }
 
+/**
+ * Load percentage performances for the range selected in the watchlist.
+ */
 export async function fetchAnalysisAssetPerformances(
   symbols: string[],
   range: ChartRange
@@ -535,6 +594,8 @@ export async function fetchAnalysisAssetPerformances(
     ])
   );
 
+  // Restore the caller's requested order and represent missing batches/data as
+  // null rather than silently removing assets from the watchlist.
   return normalizedSymbols.map(
     (symbol) =>
       performanceBySymbol.get(symbol) ?? {
@@ -545,6 +606,9 @@ export async function fetchAnalysisAssetPerformances(
   );
 }
 
+/**
+ * Load and cache the searchable symbol universe exposed by FastAPI.
+ */
 export async function fetchAnalysisTickers() {
   const now = Date.now();
 
@@ -560,6 +624,8 @@ export async function fetchAnalysisTickers() {
         .filter(Boolean)
     : [];
 
+  // Twelve hours is acceptable because the source universe is rebuilt by the
+  // analysis service, not by individual user searches.
   tickerCache = {
     expiresAt: now + 12 * 60 * 60 * 1000,
     tickers,
@@ -568,6 +634,9 @@ export async function fetchAnalysisTickers() {
   return tickers;
 }
 
+/**
+ * Perform a lightweight local symbol search over the cached ticker universe.
+ */
 export async function searchAnalysisTickers(query: string, limit = 8) {
   const normalizedQuery = query.trim().toUpperCase();
 
@@ -577,6 +646,8 @@ export async function searchAnalysisTickers(query: string, limit = 8) {
 
   const tickers = await fetchAnalysisTickers();
 
+  // Display names are resolved locally after symbol matching; no provider call
+  // is triggered while the user types.
   return tickers
     .filter((ticker) => ticker.includes(normalizedQuery))
     .slice(0, limit)
@@ -587,6 +658,7 @@ export async function searchAnalysisTickers(query: string, limit = 8) {
     }));
 }
 
+/** Runtime type guard used for URL and API query parameters. */
 export function isChartRange(value: string): value is ChartRange {
   return chartRanges.includes(value as ChartRange);
 }

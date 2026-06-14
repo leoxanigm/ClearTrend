@@ -6,44 +6,45 @@
 - `limit=N` : keep the N most recent rows
 - `range=1D|1W|1M|3M|1Y` : use product chart windows
 
-`range=1D` returns 5 minute intraday candles. `range=1W` returns persisted
-1 hour candles. `1M`, `3M`, and `1Y` return daily candles; the last daily
-candle is updated from the latest intraday cache when possible.
+`range=1D` returns intraday candles using the administrator interval.
+`range=1W` returns persisted 1 hour candles. `1M`, `3M`, and `1Y` return daily
+candles; the last daily candle is updated from the latest intraday cache when
+possible.
 
 **Refresh cadence** : daily and 1W yfinance history are refreshed once per
-calendar day when missing/stale. The 1D cache is refreshed hourly and then
-merged into the persisted 1W hourly cache. Requests for `/candles/{ticker}/meta`
-also refresh the active ticker from yfinance when its next fixed 5 minute candle
-boundary is due plus 30 seconds. `/candles/{ticker}` returns the latest cached
-payload immediately.
+calendar day when missing/stale. The administrator setting maps 1, 5, and 15
+minutes to matching `1m`, `5m`, and `15m` candles for the 1D chart. Refreshes
+are aligned to fixed slots plus 30 seconds, then merged into the persisted 1W
+hourly cache. `/candles/{ticker}` and `/candles/{ticker}/meta` only read the
+shared cache and report the interval actually served.
 
 **Candle keys** : `t` date/time, `o` open, `h` high, `l` low, `c` close, `v` volume
 
-`/candles/{ticker}` also returns `updatedAt`, the last update time of the cache
-file used for the selected range.
+`/candles/{ticker}` also returns `interval` and `updatedAt`, the granularity and
+last update time of the cache used for the selected range.
 
-`/candles/{ticker}/meta` returns only `ticker` and `updatedAt` for lightweight
-refresh checks. `/snapshots` returns batch watchlist values from cached data
-without calling Yahoo.
+`/candles/{ticker}/meta` returns `ticker`, `interval`, and `updatedAt` for
+lightweight refresh checks. `/snapshots` returns batch watchlist values from
+cached data without calling Yahoo.
 
 ## Code layout
 
-- `market_data.py`: stable public facade imported by `main.py`, `scheduler.py`,
-  and `database_builder.py`.
-- `market_data_config.py`: paths, periods, intervals, 5y ticker list, ticker
+- `market_data/__init__.py`: stable public facade imported by `main.py`,
+  `scheduler.py`, and `database_builder.py`.
+- `market_data/config.py`: paths, periods, intervals, 5y ticker list, ticker
   normalization.
-- `market_data_storage.py`: CSV snapshots, cache timestamps, refresh markers.
-- `market_data_fetcher.py`: Yahoo/yfinance downloads and S&P 500 ticker source.
-- `market_data_history.py`: cache warmup, intraday/daily merge rules, official
+- `market_data/storage.py`: CSV snapshots, cache timestamps, refresh markers.
+- `market_data/fetcher.py`: Yahoo/yfinance downloads and S&P 500 ticker source.
+- `market_data/history.py`: cache warmup, intraday/daily merge rules, official
   close correction.
-- `market_data_views.py`: API payloads for candles, snapshots, latest, and
+- `market_data/views.py`: API payloads for candles, snapshots, latest, and
   `updatedAt`.
-- `ml/historical_regression.py`: OHLCV features, Ridge Regression, chronological
+- `ml/regression.py`: OHLCV features, Ridge Regression, chronological
   backtests, estimated prices, and normalized trend scores.
-- `ml/reddit_sentiment.py`: seven-day Reddit RSS sampling and Gemini sentiment.
-- `ml/attention_signal.py`: ApeWisdom mention and rank attention.
-- `ml/trend_ensemble.py`: multi-source weighting, trend, and confidence.
-- `ml/prediction_store.py`: daily per-asset training orchestration, atomic JSON
+- `ml/sentiment.py`: seven-day Reddit RSS sampling and Gemini sentiment.
+- `ml/attention.py`: ApeWisdom mention and rank attention.
+- `ml/ensemble.py`: multi-source weighting, trend, and confidence.
+- `ml/store.py`: daily per-asset training orchestration, atomic JSON
   snapshots, model versioning, and cache status.
 
 ## Health

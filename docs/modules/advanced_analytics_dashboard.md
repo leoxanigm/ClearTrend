@@ -92,9 +92,9 @@ Ce lien permet de retrouver directement la même vue.
 
 **Fichiers concernés :**
 
-- [`analysis-data.ts`](../../web/src/lib/analysis-data.ts#L371) : appel à FastAPI, validation et normalisation ;
-- [`market_data_views.py`](../../analysis/src/market_data_views.py#L61) : choix de l'historique selon la période ;
-- [`market_data_history.py`](../../analysis/src/market_data_history.py#L442) : lecture et composition des caches OHLCV.
+- [`analysis-data.ts`](../../web/src/lib/analysis-data.ts#L357) : appel à FastAPI, validation et normalisation ;
+- [`market_data/views.py`](../../analysis/src/market_data/views.py#L68) : choix de l'historique selon la période ;
+- [`market_data/history.py`](../../analysis/src/market_data/history.py#L502) : lecture et composition des caches OHLCV.
 
 Le frontend appelle :
 
@@ -130,18 +130,41 @@ donc pas remplacer la nouvelle sélection.
 
 **Fichiers concernés :**
 
-- [`get_candles`](../../analysis/src/market_data_views.py#L61) : associe chaque période à une source de données ;
-- [`load_intraday_history_with_official_close`](../../analysis/src/market_data_history.py#L246) : corrige la dernière bougie intraday ;
-- [`load_daily_history_with_latest`](../../analysis/src/market_data_history.py#L442) : ajoute la séance courante à l'historique journalier.
+- [`get_candles`](../../analysis/src/market_data/views.py#L68) : associe chaque période à une source de données ;
+- [`load_intraday_history_with_official_close`](../../analysis/src/market_data/history.py#L287) : corrige la dernière bougie intraday ;
+- [`load_daily_history_with_latest`](../../analysis/src/market_data/history.py#L502) : ajoute la séance courante à l'historique journalier.
 
 | Période | Granularité | Source servie |
 |---|---|---|
-| `1D` | 5 minutes | cache intraday, corrigé avec la clôture officielle lorsqu'elle existe |
+| `1D` | 1, 5 ou 15 minutes | cache intraday selon le réglage admin, corrigé avec la clôture officielle lorsqu'elle existe |
 | `1W` | 1 heure | cache intraday hebdomadaire |
 | `1M`, `3M`, `1Y` | 1 jour | historique daily complété par la séance courante |
 
 Cette composition permet d'afficher la séance en cours sans attendre la
 publication de la prochaine bougie journalière officielle.
+
+### Modifier l'intervalle `1D`
+
+Le réglage de l'administration contrôle maintenant à la fois la fréquence de
+collecte et la granularité des bougies `1D` :
+
+| Réglage | Intervalle Yahoo | Visualisation |
+|---|---|---|
+| 1 minute | `1m` | une bougie par minute |
+| 5 minutes | `5m` | une bougie toutes les cinq minutes |
+| 15 minutes | `15m` | une bougie toutes les quinze minutes |
+
+La correspondance est centralisée dans
+[`market_data/config.py`](../../analysis/src/market_data/config.py#L42).
+FastAPI renvoie l'intervalle réellement servi avec les bougies ; le frontend
+l'affiche donc sans maintenir une seconde configuration.
+
+Après une modification, le scheduler relit le réglage en moins d'une minute.
+Pendant la création du nouveau cache, le dashboard conserve temporairement le
+cache disponible le plus récent afin d'éviter un graphique vide. Le nouvel
+intervalle n'est utilisé que lorsqu'il atteint la dernière bougie connue,
+couvre la même période et contient assez de points pour sa granularité. Ainsi,
+un téléchargement `1m` partiel ne remplace pas prématurément le graphique `5m`.
 
 ## Visualisations
 

@@ -400,8 +400,8 @@
       "notifications": "Notification log"
     },
     "refreshRate": {
-      "label": "Finance refresh rate",
-      "ariaLabel": "Choose finance refresh rate",
+      "label": "Financial data interval",
+      "ariaLabel": "Choose the financial data interval",
       "options": {
         "60": "1 minute",
         "300": "5 minutes",

@@ -26,7 +26,8 @@ dev it is bind-mounted through `./analysis:/app`.
 
 - `analysis/data/intraday`
   - Short intraday candles for `1D`.
-  - Yahoo period/interval: `1d / 5m`.
+  - Yahoo period: `1d`.
+  - Interval selected by the administrator: `1m`, `5m`, or `15m`.
 
 - `analysis/data/weekly_intraday`
   - Persisted hourly candles for `1W`.
@@ -40,18 +41,18 @@ older ones for the same ticker and interval.
 
 ## Implementation Layout
 
-- `market_data.py`
+- `market_data/__init__.py`
   - Public facade used by `main.py`, `scheduler.py`, and `database_builder.py`.
-- `market_data_config.py`
+- `market_data/config.py`
   - Constants, paths, periods, 5 year ticker list, and ticker normalization.
-- `market_data_storage.py`
+- `market_data/storage.py`
   - CSV read/write helpers, cache timestamps, and refresh markers.
-- `market_data_fetcher.py`
+- `market_data/fetcher.py`
   - Yahoo/yfinance downloads and S&P 500 ticker discovery.
-- `market_data_history.py`
+- `market_data/history.py`
   - Daily, intraday, and 1W refresh logic; 1D-to-1W merge; official daily close
     correction.
-- `market_data_views.py`
+- `market_data/views.py`
   - API payload shaping for `/candles`, `/history/{ticker}/latest`, and
     `/snapshots`, including `updatedAt`.
 
@@ -71,13 +72,13 @@ Current cadence:
 | Dataset | Yahoo query | Refresh rule | Used by |
 | --- | --- | --- | --- |
 | Daily | `1d` candles, `1y` or `5y` period | Once per calendar day, or if missing | `1M`, `3M`, `1Y`, watchlist snapshots |
-| 1D intraday | `period=1d`, `interval=5m` | Global scheduler on fixed 5 minute boundaries plus 30 seconds | `1D`, latest daily overlay |
+| 1D intraday | `period=1d`, interval admin `1m`, `5m` or `15m` | Global scheduler on matching fixed boundaries plus 30 seconds | `1D`, latest daily overlay |
 | 1W hourly | `period=30d`, `interval=1h` | Base yfinance cache once per day, then hourly merge from `1D` | `1W` |
 
 The hourly merge works like this:
 
 1. Refresh `1D` candles from Yahoo.
-2. Aggregate the new 5 minute candles into 1 hour candles.
+2. Aggregate the new intraday candles into 1 hour candles.
 3. Merge those hourly candles into `analysis/data/weekly_intraday`.
 4. Save the merged file, keeping the latest 30 days in cache.
 
@@ -87,9 +88,13 @@ hourly merge uses that corrected close for the final hourly candle too.
 
 `/candles`, `/candles/{ticker}/meta`, and `/snapshots` read the local CSV cache;
 they do not call Yahoo. Refreshes are owned by startup warmup and the background
-scheduler. Intraday refreshes are pinned to fixed 5 minute clock boundaries plus
-30 seconds, for example `15:00:30`, `15:05:30`, `15:10:30`; the 30 second delay
-does not drift over time.
+scheduler. Intraday refreshes are pinned to the clock boundaries selected in
+the administration plus 30 seconds. With `5m`, for example, refreshes occur at
+`15:00:30`, `15:05:30`, and `15:10:30`; the delay does not drift over time.
+The scheduler checks for an administrator change at least once per minute.
+When moving to a finer interval, the API keeps serving the previous cache until
+the new file covers the same visible duration, reaches the latest known candle,
+and contains enough points for its finer granularity.
 
 ## Analysis API
 
@@ -121,7 +126,7 @@ Range behavior:
 
 | Range | Backend data | Display precision |
 | --- | --- | --- |
-| `1D` | short intraday cache | 5 minutes, displayed on a fixed regular-session window |
+| `1D` | short intraday cache | 1, 5, or 15 minutes, displayed on a fixed regular-session window |
 | `1W` | persisted weekly intraday cache | 1 hour |
 | `1M` | daily cache + latest intraday overlay | 1 trading day |
 | `3M` | daily cache + latest intraday overlay | 1 trading day |
@@ -134,7 +139,8 @@ For `1D`, the dashboard keeps the horizontal time axis fixed to the regular
 stock session. The candle timestamps come from Yahoo, then the chart labels are
 rendered in the browser/system timezone. On US assets this means the right edge
 is `16:00` on a New York machine and around `22:00` in Paris during daylight
-saving time. The line only advances as new 5 minute candles arrive.
+saving time. The line only advances as new intraday candles arrive according
+to the interval selected in the administration.
 
 The `1D` percentage uses the market-standard daily formula:
 `(latest close - previous daily close) / previous daily close`. Longer chart
@@ -150,8 +156,8 @@ candle timestamped `16:10` is displayed at `16:10`, never at `16:15`.
 During an open session, the current day is approximated from the latest `1D`
 intraday candle. Once a complete regular session is detected, the daily Yahoo
 candle can replace the last intraday close with the official close. This handles
-cases where the closing auction/daily close differs slightly from the last 5
-minute candle.
+cases where the closing auction/daily close differs slightly from the last
+intraday candle.
 
 ## Dashboard Link
 
@@ -167,13 +173,13 @@ Frontend chart flow:
 
 Automatic chart refresh:
 
-1. While the tab is visible, `AssetChart` fetches
-   `/api/assets/candles?symbol=AAPL&range=1W` on fixed 5 minute boundaries plus
-   30 seconds.
+1. While the tab is visible, `AssetChart` checks chart metadata on the
+   administrator interval, aligned to fixed boundaries plus 30 seconds.
 2. The chart applies the returned candles directly. Backend refreshes are
    handled by the scheduler, so this request only reads the cache.
 3. If the cache has not changed yet, the chart retries every 30 seconds until
-   it sees a new `updatedAt`, then returns to the fixed 5 minute schedule.
+   it sees a new `updatedAt` or `interval`, then returns to the configured
+   schedule.
 4. After a chart refresh, the dashboard compares the selected asset's new
    `lastPrice/dayChangePercent` with the value already loaded in the
    watchlist. It reloads `/api/assets/watchlist` only when that selected asset

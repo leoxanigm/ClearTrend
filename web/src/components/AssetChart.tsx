@@ -52,6 +52,7 @@ type ChartResponse = {
 };
 
 type ChartMetaResponse = {
+  interval?: string | null;
   symbol?: string;
   updatedAt?: string | null;
 };
@@ -599,7 +600,8 @@ export function AssetChart({
   const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Ref access avoids restarting polling whenever the displayed timestamp changes.
+  // Ref access avoids restarting polling whenever freshness metadata changes.
+  const intervalRef = useRef<string | null>(null);
   const updatedAtRef = useRef<string | null>(null);
   const chartPollIntervalMs = Math.max(financeRefreshRateSeconds * 1000, 60_000);
 
@@ -619,6 +621,7 @@ export function AssetChart({
       setCandles(nextCandles);
       setCurrency(body.currency ?? null);
       setDayChangePercent(body.dayChangePercent ?? null);
+      intervalRef.current = body.interval ?? null;
       setInterval(body.interval ?? null);
       setSource(body.source ?? null);
       updatedAtRef.current = body.updatedAt ?? null;
@@ -696,6 +699,8 @@ export function AssetChart({
         if (!controller.signal.aborted) {
           setCandles([]);
           setDayChangePercent(null);
+          intervalRef.current = null;
+          setInterval(null);
           updatedAtRef.current = null;
           setUpdatedAt(null);
           setError(t("unavailable"));
@@ -739,6 +744,7 @@ export function AssetChart({
 
       try {
         const previousUpdatedAt = updatedAtRef.current;
+        const previousInterval = intervalRef.current;
         const metadata = await fetchChartMeta(
           requestedSymbol,
           range,
@@ -753,7 +759,8 @@ export function AssetChart({
         if (
           previousUpdatedAt &&
           metadata.updatedAt &&
-          metadata.updatedAt === previousUpdatedAt
+          metadata.updatedAt === previousUpdatedAt &&
+          metadata.interval === previousInterval
         ) {
           return "unchanged";
         }
