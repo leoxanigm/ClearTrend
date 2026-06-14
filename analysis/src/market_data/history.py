@@ -44,6 +44,7 @@ def build_daily_history(
     sp500_period: str = DEFAULT_DAILY_HISTORY_PERIOD,
     long_period: str = LONG_HISTORY_PERIOD,
 ) -> None:
+    """Refresh daily caches, keeping longer histories for selected assets."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     sp500 = [
@@ -76,6 +77,7 @@ def build_intraday_history(
     interval: str = INTRADAY_INTERVAL,
     period: str = INTRADAY_PERIOD,
 ) -> None:
+    """Refresh the short intraday cache used by the 1D chart."""
     INTRADAY_DATA_DIR.mkdir(parents=True, exist_ok=True)
     source_tickers = (
         tickers
@@ -100,6 +102,7 @@ def build_weekly_intraday_history(
     interval: str = WEEKLY_INTRADAY_INTERVAL,
     period: str = WEEKLY_INTRADAY_PERIOD,
 ) -> None:
+    """Refresh the persisted hourly history used by the 1W chart."""
     WEEKLY_INTRADAY_DATA_DIR.mkdir(parents=True, exist_ok=True)
     source_tickers = (
         tickers
@@ -134,6 +137,7 @@ def _timestamp_to_utc_datetime(value: pd.Timestamp) -> datetime:
 def _latest_complete_intraday_session_close(
     df: pd.DataFrame,
 ) -> datetime | None:
+    """Return session close only when the intraday frame covers a full market day."""
     if df.empty:
         return None
 
@@ -191,6 +195,7 @@ def _read_cached_history(
     ticker: str,
     data_kind: str,
 ) -> pd.DataFrame:
+    """Read one cache and discard corrupt CSV files so they can be rebuilt."""
     try:
         return read_csv(path)
     except (pd.errors.EmptyDataError, pd.errors.ParserError):
@@ -202,6 +207,7 @@ def _read_cached_history(
 
 
 def load_daily_history(ticker: str) -> pd.DataFrame:
+    """Load the newest daily cache for a sanitized ticker."""
     safe = sanitize_ticker(ticker)
     path = latest_file(DATA_DIR, safe)
 
@@ -219,6 +225,7 @@ def load_daily_history(ticker: str) -> pd.DataFrame:
 
 
 def load_intraday_history(ticker: str) -> pd.DataFrame:
+    """Load the newest 5-minute cache used by the 1D visualization."""
     safe = sanitize_ticker(ticker)
     prefix = f"{safe}_{INTRADAY_INTERVAL}"
     path = latest_file(INTRADAY_DATA_DIR, prefix)
@@ -237,6 +244,7 @@ def load_intraday_history(ticker: str) -> pd.DataFrame:
 
 
 def load_intraday_history_with_official_close(ticker: str) -> pd.DataFrame:
+    """Replace the last intraday close once the official daily close is available."""
     intraday = load_intraday_history(ticker)
 
     if not _has_official_daily_close(ticker, intraday):
@@ -289,6 +297,7 @@ def load_intraday_history_with_official_close(ticker: str) -> pd.DataFrame:
 
 
 def load_weekly_intraday_history(ticker: str) -> pd.DataFrame:
+    """Load the persisted hourly cache used by weekly charts."""
     safe = sanitize_ticker(ticker)
     prefix = f"{safe}_{WEEKLY_INTRADAY_INTERVAL}"
     path = latest_file(WEEKLY_INTRADAY_DATA_DIR, prefix)
@@ -307,6 +316,7 @@ def load_weekly_intraday_history(ticker: str) -> pd.DataFrame:
 
 
 def _aggregate_intraday_to_hourly(df: pd.DataFrame) -> pd.DataFrame | None:
+    """Aggregate OHLCV correctly: first open, extrema, last close, summed volume."""
     required_columns = ["Open", "High", "Low", "Close"]
 
     if any(column not in df.columns for column in required_columns):
@@ -338,6 +348,7 @@ def _aggregate_intraday_to_hourly(df: pd.DataFrame) -> pd.DataFrame | None:
 
 
 def filter_recent_days(df: pd.DataFrame, days: int) -> pd.DataFrame:
+    """Keep only rows inside the requested rolling calendar window."""
     cutoff = datetime.now().date() - timedelta(days=days)
     mask = [pd.Timestamp(idx).date() >= cutoff for idx in df.index]
 
@@ -345,6 +356,7 @@ def filter_recent_days(df: pd.DataFrame, days: int) -> pd.DataFrame:
 
 
 def refresh_weekly_intraday_from_1d(tickers: list[str] | None = None) -> int:
+    """Merge the newest 1D data into hourly caches without duplicate timestamps."""
     target_tickers = tickers if tickers is not None else list_cached_tickers()
     updated = 0
 
@@ -393,6 +405,7 @@ def refresh_weekly_intraday_from_1d(tickers: list[str] | None = None) -> int:
 
 
 def _aggregate_latest_intraday_day(df: pd.DataFrame) -> pd.Series | None:
+    """Fold the active intraday session into one provisional daily OHLCV row."""
     required_columns = ["Open", "High", "Low", "Close"]
 
     if any(column not in df.columns for column in required_columns):
@@ -427,6 +440,7 @@ def _aggregate_latest_intraday_day(df: pd.DataFrame) -> pd.Series | None:
 
 
 def load_daily_history_with_latest(ticker: str) -> pd.DataFrame:
+    """Overlay the active session until the provider publishes its daily candle."""
     daily = load_daily_history(ticker)
 
     try:

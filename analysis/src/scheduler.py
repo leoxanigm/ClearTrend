@@ -21,10 +21,12 @@ logger = logging.getLogger(__name__)
 
 
 def _refreshed_today(refresh_date) -> bool:
+    """Avoid repeating expensive daily cache builds on the same calendar day."""
     return refresh_date is not None and refresh_date == datetime.now().date()
 
 
 def _floor_datetime(value: datetime, step: timedelta) -> datetime:
+    """Align an instant to the beginning of its configured refresh slot."""
     epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
     value_utc = value.astimezone(timezone.utc)
     elapsed = int((value_utc - epoch).total_seconds())
@@ -37,6 +39,7 @@ def seconds_until_next_intraday_refresh(
     now: datetime | None = None,
     refresh_duration: timedelta | None = None,
 ) -> float:
+    """Schedule work shortly after providers should have completed a new candle."""
     now_utc = now.astimezone(timezone.utc) if now else datetime.now(timezone.utc)
     duration = refresh_duration or INTRADAY_CANDLE_DURATION
     slot = _floor_datetime(now_utc, duration)
@@ -49,6 +52,7 @@ def seconds_until_next_intraday_refresh(
 
 
 async def refresh_daily_history_if_needed() -> bool:
+    """Refresh daily market history and dependent ML predictions once per day."""
     refresh_date = latest_daily_csv_date()
 
     if _refreshed_today(refresh_date):
@@ -65,6 +69,7 @@ async def refresh_daily_history_if_needed() -> bool:
 
 
 async def refresh_weekly_intraday_history_if_needed() -> bool:
+    """Refresh the provider-backed weekly intraday source once per day."""
     refresh_date = latest_weekly_intraday_source_date()
 
     if _refreshed_today(refresh_date):
@@ -78,6 +83,7 @@ async def refresh_weekly_intraday_history_if_needed() -> bool:
 
 
 async def refresh_intraday_history() -> bool:
+    """Refresh current intraday candles on every configured scheduler cycle."""
     logger.info("Intraday history refresh started.")
     await asyncio.to_thread(build_intraday_history)
     logger.info("Intraday history refresh completed.")
@@ -85,6 +91,7 @@ async def refresh_intraday_history() -> bool:
 
 
 async def run_market_data_scheduler() -> None:
+    """Continuously refresh caches without blocking FastAPI request handling."""
     while True:
         refresh_duration = await asyncio.to_thread(
             get_finance_refresh_rate_duration

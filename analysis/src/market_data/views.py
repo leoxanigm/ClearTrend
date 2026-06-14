@@ -28,6 +28,7 @@ def get_data_updated_at(
     *,
     range_name: str | None = None,
 ) -> datetime | None:
+    """Return the newest cache timestamp used by the requested chart range."""
     safe = sanitize_ticker(ticker)
 
     if range_name:
@@ -65,6 +66,7 @@ def get_candles(
     range_name: str | None = None,
     start: str | None = None,
 ) -> list[dict]:
+    """Select the stored history and granularity matching a dashboard request."""
     if range_name:
         normalized_range = range_name.upper()
 
@@ -104,6 +106,7 @@ def get_candles(
 
 
 def latest_payload(ticker: str) -> dict:
+    """Expose the latest daily row for legacy consumers of the analysis API."""
     df = load_daily_history_with_latest(ticker)
     last = df.iloc[-1]
 
@@ -115,6 +118,7 @@ def latest_payload(ticker: str) -> dict:
 
 
 def _read_number(value) -> float | None:
+    """Convert pandas values into finite JSON-safe floats."""
     if pd.isna(value):
         return None
 
@@ -124,6 +128,7 @@ def _read_number(value) -> float | None:
 
 
 def _latest_and_previous_daily_close(ticker: str) -> tuple[float | None, float | None]:
+    """Read the two closes required for daily price and performance."""
     df = load_daily_history_with_latest(ticker).sort_index()
 
     if "Close" not in df.columns or len(df) < 1:
@@ -136,6 +141,7 @@ def _latest_and_previous_daily_close(ticker: str) -> tuple[float | None, float |
 
 
 def _snapshot_payload(ticker: str) -> dict | None:
+    """Build one compact watchlist snapshot, omitting unavailable tickers."""
     try:
         last_price, previous_close = _latest_and_previous_daily_close(ticker)
     except HTTPException:
@@ -166,6 +172,7 @@ def _snapshot_payload(ticker: str) -> dict | None:
 
 
 def snapshot_payloads(tickers: list[str]) -> list[dict]:
+    """Build snapshots independently so one missing ticker does not fail the batch."""
     return [
         snapshot
         for ticker in tickers
@@ -174,6 +181,7 @@ def snapshot_payloads(tickers: list[str]) -> list[dict]:
 
 
 def _range_performance_payload(ticker: str, range_name: str) -> dict | None:
+    """Calculate first-to-last close performance for one product range."""
     normalized_range = range_name.upper()
 
     if normalized_range == "1D":
@@ -216,6 +224,7 @@ def _range_performance_payload(ticker: str, range_name: str) -> dict | None:
 
 
 def performance_payloads(tickers: list[str], range_name: str) -> list[dict]:
+    """Return every available performance while tolerating partial cache gaps."""
     return [
         performance
         for ticker in tickers
@@ -226,6 +235,7 @@ def performance_payloads(tickers: list[str], range_name: str) -> list[dict]:
 
 
 def df_to_candles(df: pd.DataFrame, *, include_time: bool = False) -> list[dict]:
+    """Serialize a pandas OHLCV frame into the compact API candle schema."""
     out: list[dict] = []
 
     for idx, row in df.iterrows():

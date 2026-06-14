@@ -23,6 +23,7 @@ from .ml.ensemble import SUPPORTED_TICKERS
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Own the background market scheduler for the lifetime of FastAPI."""
     # Run cache refreshes in the background; Docker still performs an initial
     # warmup through database_builder before uvicorn starts.
     refresh_task = asyncio.create_task(run_market_data_scheduler())
@@ -113,6 +114,7 @@ def latest(ticker: str) -> dict:
 
 @app.get("/snapshots")
 def snapshots(symbols: str = Query("")) -> dict[str, list[dict]]:
+    """Serve compact current values for a batch of watchlist symbols."""
     tickers = [
         symbol.strip()
         for symbol in symbols.split(",")
@@ -127,6 +129,7 @@ def performances(
     range_name: str = Query("1D", alias="range"),
     symbols: str = Query(""),
 ) -> dict[str, list[dict]]:
+    """Serve first-to-last close performance for one dashboard range."""
     tickers = [
         symbol.strip()
         for symbol in symbols.split(",")
@@ -143,6 +146,7 @@ def candles_meta(
     ticker: str,
     range_name: str | None = Query(None, alias="range"),
 ) -> dict:
+    """Expose only cache freshness metadata for lightweight client polling."""
     updated_at = get_data_updated_at(ticker, range_name=range_name)
 
     return {
@@ -159,6 +163,7 @@ def candles(
     range_name: str | None = Query(None, alias="range"),
     start: str | None = Query(None),
 ) -> dict:
+    """Serve normalized OHLCV candles for one ticker and product range."""
     updated_at = get_data_updated_at(ticker, range_name=range_name)
 
     # Keep endpoint behavior thin; range selection, intraday overlay, and CSV

@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 
 const symbolPattern = /^[A-Z0-9.=-]{1,15}$/;
 
+// Lightweight authenticated proxy used to compare the analysis cache timestamp.
 export async function GET(req: Request) {
   const { response } = await requireApiIdentity(req);
 
@@ -33,6 +34,7 @@ export async function GET(req: Request) {
   }
 
   try {
+    // This response intentionally excludes candles to keep polling inexpensive.
     const data = await fetchAnalysisCandlesMeta(symbol, range);
 
     return NextResponse.json(data);

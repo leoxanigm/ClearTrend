@@ -25,6 +25,12 @@ rafraîchissement et les exports.
 
 ## Architecture générale
 
+**Fichiers concernés :**
+
+- [`dashboard/page.tsx`](../../web/src/app/dashboard/page.tsx#L14) : chargement serveur initial de la page ;
+- [`candles/route.ts`](../../web/src/app/api/assets/candles/route.ts#L14) : route Next.js authentifiée ;
+- [`main.py`](../../analysis/src/main.py#L159) : endpoint FastAPI qui fournit les bougies.
+
 Le dashboard traverse les trois couches suivantes :
 
 ```text
@@ -53,7 +59,17 @@ Cette séparation permet :
 - de normaliser les données avant leur utilisation par React ;
 - de conserver FastAPI spécialisé dans les données financières.
 
+Un rechargement de page ou un changement de période ne déclenche pas directement
+un téléchargement chez le fournisseur financier. FastAPI sert les caches
+partagés, mis à jour en arrière-plan par le scheduler. Tous les utilisateurs
+consultent donc la même version de marché.
+
 ## Parcours utilisateur
+
+**Fichiers concernés :**
+
+- [`DashboardClient.tsx`](../../web/src/components/DashboardClient.tsx#L149) : sélection de l'asset et de la période ;
+- [`AssetChart.tsx`](../../web/src/components/AssetChart.tsx#L575) : contrôles et affichage du graphique.
 
 Depuis le dashboard, l'utilisateur peut :
 
@@ -74,32 +90,66 @@ Ce lien permet de retrouver directement la même vue.
 
 ## Données utilisées
 
+**Fichiers concernés :**
+
+- [`analysis-data.ts`](../../web/src/lib/analysis-data.ts#L371) : appel à FastAPI, validation et normalisation ;
+- [`market_data_views.py`](../../analysis/src/market_data_views.py#L61) : choix de l'historique selon la période ;
+- [`market_data_history.py`](../../analysis/src/market_data_history.py#L442) : lecture et composition des caches OHLCV.
+
 Le frontend appelle :
 
 ```text
 GET /api/assets/candles?symbol=AAPL&range=1M
 ```
 
-La route Next.js :
-
-1. vérifie la session ou la clé API ;
-2. valide le symbole et la période ;
-3. appelle le service FastAPI ;
-4. normalise les bougies ;
-5. retourne les données au composant graphique.
-
 Une bougie contient :
 
-```text
-datetime
-open
-high
-low
-close
-volume
-```
+- `datetime` : date et, pour les données intraday, heure de la période ;
+- `open` : prix au début de la période ;
+- `high` : prix le plus élevé atteint pendant la période ;
+- `low` : prix le plus bas atteint pendant la période ;
+- `close` : prix à la fin de la période ;
+- `volume` : quantité d'actifs échangée pendant la période.
+
+### Cycle complet d'une donnée
+
+1. `DashboardClient` conserve l'asset et la période sélectionnés.
+2. `AssetChart` appelle la route Next.js avec `symbol` et `range`.
+3. La route vérifie l'identité et refuse un symbole invalide.
+4. `analysis-data.ts` appelle FastAPI sur le réseau Docker.
+5. FastAPI choisit le cache adapté à la période.
+6. Les champs compacts `t`, `o`, `h`, `l`, `c`, `v` sont validés et convertis
+   en `ChartCandle`.
+7. Le composant applique la réponse complète, puis recalcule localement le SVG.
+
+Une requête précédente est annulée avec `AbortController` si l'utilisateur
+change rapidement d'asset ou de période. Une réponse devenue obsolète ne peut
+donc pas remplacer la nouvelle sélection.
+
+### Granularité et caches
+
+**Fichiers concernés :**
+
+- [`get_candles`](../../analysis/src/market_data_views.py#L61) : associe chaque période à une source de données ;
+- [`load_intraday_history_with_official_close`](../../analysis/src/market_data_history.py#L246) : corrige la dernière bougie intraday ;
+- [`load_daily_history_with_latest`](../../analysis/src/market_data_history.py#L442) : ajoute la séance courante à l'historique journalier.
+
+| Période | Granularité | Source servie |
+|---|---|---|
+| `1D` | 5 minutes | cache intraday, corrigé avec la clôture officielle lorsqu'elle existe |
+| `1W` | 1 heure | cache intraday hebdomadaire |
+| `1M`, `3M`, `1Y` | 1 jour | historique daily complété par la séance courante |
+
+Cette composition permet d'afficher la séance en cours sans attendre la
+publication de la prochaine bougie journalière officielle.
 
 ## Visualisations
+
+**Fichiers concernés :**
+
+- [`buildChartData`](../../web/src/components/AssetChart.tsx#L388) : calcul des axes, points, courbe et bougies SVG ;
+- [`chart-layout.ts`](../../web/src/lib/chart-layout.ts#L24) : largeur responsive des bougies ;
+- [`globals.css`](../../web/src/app/globals.css#L1253) : apparence du graphique, des axes et des tooltips.
 
 Le graphique est dessiné directement en SVG par React. Aucune bibliothèque de
 visualisation externe n'est utilisée.
@@ -129,32 +179,24 @@ La vue `Candles` utilise les mêmes données et affiche :
 - une bougie verte lorsque la clôture est supérieure ou égale à l'ouverture ;
 - une bougie rouge lorsque la clôture est inférieure à l'ouverture ;
 - un tooltip compact avec la date et les libellés complets `Ouverture`,
-  `Plus haut`, `Plus bas` et `Cloture`.
+  `Plus haut`, `Plus bas` et `Clôture`.
 
-La granularité vient directement de la période choisie :
-
-```text
-1D -> 5 minutes
-1W -> 1 heure
-1M / 3M / 1Y -> 1 jour
-```
+La largeur des bougies utilise l'espacement médian entre les points. En `1D`,
+elle est plafonnée pour éviter des bougies trop larges lorsque le fournisseur
+retourne momentanément peu de points.
 
 ## Plages et filtres
 
-Périodes disponibles :
+**Fichiers concernés :**
 
-```text
-1D
-1W
-1M
-3M
-1Y
-```
+- [`visibleCandles`](../../web/src/components/AssetChart.tsx#L847) : filtrage local entre les dates choisies ;
+- [`handleRangeChange`](../../web/src/components/DashboardClient.tsx#L342) : changement de période et synchronisation de l'URL ;
+- [`performance/route.ts`](../../web/src/app/api/assets/performance/route.ts#L13) : performances de la watchlist pour la période active.
 
 Filtres disponibles :
 
 - asset sélectionné dans la watchlist ;
-- période du graphique ;
+- période du graphique parmi `1D`, `1W`, `1M`, `3M` et `1Y` ;
 - début et fin personnalisés dans la période chargée ;
 - type de visualisation `Price` ou `Candles` ;
 - période de performance de la watchlist.
@@ -172,10 +214,17 @@ de demander une période arbitraire située en dehors de la plage chargée.
 Les snapshots `1D` et les performances de watchlist sont chargés par lots de
 20 symboles, avec deux lots simultanés. Les requêtes identiques en cours sont
 partagées entre utilisateurs et les résultats sont gardés 30 secondes côté
-`web`. Le sélecteur affiche `...` pendant le chargement; `N/A` indique ensuite
+`web`. Le sélecteur affiche `...` pendant le chargement ; `N/A` indique ensuite
 une absence réelle de données pour l'asset et la période.
 
 ## Rafraîchissement automatique
+
+**Fichiers concernés :**
+
+- [`fetchChartMeta`](../../web/src/components/AssetChart.tsx#L157) : contrôle léger de la fraîcheur côté navigateur ;
+- [`candles/meta/route.ts`](../../web/src/app/api/assets/candles/meta/route.ts#L14) : proxy authentifié des métadonnées ;
+- [`market-calendar.ts`](../../web/src/lib/market-calendar.ts#L207) : calcul de la prochaine ouverture régulière ;
+- [`scheduler.py`](../../analysis/src/scheduler.py#L93) : mise à jour des caches indépendamment des utilisateurs.
 
 Le dashboard utilise la fréquence configurée par l'administrateur, avec une
 valeur minimale d'une minute.
@@ -183,8 +232,9 @@ valeur minimale d'une minute.
 Fonctionnement :
 
 1. le graphique charge les bougies à son ouverture ;
-2. il programme le prochain contrôle du cache `analysis` ;
-3. il recharge les données quand une nouvelle version est disponible ;
+2. il consulte ensuite `/api/assets/candles/meta` pour lire uniquement
+   `updatedAt` ;
+3. il recharge les bougies complètes seulement lorsque cette valeur a changé ;
 4. en cas d'échec en arrière-plan, il conserve le graphique déjà visible ;
 5. lorsque l'onglet redevient visible, il contrôle immédiatement les données.
 
@@ -197,15 +247,26 @@ Il affiche aussi la prochaine ouverture régulière du marché américain. Le
 calcul utilise 9h30 à New York, ignore les week-ends et les principaux jours
 fériés NYSE, puis affiche le résultat dans le fuseau local du navigateur.
 
-Ce rafraîchissement automatique valide la mise à jour des données du dashboard.
-Il ne doit pas être confondu avec le module distinct WebSocket/SSE, qui reste à
-implémenter.
+`updatedAt` représente la date de modification du cache utilisé par la période.
+Une valeur identique signifie que le navigateur possède déjà la dernière
+version et évite de retransférer le même historique. Une erreur réseau est
+retentée après 30 secondes, sans effacer les données visibles.
 
-Le contrôle léger utilise d'abord l'endpoint de métadonnées
-`/api/assets/candles/meta`. Les bougies complètes ne sont rechargées que lorsque
-`updatedAt` a changé. Cela évite de transférer plusieurs fois le même historique.
+Le scheduler FastAPI tourne indépendamment des utilisateurs :
+[`run_market_data_scheduler`](../../analysis/src/scheduler.py#L93). Il recharge
+les historiques intraday selon la fréquence configurée, les historiques daily
+une fois par jour et reconstruit le cache horaire hebdomadaire lorsque
+nécessaire.
+
+Ce mécanisme repose sur du polling. Il ne doit pas être confondu avec le module
+distinct WebSocket/SSE.
 
 ## Export CSV
+
+**Fichiers concernés :**
+
+- [`createChartCsvExport`](../../web/src/lib/chart-analytics.ts#L88) : construction du contenu CSV ;
+- [`downloadChartData`](../../web/src/components/AssetChart.tsx#L917) : téléchargement local du fichier.
 
 Le bouton `Export CSV` génère un fichier :
 
@@ -230,10 +291,15 @@ volume
 change_percent
 ```
 
-`change_percent` correspond a la variation entre l'ouverture et la clôture de
+`change_percent` correspond à la variation entre l'ouverture et la clôture de
 la bougie.
 
 ## Export JSON
+
+**Fichiers concernés :**
+
+- [`createChartJsonExport`](../../web/src/lib/chart-analytics.ts#L58) : document JSON versionné ;
+- [`downloadChartData`](../../web/src/components/AssetChart.tsx#L917) : création du `Blob` et téléchargement.
 
 Le bouton `Export JSON` génère un document versionné :
 
@@ -262,6 +328,10 @@ correspond exactement au filtre actuellement visible.
 
 ## États gérés
 
+**Fichier concerné :**
+
+- [`AssetChart.tsx`](../../web/src/components/AssetChart.tsx#L575) : états de chargement, erreur, données absentes et conservation du dernier graphique valide.
+
 Le graphique gère :
 
 - chargement ;
@@ -271,6 +341,12 @@ Le graphique gère :
 - préservation du graphique lors d'un échec de rafraîchissement en arrière-plan.
 
 ## Responsive et accessibilité
+
+**Fichiers concernés :**
+
+- [`AssetChart.tsx`](../../web/src/components/AssetChart.tsx#L1017) : attributs ARIA et contrôles mobiles ;
+- [`globals.css`](../../web/src/app/globals.css#L1253) : mise en page desktop du graphique ;
+- [`globals.css`, media mobile](../../web/src/app/globals.css#L1855) : repli des contrôles et dimensions compactes.
 
 Sur mobile :
 
@@ -285,28 +361,12 @@ Sur mobile :
 Les contrôles utilisent des boutons natifs, `aria-pressed` pour les périodes et
 des labels accessibles pour les visualisations et les exports.
 
-## Fichiers principaux
-
-| Fichier | Rôle |
-|---|---|
-| `web/src/components/AssetChart.tsx` | État du graphique, SVG, interactions, filtres, polling et téléchargement |
-| `web/src/components/DashboardClient.tsx` | Sélection de l'asset, période active et intégration dans le dashboard |
-| `web/src/lib/analysis-data.ts` | Contrat des bougies, validation, normalisation et appels au service `analysis` |
-| `web/src/lib/chart-analytics.ts` | Génération CSV/JSON et noms de fichiers |
-| `web/src/lib/chart-layout.ts` | Calcul robuste de la largeur des bougies |
-| `web/src/lib/market-calendar.ts` | Calcul de la prochaine ouverture régulière américaine |
-| `web/src/app/api/assets/candles/route.ts` | Endpoint authentifié retournant les bougies |
-| `web/src/app/api/assets/candles/meta/route.ts` | Endpoint léger de contrôle de fraîcheur |
-| `analysis/src/market_data_views.py` | Choix des caches et conversion en bougies OHLCV |
-| `analysis/src/market_data_history.py` | Lecture et composition des historiques |
-| `analysis/src/scheduler.py` | Mise à jour périodique des caches |
-| `tests/scripts/test-chart-export.mjs` | Tests des exports, du calendrier et du layout |
-
-La largeur des bougies utilise l'espacement médian entre les points. En `1D`,
-elle est plafonnée pour éviter des bougies trop larges en début de séance ou
-lorsque le fournisseur retourne momentanément peu de points.
-
 ## Tests automatisés
+
+**Fichiers concernés :**
+
+- [`test-chart-export.mjs`](../../tests/scripts/test-chart-export.mjs) : scénarios automatisés du module ;
+- [`Makefile`](../../Makefile#L85) : commande `make test-analytics-dashboard`.
 
 Commande :
 
@@ -349,20 +409,17 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T web npm r
 8. exporter le CSV et contrôler les colonnes et la période filtrée ;
 9. exporter le JSON et contrôler `format`, `version`, `symbol` et `range` ;
 10. changer d'asset et vérifier que le nom et le contenu des exports changent ;
-11. réduire la fenêtre pour vérifier les contrôles mobiles.
+11. dans l'onglet réseau, attendre un rafraîchissement et vérifier que
+    `/candles/meta` est appelé avant un éventuel rechargement de `/candles` ;
+12. réduire la fenêtre pour vérifier les contrôles mobiles.
 
 ## Limites assumées
 
 - Le dashboard utilise du polling et non WebSocket/SSE.
 - Les exports disponibles sont CSV et JSON, pas PDF.
-- Le filtre début/fin reste borné par la période produit chargée.
-- Les visualisations sont une courbe et des bougies OHLC ; il n'existe pas de
-  graphique en barres ou en secteurs.
 - La prochaine ouverture utilise le calendrier régulier américain. Cette
   indication n'est pas adaptée au Bitcoin et à Ethereum, qui cotent 24 h/24, ni
   à tous les calendriers internationaux ou contrats futures.
-- Les tests automatisés ne réalisent pas de comparaison de captures d'écran
-  multi-navigateurs.
 
 Ces limites ne retirent aucun des parcours principaux du module : plusieurs
 visualisations interactives, filtres, périodes, mises à jour et export sont

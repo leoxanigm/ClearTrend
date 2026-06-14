@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// Return range performance for the watchlist as one authenticated batch response.
 export async function GET(req: Request) {
   const { response } = await requireApiIdentity(req);
 
@@ -21,6 +22,7 @@ export async function GET(req: Request) {
     url.searchParams.get("range")?.trim().toUpperCase() ?? "1D";
   const rawSymbols = url.searchParams.get("symbols") ?? "";
   const range: ChartRange = isChartRange(rangeParam) ? rangeParam : "1D";
+  // Shared normalization removes duplicates and unsupported symbol characters.
   const symbols = normalizeWatchlistSymbols(rawSymbols.split(","));
 
   try {

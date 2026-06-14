@@ -51,6 +51,13 @@ type ChartResponse = {
   updatedAt?: string | null;
 };
 
+type ChartMetaResponse = {
+  symbol?: string;
+  updatedAt?: string | null;
+};
+
+type ChartRefreshResult = "changed" | "failed" | "unchanged";
+
 type ChartSize = {
   height: number;
   padding: {
@@ -109,7 +116,7 @@ const compactChartSize: ChartSize = {
 const chartMetaPollIntervalMs = 5 * 60 * 1000;
 // Poll shortly after expected backend cache refresh boundaries.
 const chartMetaPollOffsetMs = 30 * 1000;
-// Failed or unchanged checks retry sooner than a full refresh interval.
+// Failed checks retry sooner than a normal refresh interval.
 const chartRetryPollMs = 30 * 1000;
 const regularStockSessionMs = 6.5 * 60 * 60 * 1000;
 
@@ -144,6 +151,27 @@ async function fetchChartCandles(
   }
 
   return (await response.json()) as ChartResponse;
+}
+
+// Check cache freshness without transferring the complete candle history.
+async function fetchChartMeta(
+  symbol: string,
+  range: ChartRange,
+  signal?: AbortSignal
+) {
+  const response = await fetch(
+    `/api/assets/candles/meta?symbol=${encodeURIComponent(symbol)}&range=${range}`,
+    {
+      cache: "no-store",
+      signal,
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Chart metadata request failed");
+  }
+
+  return (await response.json()) as ChartMetaResponse;
 }
 
 function getNextChartPollDelayMs(
@@ -699,10 +727,10 @@ export function AssetChart({
     let isDisposed = false;
     let timeoutId: number | null = null;
 
-    async function refreshCandlesIfNeeded() {
+    async function refreshCandlesIfNeeded(): Promise<ChartRefreshResult> {
       // Hidden tabs postpone work until the visibility handler runs.
       if (document.hidden) {
-        return true;
+        return "unchanged";
       }
 
       activeController?.abort();
@@ -710,24 +738,47 @@ export function AssetChart({
       activeController = controller;
 
       try {
+        const previousUpdatedAt = updatedAtRef.current;
+        const metadata = await fetchChartMeta(
+          requestedSymbol,
+          range,
+          controller.signal
+        );
+
+        if (isDisposed) {
+          return "unchanged";
+        }
+
+        // A matching timestamp proves that the browser already has this cache version.
+        if (
+          previousUpdatedAt &&
+          metadata.updatedAt &&
+          metadata.updatedAt === previousUpdatedAt
+        ) {
+          return "unchanged";
+        }
+
+        // Missing or changed metadata falls back to the canonical full response.
         const body = await fetchChartCandles(
           requestedSymbol,
           range,
           controller.signal
         );
         if (isDisposed) {
-          return true;
+          return "unchanged";
         }
 
-        const previousUpdatedAt = updatedAtRef.current;
         applyChartResponse(body, requestedSymbol);
 
-        // Changed data resumes normal cadence; unchanged data retries sooner.
-        return Boolean(body.updatedAt && body.updatedAt !== previousUpdatedAt);
-      } catch {
+        return body.updatedAt !== previousUpdatedAt ? "changed" : "unchanged";
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return "unchanged";
+        }
+
         // Background polling should never replace visible chart data with an
         // error state. The next interval can try again.
-        return false;
+        return "failed";
       }
     }
 
@@ -744,9 +795,11 @@ export function AssetChart({
 
       timeoutId = window.setTimeout(() => {
         timeoutId = null;
-        void refreshCandlesIfNeeded().then((changed) => {
+        void refreshCandlesIfNeeded().then((result) => {
           scheduleNextRefresh(
-            changed ? getNextChartPollDelayMs(chartPollIntervalMs) : chartRetryPollMs
+            result === "failed"
+              ? chartRetryPollMs
+              : getNextChartPollDelayMs(chartPollIntervalMs)
           );
         });
       }, delayMs);

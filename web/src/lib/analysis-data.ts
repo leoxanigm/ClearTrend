@@ -61,6 +61,7 @@ type AnalysisTickersResponse = {
   tickers?: unknown;
 };
 
+// Public types below are normalized contracts safe for React components.
 export type AnalysisAssetSnapshot = {
   dayChange: number | null;
   dayChangePercent: number | null;
@@ -129,6 +130,7 @@ const analysisJsonCache = new Map<
 >();
 const analysisJsonInFlight = new Map<string, Promise<unknown>>();
 
+// Resolve every internal analysis request from the Docker service base URL.
 function getAnalysisUrl(path: string) {
   const analysisUrl = process.env.ANALYSIS_URL;
 
@@ -139,6 +141,7 @@ function getAnalysisUrl(path: string) {
   return new URL(path, analysisUrl);
 }
 
+// Runtime readers reject malformed provider values before they enter UI state.
 function readString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -170,6 +173,7 @@ function getTimestamp(datetime: string) {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
+// Convert the compact FastAPI OHLCV shape into the frontend candle contract.
 function normalizeAnalysisCandle(value: AnalysisCandle): ChartCandle | null {
   const close = readNumber(value.c);
   const datetime = readString(value.t);
@@ -208,6 +212,7 @@ function normalizeAnalysisCandle(value: AnalysisCandle): ChartCandle | null {
   };
 }
 
+// Shared internal fetcher provides timeouts, short caching, and in-flight deduplication.
 async function fetchAnalysisJson(
   path: string,
   params?: Record<string, string>,
@@ -236,6 +241,7 @@ async function fetchAnalysisJson(
   const inFlight = analysisJsonInFlight.get(cacheKey);
 
   if (inFlight) {
+    // Concurrent users asking for the same resource share one upstream request.
     return inFlight;
   }
 
@@ -272,6 +278,7 @@ async function fetchAnalysisJson(
   }
 }
 
+// Large watchlists are split to keep query strings and analysis work bounded.
 function splitIntoBatches<T>(values: T[], batchSize: number) {
   const batches: T[][] = [];
 
@@ -282,6 +289,7 @@ function splitIntoBatches<T>(values: T[], batchSize: number) {
   return batches;
 }
 
+// Process a small number of batches concurrently and keep successful partial results.
 async function loadAnalysisInBatches<T>(
   symbols: string[],
   loader: (batchSymbols: string[]) => Promise<T[]>
@@ -314,6 +322,7 @@ async function loadAnalysisInBatches<T>(
   return values;
 }
 
+// Load, normalize, sort, and reject an unusable candle response.
 async function fetchAnalysisCandlesByParams(
   symbol: string,
   params: Record<string, string>
@@ -381,6 +390,7 @@ export async function fetchAnalysisCandles(symbol: string, range: ChartRange) {
   };
 }
 
+// Metadata requests support lightweight browser polling without OHLCV transfer.
 export async function fetchAnalysisCandlesMeta(
   symbol: string,
   range: ChartRange
