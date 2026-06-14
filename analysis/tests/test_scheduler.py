@@ -4,8 +4,8 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
-from src.market_data_history import build_daily_history
-from src.ml.prediction_store import refresh_all_predictions
+from src.market_data.history import build_daily_history
+from src.ml.store import refresh_all_predictions
 from src.scheduler import refresh_daily_history_if_needed
 
 

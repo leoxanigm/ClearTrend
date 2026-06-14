@@ -2,11 +2,11 @@ import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 
-from .market_data_config import (
+from .market_data.config import (
     ACTIVE_INTRADAY_REFRESH_DELAY,
     INTRADAY_CANDLE_DURATION,
 )
-from .app_settings import get_finance_refresh_rate_duration
+from .config import get_finance_refresh_rate_duration
 from .market_data import (
     build_daily_history,
     build_intraday_history,
@@ -15,7 +15,7 @@ from .market_data import (
     latest_weekly_intraday_source_date,
     refresh_weekly_intraday_from_1d,
 )
-from .ml.prediction_store import refresh_all_predictions
+from .ml.store import refresh_all_predictions
 
 logger = logging.getLogger(__name__)
 

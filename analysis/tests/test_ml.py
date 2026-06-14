@@ -10,10 +10,10 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 
-from src.ml.attention_signal import score_attention_record
-from src.ml.historical_regression import analyze_history, analyze_history_frame
-from src.ml.reddit_sentiment import _qwen_schema, parse_reddit_feed
-from src.ml.prediction_store import (
+from src.ml.attention import score_attention_record
+from src.ml.regression import analyze_history, analyze_history_frame
+from src.ml.sentiment import _qwen_schema, parse_reddit_feed
+from src.ml.store import (
     MODEL_VERSION,
     load_prediction,
     prediction_is_current,
@@ -21,7 +21,7 @@ from src.ml.prediction_store import (
     select_prediction_horizon,
     train_asset_prediction,
 )
-from src.ml.trend_ensemble import combine_signals
+from src.ml.ensemble import combine_signals
 
 
 def synthetic_market_frame(rows: int = 900) -> pd.DataFrame:
@@ -75,7 +75,7 @@ class HistoricalRegressionTests(unittest.TestCase):
         self.assertNotEqual(result["asOf"], today.date().isoformat())
 
     @patch(
-        "src.ml.historical_regression.load_daily_history",
+        "src.ml.regression.load_daily_history",
         return_value=synthetic_market_frame(),
     )
     def test_crypto_horizons_use_calendar_days(self, _) -> None:
@@ -244,7 +244,7 @@ class PredictionStoreTests(unittest.TestCase):
                 "BTC-USD",
             )
 
-    @patch("src.ml.prediction_store.market_data_as_of")
+    @patch("src.ml.store.market_data_as_of")
     @patch.dict("os.environ", {"QWEN_API_KEY": "configured"})
     def test_failed_social_attempt_is_not_repeated_the_same_day(
         self,
@@ -270,7 +270,7 @@ class PredictionStoreTests(unittest.TestCase):
 
         self.assertTrue(prediction_is_current("NVDA", payload))
 
-    @patch("src.ml.prediction_store.market_data_as_of")
+    @patch("src.ml.store.market_data_as_of")
     @patch.dict("os.environ", {"QWEN_API_KEY": "configured"})
     def test_missing_social_attempt_is_retried_at_startup(
         self,
@@ -288,9 +288,9 @@ class PredictionStoreTests(unittest.TestCase):
 
         self.assertFalse(prediction_is_current("NVDA", payload))
 
-    @patch("src.ml.prediction_store.prediction_is_current")
-    @patch("src.ml.prediction_store.market_data_as_of")
-    @patch("src.ml.prediction_store.analyze_asset")
+    @patch("src.ml.store.prediction_is_current")
+    @patch("src.ml.store.market_data_as_of")
+    @patch("src.ml.store.analyze_asset")
     def test_training_is_skipped_when_daily_snapshot_is_current(
         self,
         analyze_asset_mock,

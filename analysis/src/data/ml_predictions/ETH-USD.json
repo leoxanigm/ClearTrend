@@ -1,0 +1,217 @@
+{
+  "ticker": "ETH-USD",
+  "sourceTicker": "ETH-USD",
+  "generatedAt": "2026-06-14T17:38:04.046447+00:00",
+  "predictions": [
+    {
+      "horizon": "1D",
+      "score": 0.6092,
+      "trend": "bullish",
+      "confidence": 0.3252,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.55,
+        "sentiment": 0.3477
+      },
+      "signalAgreement": 0.3772,
+      "components": {
+        "historical": 0.4886,
+        "sentiment": 0.8,
+        "attention": 0.6503
+      },
+      "estimatedPrice": 1678.2529,
+      "estimatedReturn": -0.001168,
+      "priceInterval": {
+        "lower": 1562.3179,
+        "upper": 1802.7912
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1D",
+        "marketCalendar": "continuous",
+        "observationCount": 1,
+        "sessions": 1,
+        "asOf": "2026-06-13",
+        "currentPrice": 1680.2146,
+        "predictedPrice": 1678.2529,
+        "predictedReturn": -0.001168,
+        "score": 0.4886,
+        "confidence": 0.26,
+        "priceInterval": {
+          "lower": 1562.3179,
+          "upper": 1802.7912
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5026,
+          "maeReturn": 0.025032,
+          "baselineMaeReturn": 0.024726,
+          "residualStd": 0.036522,
+          "samples": 1825
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-23",
+          "targetDate": "2026-05-24",
+          "startPrice": 2115.9514,
+          "predictedPrice": 2111.4262,
+          "actualPrice": 2097.9939,
+          "predictedReturn": -0.002141,
+          "actualReturn": -0.008523,
+          "absolutePriceErrorPercent": 0.64,
+          "directionCorrect": true
+        }
+      }
+    },
+    {
+      "horizon": "1W",
+      "score": 0.5557,
+      "trend": "neutral",
+      "confidence": 0.2676,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.65,
+        "sentiment": 0.2704
+      },
+      "signalAgreement": 0.308,
+      "components": {
+        "historical": 0.454,
+        "sentiment": 0.8,
+        "attention": 0.6503
+      },
+      "estimatedPrice": 1659.2667,
+      "estimatedReturn": -0.012546,
+      "priceInterval": {
+        "lower": 1370.7258,
+        "upper": 2008.5462
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1W",
+        "marketCalendar": "continuous",
+        "observationCount": 7,
+        "sessions": 7,
+        "asOf": "2026-06-13",
+        "currentPrice": 1680.2146,
+        "predictedPrice": 1659.2667,
+        "predictedReturn": -0.012546,
+        "score": 0.454,
+        "confidence": 0.236,
+        "priceInterval": {
+          "lower": 1370.7258,
+          "upper": 2008.5462
+        },
+        "metrics": {
+          "directionalAccuracy": 0.4898,
+          "maeReturn": 0.070128,
+          "baselineMaeReturn": 0.068555,
+          "residualStd": 0.097467,
+          "samples": 1819
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-23",
+          "targetDate": "2026-05-30",
+          "startPrice": 2115.9514,
+          "predictedPrice": 2111.867,
+          "actualPrice": 2019.4583,
+          "predictedReturn": -0.001932,
+          "actualReturn": -0.046675,
+          "absolutePriceErrorPercent": 4.576,
+          "directionCorrect": true
+        }
+      }
+    },
+    {
+      "horizon": "1M",
+      "score": 0.5246,
+      "trend": "neutral",
+      "confidence": 0.1907,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.8,
+        "sentiment": 0.1545
+      },
+      "signalAgreement": 0.3428,
+      "components": {
+        "historical": 0.4714,
+        "sentiment": 0.8,
+        "attention": 0.6503
+      },
+      "estimatedPrice": 1653.3021,
+      "estimatedReturn": -0.016147,
+      "priceInterval": {
+        "lower": 1069.5041,
+        "upper": 2555.7712
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1M",
+        "marketCalendar": "continuous",
+        "observationCount": 30,
+        "sessions": 30,
+        "asOf": "2026-06-13",
+        "currentPrice": 1680.2146,
+        "predictedPrice": 1653.3021,
+        "predictedReturn": -0.016147,
+        "score": 0.4714,
+        "confidence": 0.1772,
+        "priceInterval": {
+          "lower": 1069.5041,
+          "upper": 2555.7712
+        },
+        "metrics": {
+          "directionalAccuracy": 0.4622,
+          "maeReturn": 0.171967,
+          "baselineMaeReturn": 0.158251,
+          "residualStd": 0.222234,
+          "samples": 1796
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-14",
+          "targetDate": "2026-06-13",
+          "startPrice": 2280.9348,
+          "predictedPrice": 2239.9921,
+          "actualPrice": 1680.2146,
+          "predictedReturn": -0.018113,
+          "actualReturn": -0.305664,
+          "absolutePriceErrorPercent": 33.316,
+          "directionCorrect": true
+        }
+      }
+    }
+  ],
+  "social": {
+    "sentiment": {
+      "available": true,
+      "source": "reddit_rss",
+      "periodDays": 7,
+      "postCount": 26,
+      "score": 0.8,
+      "agreement": 1.0,
+      "bullishCount": 3,
+      "neutralCount": 2,
+      "bearishCount": 1,
+      "model": "gemma3:1b"
+    },
+    "attention": {
+      "available": true,
+      "source": "apewisdom",
+      "attention": 0.6503,
+      "mentions": 63,
+      "mentions24hAgo": 71,
+      "mentionGrowth": -0.1127,
+      "rank": 4,
+      "rank24hAgo": 16,
+      "matchedTicker": "ETH.X"
+    }
+  },
+  "disclaimer": "Experimental trend estimate for educational use; not financial advice.",
+  "schemaVersion": 1,
+  "marketDataAsOf": "2026-06-13",
+  "modelVersion": "ridge100-reddit50-daily-social-calendar-v8",
+  "socialAttemptedAt": "2026-06-14T17:38:04.046454+00:00",
+  "socialEnabled": true,
+  "trainedAt": "2026-06-14T17:38:04.046454+00:00",
+  "trainingMode": "daily_backend_job"
+}

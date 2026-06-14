@@ -13,12 +13,12 @@ from .market_data import (
     snapshot_payloads,
 )
 from .scheduler import run_market_data_scheduler
-from .ml.prediction_store import (
+from .ml.store import (
     load_prediction,
     prediction_status,
     select_prediction_horizon,
 )
-from .ml.trend_ensemble import SUPPORTED_TICKERS
+from .ml.ensemble import SUPPORTED_TICKERS
 
 
 @asynccontextmanager
