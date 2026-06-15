@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime
 
 from .market_data import (
@@ -22,6 +23,8 @@ from .config import get_finance_refresh_rate_duration
 from .market_data.fetcher import process_tickers
 from .market_data.storage import latest_file
 from .ml.store import refresh_all_predictions
+
+logger = logging.getLogger(__name__)
 
 
 def _refreshed_today(refresh_date: date | None) -> bool:
@@ -49,20 +52,26 @@ def _build_missing_long_history() -> None:
 
 
 def build_missing_or_stale_history() -> None:
+    logger.info("Warmup started...")
     weekly_refreshed = False
     intraday_refreshed = False
 
     # Warm daily history before the API starts when the cache is missing/stale.
     if not _refreshed_today(latest_daily_csv_date()):
+        logger.info("Downloading full universe")
         build_daily_history()
+        logger.info("Daily history download complete")
     else:
+        logger.info("Checking for missing long-history tickers")
         _build_missing_long_history()
 
     # 1W hourly cache is rebuilt from yfinance once per day, then completed
     # from the configured 1D intraday cache below.
     if not _refreshed_today(latest_weekly_intraday_source_date()):
+        logger.info("Building weekly intraday history")
         build_weekly_intraday_history()
         weekly_refreshed = True
+        logger.info("Weekly intraday history complete")
 
     refresh_duration = get_finance_refresh_rate_duration()
     intraday_interval = intraday_interval_for_refresh_seconds(
@@ -72,15 +81,20 @@ def build_missing_or_stale_history() -> None:
 
     # Warm intraday cache too, otherwise the 1D dashboard range starts empty.
     if intraday_age is None or intraday_age >= refresh_duration:
+        logger.info("Building intraday history (1D chart cache, interval=%s)", intraday_interval)
         build_intraday_history(interval=intraday_interval)
         intraday_refreshed = True
+        logger.info("Intraday history complete.")
 
     if weekly_refreshed or intraday_refreshed:
+        logger.info("Merging intraday data into weekly cache")
         refresh_weekly_intraday_from_1d(interval=intraday_interval)
 
     # Train once after startup data warmup. Existing snapshots are skipped when
     # their asset already uses the latest available daily candle.
+    logger.info("Starting ML prediction refresh")
     refresh_all_predictions()
+    logger.info("Warmup complete")
 
 
 if __name__ == "__main__":

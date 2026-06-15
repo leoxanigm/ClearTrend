@@ -261,7 +261,9 @@ export function DashboardClient({
               })}
             </Tooltip>
           )
-        : t("mlUnavailable");
+        : mlAnalysis.status === "ready"
+          ? "—"
+          : t("mlUnavailable");
   const mlSentimentDescription =
     sentimentScore !== null && mlSentiment
       ? (
@@ -428,25 +430,21 @@ export function DashboardClient({
   useEffect(() => {
     const symbol = selectedAsset?.symbol;
     const controller = new AbortController();
-    // Deferring the request avoids synchronous state changes during effect setup.
-    const timeoutId = window.setTimeout(() => {
-      if (!symbol || !supportsMlAnalysis(symbol)) {
-        setMlAnalysis({ status: "idle", value: null });
-        return;
-      }
+    let retryTimeoutId: number | undefined;
 
-      setMlAnalysis({ status: "loading", value: null });
-
+    const attemptFetch = () => {
       void fetch(
         `/api/ml/analyse?symbol=${encodeURIComponent(
-          symbol
+          symbol!
         )}&horizon=${mlHorizon}`,
-        {
-          signal: controller.signal,
-        }
+        { signal: controller.signal }
       )
         .then(async (response) => {
           if (!response.ok) {
+            if (response.status === 503) {
+              retryTimeoutId = window.setTimeout(attemptFetch, 15_000);
+              return;
+            }
             setMlAnalysis({ status: "unavailable", value: null });
             return;
           }
@@ -465,10 +463,22 @@ export function DashboardClient({
 
           setMlAnalysis({ status: "unavailable", value: null });
         });
+    };
+
+    // Deferring the request avoids synchronous state changes during effect setup.
+    const timeoutId = window.setTimeout(() => {
+      if (!symbol || !supportsMlAnalysis(symbol)) {
+        setMlAnalysis({ status: "idle", value: null });
+        return;
+      }
+
+      setMlAnalysis({ status: "loading", value: null });
+      attemptFetch();
     }, 0);
 
     return () => {
       window.clearTimeout(timeoutId);
+      window.clearTimeout(retryTimeoutId);
       controller.abort();
     };
   }, [mlHorizon, selectedAsset?.symbol]);

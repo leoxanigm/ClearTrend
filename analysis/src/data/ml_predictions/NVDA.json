@@ -1,0 +1,211 @@
+{
+  "ticker": "NVDA",
+  "sourceTicker": "NVDA",
+  "generatedAt": "2026-06-15T16:05:55.376223+00:00",
+  "predictions": [
+    {
+      "horizon": "1D",
+      "score": 0.51,
+      "trend": "neutral",
+      "confidence": 0.2226,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.55,
+        "sentiment": 0.0
+      },
+      "signalAgreement": null,
+      "components": {
+        "historical": 0.51,
+        "sentiment": null,
+        "attention": 0.7661
+      },
+      "estimatedPrice": 205.4011,
+      "estimatedReturn": 0.001028,
+      "priceInterval": {
+        "lower": 192.7834,
+        "upper": 218.8445
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1D",
+        "marketCalendar": "exchange",
+        "observationCount": 1,
+        "sessions": 1,
+        "asOf": "2026-06-12",
+        "currentPrice": 205.19,
+        "predictedPrice": 205.4011,
+        "predictedReturn": 0.001028,
+        "score": 0.51,
+        "confidence": 0.2782,
+        "priceInterval": {
+          "lower": 192.7834,
+          "upper": 218.8445
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5062,
+          "maeReturn": 0.023708,
+          "baselineMaeReturn": 0.023648,
+          "residualStd": 0.032346,
+          "samples": 1254
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-13",
+          "targetDate": "2026-05-14",
+          "startPrice": 225.83,
+          "predictedPrice": 226.8626,
+          "actualPrice": 235.74,
+          "predictedReturn": 0.004562,
+          "actualReturn": 0.042947,
+          "absolutePriceErrorPercent": 3.766,
+          "directionCorrect": true
+        }
+      }
+    },
+    {
+      "horizon": "1W",
+      "score": 0.5133,
+      "trend": "neutral",
+      "confidence": 0.2654,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.65,
+        "sentiment": 0.0
+      },
+      "signalAgreement": null,
+      "components": {
+        "historical": 0.5133,
+        "sentiment": null,
+        "attention": 0.7661
+      },
+      "estimatedPrice": 205.8163,
+      "estimatedReturn": 0.003048,
+      "priceInterval": {
+        "lower": 179.6604,
+        "upper": 235.7801
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1W",
+        "marketCalendar": "exchange",
+        "observationCount": 5,
+        "sessions": 5,
+        "asOf": "2026-06-12",
+        "currentPrice": 205.19,
+        "predictedPrice": 205.8163,
+        "predictedReturn": 0.003048,
+        "score": 0.5133,
+        "confidence": 0.3317,
+        "priceInterval": {
+          "lower": 179.6604,
+          "upper": 235.7801
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5337,
+          "maeReturn": 0.054695,
+          "baselineMaeReturn": 0.053992,
+          "residualStd": 0.069345,
+          "samples": 1250
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-13",
+          "targetDate": "2026-05-20",
+          "startPrice": 225.83,
+          "predictedPrice": 229.6924,
+          "actualPrice": 223.47,
+          "predictedReturn": 0.016959,
+          "actualReturn": -0.010505,
+          "absolutePriceErrorPercent": 2.784,
+          "directionCorrect": false
+        }
+      }
+    },
+    {
+      "horizon": "1M",
+      "score": 0.5791,
+      "trend": "bullish",
+      "confidence": 0.3296,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.8,
+        "sentiment": 0.0
+      },
+      "signalAgreement": null,
+      "components": {
+        "historical": 0.5791,
+        "sentiment": null,
+        "attention": 0.7661
+      },
+      "estimatedPrice": 213.0349,
+      "estimatedReturn": 0.03752,
+      "priceInterval": {
+        "lower": 160.1876,
+        "upper": 283.317
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1M",
+        "marketCalendar": "exchange",
+        "observationCount": 21,
+        "sessions": 21,
+        "asOf": "2026-06-12",
+        "currentPrice": 205.19,
+        "predictedPrice": 213.0349,
+        "predictedReturn": 0.03752,
+        "score": 0.5791,
+        "confidence": 0.412,
+        "priceInterval": {
+          "lower": 160.1876,
+          "upper": 283.317
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5795,
+          "maeReturn": 0.116976,
+          "baselineMaeReturn": 0.113499,
+          "residualStd": 0.145464,
+          "samples": 1234
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-13",
+          "targetDate": "2026-06-12",
+          "startPrice": 225.83,
+          "predictedPrice": 238.224,
+          "actualPrice": 205.19,
+          "predictedReturn": 0.053429,
+          "actualReturn": -0.095846,
+          "absolutePriceErrorPercent": 16.099,
+          "directionCorrect": false
+        }
+      }
+    }
+  ],
+  "social": {
+    "sentiment": {
+      "available": false,
+      "collectedPostCount": 0,
+      "reason": "429 Client Error: Too Many Requests for url: https://old.reddit.com/search.rss?limit=100&q=%22NVDA%22+OR+%22Nvidia+stock%22&sort=new&t=week&type=link",
+      "postCount": 0
+    },
+    "attention": {
+      "available": true,
+      "source": "apewisdom",
+      "attention": 0.7661,
+      "mentions": 106,
+      "mentions24hAgo": 29,
+      "mentionGrowth": 2.6552,
+      "rank": 8,
+      "rank24hAgo": 11,
+      "matchedTicker": "NVDA"
+    }
+  },
+  "disclaimer": "Experimental trend estimate for educational use; not financial advice.",
+  "schemaVersion": 1,
+  "marketDataAsOf": "2026-06-12",
+  "modelVersion": "ridge100-reddit50-daily-social-calendar-v8",
+  "socialAttemptedAt": "2026-06-15T16:05:55.376229+00:00",
+  "socialEnabled": true,
+  "trainedAt": "2026-06-15T16:05:55.376229+00:00",
+  "trainingMode": "daily_backend_job"
+}

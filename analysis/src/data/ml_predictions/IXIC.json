@@ -1,0 +1,217 @@
+{
+  "ticker": "IXIC",
+  "sourceTicker": "^IXIC",
+  "generatedAt": "2026-06-15T16:01:48.762045+00:00",
+  "predictions": [
+    {
+      "horizon": "1D",
+      "score": 0.5899,
+      "trend": "bullish",
+      "confidence": 0.3155,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.55,
+        "sentiment": 0.3948
+      },
+      "signalAgreement": 0.6218,
+      "components": {
+        "historical": 0.5109,
+        "sentiment": 0.7,
+        "attention": 0.8113
+      },
+      "estimatedPrice": 25904.0667,
+      "estimatedReturn": 0.000588,
+      "priceInterval": {
+        "lower": 25185.1678,
+        "upper": 26643.4863
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1D",
+        "marketCalendar": "exchange",
+        "observationCount": 1,
+        "sessions": 1,
+        "asOf": "2026-06-12",
+        "currentPrice": 25888.8398,
+        "predictedPrice": 25904.0667,
+        "predictedReturn": 0.000588,
+        "score": 0.5109,
+        "confidence": 0.3209,
+        "priceInterval": {
+          "lower": 25185.1678,
+          "upper": 26643.4863
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5206,
+          "maeReturn": 0.010361,
+          "baselineMaeReturn": 0.010303,
+          "residualStd": 0.01436,
+          "samples": 1254
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-13",
+          "targetDate": "2026-05-14",
+          "startPrice": 26402.3398,
+          "predictedPrice": 26389.0405,
+          "actualPrice": 26635.2207,
+          "predictedReturn": -0.000504,
+          "actualReturn": 0.008782,
+          "absolutePriceErrorPercent": 0.924,
+          "directionCorrect": false
+        }
+      }
+    },
+    {
+      "horizon": "1W",
+      "score": 0.5492,
+      "trend": "neutral",
+      "confidence": 0.2758,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.65,
+        "sentiment": 0.3071
+      },
+      "signalAgreement": 0.5558,
+      "components": {
+        "historical": 0.4779,
+        "sentiment": 0.7,
+        "attention": 0.8113
+      },
+      "estimatedPrice": 25819.8016,
+      "estimatedReturn": -0.00267,
+      "priceInterval": {
+        "lower": 24318.0501,
+        "upper": 27414.2932
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1W",
+        "marketCalendar": "exchange",
+        "observationCount": 5,
+        "sessions": 5,
+        "asOf": "2026-06-12",
+        "currentPrice": 25888.8398,
+        "predictedPrice": 25819.8016,
+        "predictedReturn": -0.00267,
+        "score": 0.4779,
+        "confidence": 0.2888,
+        "priceInterval": {
+          "lower": 24318.0501,
+          "upper": 27414.2932
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5,
+          "maeReturn": 0.023773,
+          "baselineMaeReturn": 0.023315,
+          "residualStd": 0.030573,
+          "samples": 1250
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-13",
+          "targetDate": "2026-05-20",
+          "startPrice": 26402.3398,
+          "predictedPrice": 26410.9127,
+          "actualPrice": 26270.3594,
+          "predictedReturn": 0.000325,
+          "actualReturn": -0.005011,
+          "absolutePriceErrorPercent": 0.535,
+          "directionCorrect": false
+        }
+      }
+    },
+    {
+      "horizon": "1M",
+      "score": 0.5361,
+      "trend": "neutral",
+      "confidence": 0.2717,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.8,
+        "sentiment": 0.1755
+      },
+      "signalAgreement": 0.6004,
+      "components": {
+        "historical": 0.5002,
+        "sentiment": 0.7,
+        "attention": 0.8113
+      },
+      "estimatedPrice": 25889.9057,
+      "estimatedReturn": 4.1e-05,
+      "priceInterval": {
+        "lower": 22959.7603,
+        "upper": 29193.9989
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1M",
+        "marketCalendar": "exchange",
+        "observationCount": 21,
+        "sessions": 21,
+        "asOf": "2026-06-12",
+        "currentPrice": 25888.8398,
+        "predictedPrice": 25889.9057,
+        "predictedReturn": 4.1e-05,
+        "score": 0.5002,
+        "confidence": 0.3024,
+        "priceInterval": {
+          "lower": 22959.7603,
+          "upper": 29193.9989
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5063,
+          "maeReturn": 0.051283,
+          "baselineMaeReturn": 0.048085,
+          "residualStd": 0.061281,
+          "samples": 1234
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-13",
+          "targetDate": "2026-06-12",
+          "startPrice": 26402.3398,
+          "predictedPrice": 26319.5956,
+          "actualPrice": 25888.8398,
+          "predictedReturn": -0.003139,
+          "actualReturn": -0.019641,
+          "absolutePriceErrorPercent": 1.664,
+          "directionCorrect": true
+        }
+      }
+    }
+  ],
+  "social": {
+    "sentiment": {
+      "available": true,
+      "source": "reddit_rss",
+      "periodDays": 7,
+      "postCount": 10,
+      "score": 0.7,
+      "agreement": 0.8,
+      "bullishCount": 3,
+      "neutralCount": 3,
+      "bearishCount": 1,
+      "model": "gemma3:1b"
+    },
+    "attention": {
+      "available": true,
+      "source": "apewisdom",
+      "attention": 0.8113,
+      "mentions": 127,
+      "mentions24hAgo": 42,
+      "mentionGrowth": 2.0238,
+      "rank": 6,
+      "rank24hAgo": 6,
+      "matchedTicker": "QQQ"
+    }
+  },
+  "disclaimer": "Experimental trend estimate for educational use; not financial advice.",
+  "schemaVersion": 1,
+  "marketDataAsOf": "2026-06-12",
+  "modelVersion": "ridge100-reddit50-daily-social-calendar-v8",
+  "socialAttemptedAt": "2026-06-15T16:01:48.762052+00:00",
+  "socialEnabled": true,
+  "trainedAt": "2026-06-15T16:01:48.762052+00:00",
+  "trainingMode": "daily_backend_job"
+}

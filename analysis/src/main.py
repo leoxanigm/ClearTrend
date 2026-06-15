@@ -1,7 +1,15 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)-9s %(name)s - %(message)s",
+)
+
 from fastapi import FastAPI, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 
 from .market_data import (
     get_candles,
@@ -15,6 +23,7 @@ from .market_data import (
 )
 from .config import get_finance_refresh_rate_duration
 from .market_data.config import intraday_interval_for_refresh_seconds
+from .database_builder import build_missing_or_stale_history
 from .scheduler import run_market_data_scheduler
 from .ml.store import (
     load_prediction,
@@ -26,17 +35,20 @@ from .ml.ensemble import SUPPORTED_TICKERS
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Own the background market scheduler for the lifetime of FastAPI."""
-    # Run cache refreshes in the background; Docker still performs an initial
-    # warmup through database_builder before uvicorn starts.
+    # Own the background market scheduler for the lifetime of FastAPI
+    logger.info("Analysis service ready, starting background warmup and scheduler")
+    warmup_task = asyncio.create_task(
+        asyncio.to_thread(build_missing_or_stale_history)
+    )
     refresh_task = asyncio.create_task(run_market_data_scheduler())
 
     try:
         yield
     finally:
         refresh_task.cancel()
+        warmup_task.cancel()
         try:
-            await refresh_task
+            await asyncio.gather(refresh_task, warmup_task, return_exceptions=True)
         except asyncio.CancelledError:
             pass
 

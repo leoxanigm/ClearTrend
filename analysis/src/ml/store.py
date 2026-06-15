@@ -216,7 +216,7 @@ def refresh_all_predictions(
                 )
                 results.append(result)
                 logger.info(
-                    "ML prediction %s for %s using daily data %s.",
+                    "ML prediction %s for %s using daily data %s",
                     result["status"],
                     result["ticker"],
                     result["marketDataAsOf"],
