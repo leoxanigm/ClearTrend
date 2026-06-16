@@ -134,8 +134,7 @@ export function SearchClient() {
   const entityTypes: Array<{ label: string; value: SearchEntityType }> = [
     { label: t('entityTypes.all'), value: 'all' },
     { label: t('entityTypes.assets'), value: 'assets' },
-    { label: t('entityTypes.analyses'), value: 'analyses' },
-    { label: t('entityTypes.reports'), value: 'reports' }
+    { label: t('entityTypes.analyses'), value: 'analyses' }
   ];
 
   const sortOptions: Array<{ label: string; value: SearchSortKey }> = [
@@ -154,15 +153,6 @@ export function SearchClient() {
     { label: t('sentimentOptions.bullish'), value: 'BULLISH' },
     { label: t('sentimentOptions.neutral'), value: 'NEUTRAL' },
     { label: t('sentimentOptions.bearish'), value: 'BEARISH' }
-  ];
-
-  const sourceOptions = [
-    { label: t('sourceOptions.any'), value: '' },
-    { label: t('sourceOptions.price'), value: 'PRICE' },
-    { label: t('sourceOptions.comment'), value: 'COMMENT' },
-    { label: t('sourceOptions.news'), value: 'NEWS' },
-    { label: t('sourceOptions.api'), value: 'API' },
-    { label: t('sourceOptions.scrape'), value: 'SCRAPE' }
   ];
 
   // Result formatting helpers
@@ -188,9 +178,6 @@ export function SearchClient() {
       return t('resultTypes.analysis');
     }
 
-    if (type === 'report') {
-      return t('resultTypes.report');
-    }
   }
 
   function SearchResultCard({ result }: { result: SearchResultItem }) {
@@ -207,10 +194,6 @@ export function SearchClient() {
         </div>
 
         <h2 className='search-result-title'>{result.title}</h2>
-
-        {result.subtitle ? (
-          <p className='search-result-subtitle'>{result.subtitle}</p>
-        ) : null}
 
         {result.description ? (
           <p className='search-result-description'>{result.description}</p>
@@ -335,20 +318,6 @@ export function SearchClient() {
           options={sentimentOptions}
           selectClassName=''
           value={sentiment}
-        />
-
-        <SelectField
-          containerClassName='search-field'
-          id='search-source'
-          label={t('labels.source')}
-          labelClassName=''
-          onValueChange={value => {
-            setSource(value);
-            setPage(1);
-          }}
-          options={sourceOptions}
-          selectClassName=''
-          value={source}
         />
 
         <TextInput

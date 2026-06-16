@@ -138,6 +138,22 @@ function getAssetOrderBy(sort: SearchSortKey, direction: SearchDirection) {
   return { createdAt: direction };
 }
 
+function getAnalysisOrderBy(sort: SearchSortKey, direction: SearchDirection) {
+  if (sort === 'symbol') {
+    return { 
+      asset: { symbol: direction }
+    };
+  }
+
+  if (sort === 'name') {
+    return { 
+      asset: { name: direction }
+    };
+  }
+
+  return { createdAt: direction };
+}
+
 function getCreatedAtOrderBy(direction: SearchDirection) {
   return {
     createdAt: direction
@@ -200,6 +216,7 @@ async function searchAnalyses(input: {
   sentiment: string | null;
   source: string | null;
   userId: string;
+  sort: SearchSortKey;
 }) {
   const prisma = getPrisma();
   const skip = (input.page - 1) * input.limit;
@@ -265,7 +282,7 @@ async function searchAnalyses(input: {
       include: {
         asset: true
       },
-      orderBy: getCreatedAtOrderBy(input.direction),
+      orderBy: getAnalysisOrderBy(input.sort, input.direction),
       skip,
       take: input.limit,
       where
@@ -286,97 +303,6 @@ async function searchAnalyses(input: {
       recommendation: analysis.recommendation,
       technicalScore: analysis.technicalScore,
       trendLabel: analysis.trendLabel
-    }
-  }));
-
-  return { results, total };
-}
-
-async function searchReports(input: {
-  dateFrom: Date | null;
-  dateTo: Date | null;
-  direction: SearchDirection;
-  limit: number;
-  page: number;
-  q: string;
-  userId: string;
-}) {
-  const prisma = getPrisma();
-  const skip = (input.page - 1) * input.limit;
-  const createdAt = getDateFilter(input.dateFrom, input.dateTo);
-
-  const where = {
-    userId: input.userId,
-    ...(createdAt ? { createdAt } : {}),
-    ...(input.q
-      ? {
-          OR: [
-            {
-              title: {
-                contains: input.q,
-                mode: 'insensitive' as const
-              }
-            },
-            {
-              summary: {
-                contains: input.q,
-                mode: 'insensitive' as const
-              }
-            },
-            {
-              content: {
-                contains: input.q,
-                mode: 'insensitive' as const
-              }
-            },
-            {
-              asset: {
-                is: {
-                  OR: [
-                    {
-                      symbol: {
-                        contains: input.q,
-                        mode: 'insensitive' as const
-                      }
-                    },
-                    {
-                      name: {
-                        contains: input.q,
-                        mode: 'insensitive' as const
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          ]
-        }
-      : {})
-  };
-
-  const [total, rows] = await Promise.all([
-    prisma.report.count({ where }),
-    prisma.report.findMany({
-      include: {
-        asset: true
-      },
-      orderBy: getCreatedAtOrderBy(input.direction),
-      skip,
-      take: input.limit,
-      where
-    })
-  ]);
-
-  const results: SearchResultItem[] = rows.map(report => ({
-    id: report.id,
-    type: 'report',
-    title: report.title,
-    subtitle: report.asset.symbol,
-    description: report.summary,
-    href: null,
-    createdAt: toIso(report.createdAt),
-    metadata: {
-      asset: report.asset.symbol
     }
   }));
 
@@ -464,13 +390,10 @@ export async function GET(req: Request) {
       searchResult = await searchAssets(input);
     } else if (type === 'analyses') {
       searchResult = await searchAnalyses(input);
-    } else if (type === 'reports') {
-      searchResult = await searchReports(input);
     } else {
       const groups = await Promise.all([
         searchAssets(input),
-        searchAnalyses(input),
-        searchReports(input)
+        searchAnalyses(input)
       ]);
 
       searchResult = mergeSearchResults(groups, limit, page, direction);

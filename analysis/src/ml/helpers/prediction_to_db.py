@@ -8,7 +8,7 @@ from uuid import uuid4
 import psycopg
 from psycopg.types.json import Jsonb
 
-from ...market_data_config import sanitize_ticker
+from ...market_data.config import sanitize_ticker
 
 logger = logging.getLogger(__name__)
 

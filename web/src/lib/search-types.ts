@@ -18,7 +18,7 @@ export type SearchDirection = (typeof searchDirections)[number];
 
 export type SearchResultItem = {
   id: string;
-  type: 'asset' | 'analysis' | 'report' | 'notification';
+  type: 'asset' | 'analysis';
   title: string;
   subtitle: string | null;
   description: string | null;
