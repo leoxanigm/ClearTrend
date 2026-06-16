@@ -34,6 +34,7 @@ import type { UserProfile } from "@/lib/profile-types";
 import { useTranslations } from "next-intl";
 import { signOut } from "next-auth/react";
 
+// Dashboard inputs and local data contracts
 type DashboardClientProps = {
   financeRefreshRateSeconds: number;
   initialRange?: string | null;
@@ -43,12 +44,14 @@ type DashboardClientProps = {
 };
 
 type AssetSnapshotUpdate = {
+  // The chart publishes only fields that can refresh an existing watchlist row.
   dayChangePercent: number | null;
   lastPrice: number | null;
   symbol: string;
 };
 
 type MlAnalysisState =
+  // A discriminated union prevents reading ML data before it is ready.
   | { status: "idle" | "loading" | "unavailable"; value: null }
   | { status: "ready"; value: MlAnalysis };
 
@@ -56,6 +59,7 @@ type MetricTone = "accent" | "negative" | "positive" | "secondary";
 
 const marketValueTolerance = 0.000001;
 
+// Map normalized ML scores to the visual tone used by metric tiles.
 function scoreTone(score: number | null, fallback: MetricTone): MetricTone {
   if (score === null) {
     return fallback;
@@ -73,6 +77,7 @@ function scoreTone(score: number | null, fallback: MetricTone): MetricTone {
 }
 
 function percentScore(value: number) {
+  // ML scores are normalized from 0 to 1 and displayed as percentages.
   return `${Math.round(value * 100)}%`;
 }
 
@@ -86,11 +91,13 @@ function assetSnapshotChanged(
   asset: WatchlistAsset | undefined,
   snapshot: AssetSnapshotUpdate
 ) {
+  // Stale rows should accept chart data directly instead of causing a reload loop.
   if (!asset || asset.isStale) {
     return false;
   }
 
   const changed = (currentValue: number | null, nextValue: number | null) =>
+    // Ignore missing values and insignificant floating-point differences.
     nextValue !== null &&
     currentValue !== null &&
     Math.abs(currentValue - nextValue) > marketValueTolerance;
@@ -103,6 +110,7 @@ function mergeSnapshotIntoAssets(
   assets: WatchlistAsset[],
   snapshot: AssetSnapshotUpdate
 ) {
+  // Preserve array order and replace only the matching immutable asset object.
   return assets.map((asset) =>
     asset.symbol === snapshot.symbol
       ? {
@@ -119,6 +127,7 @@ function mergeSnapshotIntoAssets(
   );
 }
 
+// Sanitize URL-provided state before using it as initial dashboard state.
 function normalizeInitialRange(value: string | null | undefined): ChartRange {
   const normalizedValue = value?.trim().toUpperCase() ?? "";
 
@@ -129,6 +138,7 @@ function normalizeInitialSymbol(
   value: string | null | undefined,
   assets: WatchlistAsset[]
 ): string | null {
+  // URL symbols are accepted only when already available in the user's watchlist.
   const normalizedValue = value?.trim().toUpperCase() ?? "";
 
   return assets.some((asset) => asset.symbol === normalizedValue)
@@ -143,6 +153,7 @@ export function DashboardClient({
   userProfile,
   watchlistAssets: initialWatchlistAssets,
 }: DashboardClientProps) {
+  // User, watchlist, selection, and asynchronous operation state
   const t = useTranslations("dashboard");
   const commonT = useTranslations("common");
   const userMenuRef = useRef<HTMLDetailsElement>(null);
@@ -159,6 +170,7 @@ export function DashboardClient({
     useState(0);
   const [watchlistPerformanceRange, setWatchlistPerformanceRange] =
     useState<ChartRange>("1D");
+  // The ref gives async callbacks the newest list without unstable dependencies.
   const watchlistAssetsRef = useRef(initialWatchlistAssets);
   const normalizedInitialSymbol = normalizeInitialSymbol(
     initialSymbol,
@@ -174,8 +186,11 @@ export function DashboardClient({
   const [chartRange, setChartRange] = useState<ChartRange>(
     normalizeInitialRange(initialRange)
   );
+  // Transitions keep account actions responsive while navigation is pending.
   const [isLoggingOut, startLogoutTransition] = useTransition();
   const [isDeletingProfile, startDeleteProfileTransition] = useTransition();
+
+  // Selected asset and ML presentation derived from the current range
   const selectedAsset = useMemo(
     () =>
       watchlistAssets.find((asset) => asset.symbol === selectedSymbol) ??
@@ -186,6 +201,7 @@ export function DashboardClient({
   const selectedAssetHasMlAnalysis = supportsMlAnalysis(
     selectedAsset?.symbol
   );
+  // The chart range is converted into the nearest supported ML horizon.
   const mlHorizon = chartRangeToMlHorizon(chartRange);
   const mlPrediction: MlPrediction | null =
     mlAnalysis.status === "ready"
@@ -223,6 +239,7 @@ export function DashboardClient({
       ? mlSentiment.score
       : null;
   const sentimentTrend =
+    // Scores around 0.5 are deliberately treated as neutral.
     sentimentScore === null
       ? null
       : sentimentScore >= 0.57
@@ -281,6 +298,7 @@ export function DashboardClient({
           </div>
         )
       : mlAnalysis.status === "ready" && mlSentiment
+        // A ready analysis may still lack enough social data for a score.
         ? t("mlSentimentUnavailableReason")
         : undefined;
   const watchlistSymbols = useMemo(
@@ -288,6 +306,7 @@ export function DashboardClient({
     [watchlistAssets]
   );
   const visibleWatchlistPerformanceBySymbol =
+    // Hide old-range values while the newly selected range is loading.
     loadedWatchlistPerformanceRange === watchlistPerformanceRange
       ? watchlistPerformanceBySymbol
       : {};
@@ -295,11 +314,14 @@ export function DashboardClient({
     watchlistPerformanceRange !== "1D" &&
     loadedWatchlistPerformanceRange !== watchlistPerformanceRange;
 
+  // Keep callback reads synchronized with the latest React watchlist state.
   useEffect(() => {
     watchlistAssetsRef.current = watchlistAssets;
   }, [watchlistAssets]);
 
+  // URL synchronization keeps the selected asset and range shareable.
   function replaceDashboardUrl(symbol: string | null, range: ChartRange) {
+    // replaceState avoids adding one browser-history entry per chart interaction.
     const params = new URLSearchParams(window.location.search);
 
     if (symbol) {
@@ -325,6 +347,7 @@ export function DashboardClient({
   }
 
   const signOutUnauthorizedSession = useCallback(() => {
+    // A banned or expired session is handled consistently by every dashboard request.
     notifyAfterNavigation({
       title: "Session ended",
       tone: "error",
@@ -336,6 +359,7 @@ export function DashboardClient({
     });
   }, [notifyAfterNavigation]);
 
+  // Reload canonical watchlist snapshots from the backend.
   const loadWatchlistSnapshots = useCallback(async (signal?: AbortSignal) => {
     try {
       const response = await fetch("/api/assets/watchlist", {
@@ -357,6 +381,7 @@ export function DashboardClient({
       };
 
       if (!signal?.aborted && body.assets) {
+        // Update the ref before state so concurrent callbacks see the same snapshot.
         watchlistAssetsRef.current = body.assets;
         setWatchlistAssets(body.assets);
       }
@@ -365,6 +390,7 @@ export function DashboardClient({
     }
   }, [signOutUnauthorizedSession]);
 
+  // Merge fast chart updates locally, then refresh when server values diverge.
   const updateWatchlistSnapshot = useCallback(
     (snapshot: AssetSnapshotUpdate) => {
       const currentAssets = watchlistAssetsRef.current;
@@ -377,10 +403,12 @@ export function DashboardClient({
       );
       const nextAssets = mergeSnapshotIntoAssets(currentAssets, snapshot);
 
+      // Apply immediate selected-row values before any optional full refresh.
       watchlistAssetsRef.current = nextAssets;
       setWatchlistAssets(nextAssets);
 
       if (shouldReloadWatchlist) {
+        // A meaningful selected-asset change can invalidate other cached row values.
         void loadWatchlistSnapshots();
 
         if (watchlistPerformanceRange !== "1D") {
@@ -392,12 +420,15 @@ export function DashboardClient({
   );
 
   useEffect(() => {
+    // This effect also repairs invalid initial symbols by writing the fallback.
     replaceDashboardUrl(selectedAsset?.symbol ?? selectedSymbol, chartRange);
   }, [chartRange, selectedAsset?.symbol, selectedSymbol]);
 
+  // Load the cached ML analysis only for supported assets and active horizon.
   useEffect(() => {
     const symbol = selectedAsset?.symbol;
     const controller = new AbortController();
+    // Deferring the request avoids synchronous state changes during effect setup.
     const timeoutId = window.setTimeout(() => {
       if (!symbol || !supportsMlAnalysis(symbol)) {
         setMlAnalysis({ status: "idle", value: null });
@@ -421,6 +452,7 @@ export function DashboardClient({
           }
 
           const body = (await response.json()) as MlAnalysis;
+          // The API returns cached backend analysis, not a browser-side calculation.
           setMlAnalysis({ status: "ready", value: body });
         })
         .catch((error: unknown) => {
@@ -441,8 +473,10 @@ export function DashboardClient({
     };
   }, [mlHorizon, selectedAsset?.symbol]);
 
+  // Refresh the complete watchlist once after mounting.
   useEffect(() => {
     const controller = new AbortController();
+    // Schedule after mount so the server-rendered interface appears immediately.
     const timeoutId = window.setTimeout(() => {
       void loadWatchlistSnapshots(controller.signal);
     }, 0);
@@ -454,6 +488,7 @@ export function DashboardClient({
     };
   }, [loadWatchlistSnapshots]);
 
+  // Non-daily watchlist performance is fetched separately for all symbols.
   useEffect(() => {
     if (watchlistPerformanceRange === "1D" || !watchlistSymbols) {
       return;
@@ -484,6 +519,7 @@ export function DashboardClient({
           }>;
         };
         const nextPerformanceBySymbol = Object.fromEntries(
+          // Normalize the API array into constant-time lookup by symbol.
           (body.performances ?? []).map((performance) => [
             performance.symbol,
             performance.performancePercent,
@@ -511,8 +547,10 @@ export function DashboardClient({
     watchlistSymbols,
   ]);
 
+  // Watchlist mutation actions
   function addWatchlistAsset(asset: WatchlistAsset) {
     setWatchlistAssets((currentAssets) => {
+      // Search can return an asset already added by another concurrent action.
       if (
         currentAssets.some((currentAsset) => currentAsset.symbol === asset.symbol)
       ) {
@@ -531,6 +569,7 @@ export function DashboardClient({
     symbol: string,
     isFavorite: boolean
   ) {
+    // Update immediately for responsiveness and retain the old value for rollback.
     let previousFavorite: boolean | null = null;
 
     setWatchlistAssets((currentAssets) =>
@@ -576,6 +615,7 @@ export function DashboardClient({
       const savedSymbol = body.symbol ?? symbol;
       const savedFavorite = body.isFavorite ?? isFavorite;
 
+      // Reconcile the optimistic value with the canonical server response.
       setWatchlistAssets((currentAssets) =>
         currentAssets.map((asset) =>
           asset.symbol === savedSymbol
@@ -588,6 +628,7 @@ export function DashboardClient({
       );
     } catch (error) {
       if (previousFavorite !== null) {
+        // Restore the exact previous value when persistence fails.
         const rollbackFavorite = previousFavorite;
 
         setWatchlistAssets((currentAssets) =>
@@ -606,6 +647,7 @@ export function DashboardClient({
     }
   }
 
+  // Account and profile actions
   function handleLogout() {
     startLogoutTransition(async () => {
       notifyAfterNavigation({
@@ -621,6 +663,7 @@ export function DashboardClient({
   }
 
   function handleDeleteProfile() {
+    // Account deletion remains behind an explicit destructive confirmation.
     const confirmed = window.confirm(t("confirmDeleteProfile"));
 
     if (!confirmed) {
@@ -661,6 +704,7 @@ export function DashboardClient({
   }
 
   function handleOpenProfileDialog() {
+    // Close the native details menu before mounting the modal over the page.
     userMenuRef.current?.removeAttribute("open");
     setIsProfileDialogOpen(true);
   }
@@ -676,8 +720,10 @@ export function DashboardClient({
     },
   ];
 
+  // Desktop/mobile navigation, chart, AI metrics, and profile modal
   return (
     <main className="app-shell">
+      {/* A hidden checkbox controls the CSS-only mobile watchlist drawer. */}
       <input
         className="mobile-drawer-toggle"
         id="dashboard-drawer"
@@ -685,6 +731,7 @@ export function DashboardClient({
       />
 
       <aside className="app-sidebar app-sidebar-desktop">
+        {/* Desktop and mobile navigations share the same data and callbacks. */}
         <AppLogo
           ariaLabel={t("logoAria")}
           href="/dashboard"
@@ -827,6 +874,7 @@ export function DashboardClient({
         </header>
 
         <div className="dashboard-grid mt-8 grid flex-1 gap-6">
+          {/* The chart publishes fresh snapshot values back to this parent. */}
           <AssetChart
             asset={selectedAsset}
             financeRefreshRateSeconds={financeRefreshRateSeconds}
@@ -837,6 +885,7 @@ export function DashboardClient({
           />
 
           {selectedAssetHasMlAnalysis ? (
+            // Hide the complete AI group for assets outside the supported universe.
             <fieldset className="dashboard-ai-analysis">
               <legend className="dashboard-ai-analysis-legend">
                 {t("aiAnalysis")}

@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+// Load the application's Sharp dependency and TypeScript pipeline from either host or Docker.
 const webRoot = process.env.TEST_WEB_ROOT ??
   fileURLToPath(new URL("../../web", import.meta.url));
 const require = createRequire(join(webRoot, "package.json"));
@@ -15,6 +16,7 @@ const {
   pathToFileURL(join(webRoot, "src/lib/avatar-images.ts")).href
 );
 
+// Generate deterministic in-memory images without relying on fixture files.
 async function createImage({
   format,
   height,
@@ -42,6 +44,7 @@ async function createImage({
   return image.toFormat(format).toBuffer();
 }
 
+// Assert successful normalization, output dimensions, format, and metadata removal.
 async function expectProcessed({
   expectedHeight,
   expectedWidth,
@@ -71,6 +74,7 @@ async function expectProcessed({
   console.log(`PASS ${name}: ${width}x${height} -> ${expectedWidth}x${expectedHeight}`);
 }
 
+// Assert that unsafe or unsupported input reaches the expected public error.
 async function expectRejected(name, action, expectedMessage) {
   await assert.rejects(action, (error) => {
     assert.ok(error instanceof AvatarImageError);
@@ -81,6 +85,7 @@ async function expectRejected(name, action, expectedMessage) {
   console.log(`PASS ${name}: rejected`);
 }
 
+// Cover representative square, wide, tall, large, and EXIF-oriented inputs.
 await expectProcessed({
   expectedHeight: 800,
   expectedWidth: 800,
@@ -132,6 +137,7 @@ await expectProcessed({
   width: 300,
 });
 
+// Cover security and quality boundaries independently from the HTTP route.
 await expectRejected(
   "too-small image",
   async () => {

@@ -398,8 +398,8 @@
       "notifications": "Registro de notificaciones"
     },
     "refreshRate": {
-      "label": "Frecuencia de actualización financiera",
-      "ariaLabel": "Elegir frecuencia de actualización financiera",
+      "label": "Intervalo de datos financieros",
+      "ariaLabel": "Elegir el intervalo de datos financieros",
       "options": {
         "60": "1 minuto",
         "300": "5 minutos",

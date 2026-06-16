@@ -398,8 +398,8 @@
       "notifications": "Journal notifications"
     },
     "refreshRate": {
-      "label": "Fréquence de rafraîchissement finance",
-      "ariaLabel": "Choisir la fréquence de rafraîchissement finance",
+      "label": "Intervalle des données financières",
+      "ariaLabel": "Choisir l’intervalle des données financières",
       "options": {
         "60": "1 minute",
         "300": "5 minutes",

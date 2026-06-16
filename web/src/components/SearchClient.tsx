@@ -15,7 +15,9 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextInput } from "@/components/ui/TextInput";
 import { useTranslations } from "next-intl";
 
+// Advanced search page coordinating filters, pagination, and heterogeneous results.
 export function SearchClient() {
+  // Filter, request, and pagination state
   const t = useTranslations('searchPage');
   const tDashboard = useTranslations('dashboard');
   const commonT = useTranslations('common');
@@ -32,7 +34,9 @@ export function SearchClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Build one stable URL from the complete active filter state.
   const searchUrl = useMemo(() => {
+    // Required parameters are always sent so backend defaults stay explicit.
     const params = new URLSearchParams();
 
     params.set('q', query);
@@ -43,6 +47,7 @@ export function SearchClient() {
     params.set('limit', '10');
 
     if (sentiment) {
+      // Optional filters are omitted rather than sent as empty values.
       params.set('sentiment', sentiment);
     }
 
@@ -61,7 +66,9 @@ export function SearchClient() {
     return `/api/search?${params.toString()}`;
   }, [dateFrom, dateTo, direction, page, query, sentiment, sort, source, type]);
 
+  // Search request lifecycle
   useEffect(() => {
+    // Each filter change invalidates the previous in-flight request.
     const controller = new AbortController();
 
     async function runSearch() {
@@ -80,6 +87,7 @@ export function SearchClient() {
 
         const body = (await nextResponse.json()) as SearchResponse;
 
+        // The backend owns result normalization and pagination metadata.
         setResponse(body);
       } catch {
         if (!controller.signal.aborted) {
@@ -96,16 +104,19 @@ export function SearchClient() {
     runSearch();
 
     return () => {
+      // Cancel obsolete requests when filters change before a response arrives.
       controller.abort();
     };
   }, [searchUrl, t]);
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    // Filtering already triggers requests; submit mainly resets pagination.
     event.preventDefault();
     setPage(1);
   }
 
   function resetFilters() {
+    // Reset all controlled fields together to produce one canonical search state.
     setQuery('');
     setType('all');
     setSort('createdAt');
@@ -119,6 +130,7 @@ export function SearchClient() {
 
   const pagination = response?.pagination;
 
+  // Translated select options
   const entityTypes: Array<{ label: string; value: SearchEntityType }> = [
     { label: t('entityTypes.all'), value: 'all' },
     { label: t('entityTypes.assets'), value: 'assets' },
@@ -153,6 +165,7 @@ export function SearchClient() {
     { label: t('sourceOptions.scrape'), value: 'SCRAPE' }
   ];
 
+  // Result formatting helpers
   function formatDate(value: string | null) {
     if (!value) {
       return t('states.noDate');
@@ -166,6 +179,7 @@ export function SearchClient() {
   }
 
   function resultTypeLabel(type: SearchResultItem['type']) {
+    // Search results use singular backend types while filters use plural groups.
     if (type === 'asset') {
       return t('resultTypes.asset');
     }
@@ -180,6 +194,7 @@ export function SearchClient() {
   }
 
   function SearchResultCard({ result }: { result: SearchResultItem }) {
+    // Results share one visual body but may or may not be navigable.
     const content = (
       <>
         <div className='search-result-header'>
@@ -202,6 +217,7 @@ export function SearchClient() {
         ) : null}
 
         {Object.keys(result.metadata).length > 0 ? (
+          // Metadata is intentionally generic because each entity exposes different fields.
           <dl className='search-result-metadata'>
             {Object.entries(result.metadata).map(([key, value]) =>
               value === null ? null : (
@@ -217,6 +233,7 @@ export function SearchClient() {
     );
 
     if (result.href) {
+      // Only results with an application destination become links.
       return (
         <a className='search-result-card' href={result.href}>
           {content}
@@ -227,6 +244,7 @@ export function SearchClient() {
     return <article className='search-result-card'>{content}</article>;
   }
 
+  // Search form, result list, and pagination
   return (
     <main className='search-page'>
       <header className='search-page-header'>
@@ -247,6 +265,7 @@ export function SearchClient() {
       </header>
 
       <form className='search-panel' onSubmit={handleSubmit}>
+        {/* Every filter resets the page to avoid requesting an invalid high page. */}
         <TextInput
           containerClassName='search-field search-field-wide'
           id='search-q'

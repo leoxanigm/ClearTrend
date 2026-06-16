@@ -5,9 +5,12 @@ import { useTranslations } from "next-intl";
 
 type Theme = "dark" | "light";
 
+// Shared key also appears in the early theme script in the root layout.
 const storageKey = "cleartrend-theme";
 
+// Return only values understood by the theme system.
 function getStoredTheme(): Theme | null {
+  // Server rendering has no window and therefore no persisted browser choice.
   if (typeof window === "undefined") {
     return null;
   }
@@ -22,6 +25,7 @@ function getStoredTheme(): Theme | null {
 }
 
 function getSystemTheme(): Theme {
+  // Light is a deterministic server-side fallback before hydration.
   if (typeof window === "undefined") {
     return "light";
   }
@@ -32,19 +36,24 @@ function getSystemTheme(): Theme {
 }
 
 export function ThemeSwitch() {
+  // Translation text describes the action, not merely the current state.
   const t = useTranslations("theme");
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
+    // An explicit saved choice wins over the operating-system preference.
     const storedTheme = getStoredTheme();
     const resolvedTheme = storedTheme ?? getSystemTheme();
 
     if (storedTheme) {
+      // data-theme activates the explicit CSS token set.
       document.documentElement.dataset.theme = storedTheme;
     } else {
+      // Without data-theme, CSS falls back to prefers-color-scheme.
       delete document.documentElement.dataset.theme;
     }
 
+    // Defer React state synchronization until after the initial DOM theme update.
     const frameId = window.requestAnimationFrame(() => {
       setTheme(resolvedTheme);
     });
@@ -53,15 +62,18 @@ export function ThemeSwitch() {
   }, []);
 
   const isDark = theme === "dark";
+  // The button always advertises and applies the opposite theme.
   const nextTheme = isDark ? "light" : "dark";
 
   function handleToggleTheme() {
+    // Update the DOM immediately, then persist the explicit user preference.
     document.documentElement.dataset.theme = nextTheme;
     window.localStorage.setItem(storageKey, nextTheme);
     setTheme(nextTheme);
   }
 
   return (
+    // aria-pressed exposes the current binary state to assistive technology.
     <button
       aria-label={t("switchTo", {
         theme: t(nextTheme),

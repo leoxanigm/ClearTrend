@@ -12,7 +12,8 @@ from sklearn.model_selection import TimeSeriesSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from ..market_data_history import load_daily_history
+from ..market_data.history import load_daily_history
+from .utils import clamp
 
 HORIZON_SESSIONS = {
     "1D": 1,
@@ -56,9 +57,6 @@ class RegressionMetrics:
     residual_std: float
     samples: int
 
-
-def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
-    return max(minimum, min(maximum, value))
 
 
 def _horizon_sessions(horizon: str, market_calendar: str) -> int:
@@ -194,14 +192,14 @@ def _cross_validate(
 
 
 def _model_quality(metrics: RegressionMetrics) -> float:
-    direction_quality = _clamp(
+    direction_quality = clamp(
         (metrics.directional_accuracy - 0.45) / 0.25
     )
     improvement = (
         (metrics.baseline_mae_return - metrics.mae_return)
         / max(metrics.baseline_mae_return, 1e-9)
     )
-    improvement_quality = _clamp(improvement / 0.25)
+    improvement_quality = clamp(improvement / 0.25)
 
     return 0.75 * direction_quality + 0.25 * improvement_quality
 
@@ -311,7 +309,7 @@ def analyze_history_frame(
     error_quality = 1 / (
         1 + residual_std / max(horizon_volatility, 1e-9)
     )
-    sample_quality = _clamp(metrics.samples / 800)
+    sample_quality = clamp(metrics.samples / 800)
     confidence = (
         0.6 * _model_quality(metrics) + 0.4 * error_quality
     ) * sample_quality
@@ -327,8 +325,8 @@ def analyze_history_frame(
         "currentPrice": round(current_price, 4),
         "predictedPrice": round(predicted_price, 4),
         "predictedReturn": round(predicted_return, 6),
-        "score": round(_clamp(score), 4),
-        "confidence": round(_clamp(confidence), 4),
+        "score": round(clamp(score), 4),
+        "confidence": round(clamp(confidence), 4),
         "priceInterval": {
             "lower": round(lower_price, 4),
             "upper": round(upper_price, 4),

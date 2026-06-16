@@ -5,6 +5,9 @@ import time
 
 import requests
 
+from ..market_data.config import sanitize_ticker
+from .utils import clamp
+
 APEWISDOM_API_URL = "https://apewisdom.io/api/v1.0/filter/all/page"
 CACHE_SECONDS = 15 * 60
 MAX_PAGES = 15
@@ -22,13 +25,6 @@ APEWISDOM_TICKERS = {
 _CACHE: dict[str, tuple[float, dict]] = {}
 
 
-def _safe_ticker(ticker: str) -> str:
-    return ticker.replace("^", "").upper()
-
-
-def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
-    return max(minimum, min(maximum, value))
-
 
 def score_attention_record(record: dict) -> dict:
     mentions = max(0, int(record.get("mentions", 0)))
@@ -37,7 +33,7 @@ def score_attention_record(record: dict) -> dict:
     previous_rank = max(1, int(record.get("rank_24h_ago", rank)))
     mention_level = 1 - math.exp(-mentions / 60)
     rank_level = 1 / (1 + math.log1p(rank) / 3)
-    attention = _clamp(0.75 * mention_level + 0.25 * rank_level)
+    attention = clamp(0.75 * mention_level + 0.25 * rank_level)
 
     if previous_mentions == 0:
         growth = 1.0 if mentions > 0 else 0.0
@@ -57,7 +53,7 @@ def score_attention_record(record: dict) -> dict:
 
 
 def apewisdom_attention(ticker: str, timeout: float = 12) -> dict:
-    safe = _safe_ticker(ticker)
+    safe = sanitize_ticker(ticker)
     target = APEWISDOM_TICKERS.get(safe, safe)
     cached = _CACHE.get(target)
 

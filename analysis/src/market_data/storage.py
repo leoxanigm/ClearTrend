@@ -3,9 +3,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from .market_data_config import (
+from .config import (
     DATA_DIR,
     INTRADAY_DATA_DIR,
+    INTRADAY_INTERVAL,
     TIMESTAMP_FMT,
     WEEKLY_INTRADAY_SOURCE_MARKER,
     sanitize_ticker,
@@ -19,6 +20,7 @@ def save_frame(
     directory: Path,
     marker: str | None = None,
 ) -> None:
+    """Replace the current CSV snapshot for one ticker and interval."""
     safe_name = sanitize_ticker(ticker)
     stamp = datetime.now().strftime(TIMESTAMP_FMT)
     file_prefix = f"{safe_name}_{marker}" if marker else safe_name
@@ -34,13 +36,17 @@ def save_frame(
             old.unlink(missing_ok=True)
 
 
-def latest_csv_timestamp(directory: Path) -> datetime | None:
+def latest_csv_timestamp(
+    directory: Path,
+    pattern: str = "*.csv",
+) -> datetime | None:
+    """Read the newest timestamp encoded in matching cache filenames."""
     newest: datetime | None = None
 
     if not directory.exists():
         return None
 
-    for path in directory.glob("*.csv"):
+    for path in directory.glob(pattern):
         stem_stamp = path.stem.rsplit("_", 1)[-1]
 
         try:
@@ -54,24 +60,31 @@ def latest_csv_timestamp(directory: Path) -> datetime | None:
     return newest
 
 
-def latest_csv_age(directory: Path) -> timedelta | None:
-    newest = latest_csv_timestamp(directory)
+def latest_csv_age(
+    directory: Path,
+    pattern: str = "*.csv",
+) -> timedelta | None:
+    """Measure the age of the newest matching timestamped CSV."""
+    newest = latest_csv_timestamp(directory, pattern)
 
     return None if newest is None else datetime.now() - newest
 
 
 def latest_csv_date(directory: Path) -> date | None:
+    """Return the calendar date of the newest CSV snapshot."""
     newest = latest_csv_timestamp(directory)
 
     return None if newest is None else newest.date()
 
 
 def write_refresh_marker(path: Path) -> None:
+    """Persist the completion time of a refresh that has no dedicated CSV."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(datetime.now().isoformat(), encoding="utf-8")
 
 
 def read_refresh_marker_date(path: Path) -> date | None:
+    """Read a refresh marker while tolerating a missing or invalid file."""
     if not path.exists():
         return None
 
@@ -81,19 +94,29 @@ def read_refresh_marker_date(path: Path) -> date | None:
         return None
 
 
-def latest_intraday_csv_age() -> timedelta | None:
-    return latest_csv_age(INTRADAY_DATA_DIR)
+def latest_intraday_csv_age(
+    interval: str = INTRADAY_INTERVAL,
+) -> timedelta | None:
+    """Measure freshness only for the currently configured 1D interval."""
+    # Ignore old interval files after a configuration change such as 5m -> 1m.
+    return latest_csv_age(
+        INTRADAY_DATA_DIR,
+        f"*_{interval}_*.csv",
+    )
 
 
 def latest_daily_csv_date() -> date | None:
+    """Return the date of the newest daily market-data snapshot."""
     return latest_csv_date(DATA_DIR)
 
 
 def latest_weekly_intraday_source_date() -> date | None:
+    """Return when the hourly 1W cache was last downloaded from its source."""
     return read_refresh_marker_date(WEEKLY_INTRADAY_SOURCE_MARKER)
 
 
 def latest_file(directory: Path, prefix: str) -> Path | None:
+    """Return the newest timestamped cache matching one ticker/interval prefix."""
     newest: tuple[datetime, Path] | None = None
 
     for path in directory.glob(f"{prefix}_*.csv"):
@@ -111,6 +134,7 @@ def latest_file(directory: Path, prefix: str) -> Path | None:
 
 
 def latest_file_mtime(directory: Path, prefix: str) -> datetime | None:
+    """Expose cache freshness as UTC metadata for lightweight chart polling."""
     path = latest_file(directory, prefix)
 
     if path is None:
@@ -126,12 +150,14 @@ def latest_file_age(directory: Path, prefix: str) -> timedelta | None:
 
 
 def latest_datetime(*values: datetime | None) -> datetime | None:
+    """Select the freshest timestamp when a chart combines multiple caches."""
     timestamps = [value for value in values if value is not None]
 
     return max(timestamps) if timestamps else None
 
 
 def read_csv(path: Path) -> pd.DataFrame:
+    """Restore one OHLCV cache with a parsed Date index."""
     df = pd.read_csv(path, index_col=0, parse_dates=True)
     df.index.name = "Date"
 
@@ -139,6 +165,7 @@ def read_csv(path: Path) -> pd.DataFrame:
 
 
 def list_cached_tickers() -> list[str]:
+    """List the daily-cache universe exposed to search and watchlists."""
     seen: set[str] = set()
 
     for path in DATA_DIR.glob("*.csv"):

@@ -11,6 +11,7 @@ export function isAppLocale(value: string | null | undefined): value is AppLocal
 
 export function getLocaleFromAcceptLanguage(value: string | null) {
   if (!value) {
+    // Use English when the browser sends no language preference.
     return defaultLocale;
   }
 
@@ -27,5 +28,6 @@ export function getLocaleFromAcceptLanguage(value: string | null) {
     }
   }
 
+  // None of the browser languages are supported: use English.
   return defaultLocale;
 }

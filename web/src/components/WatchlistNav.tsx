@@ -9,15 +9,18 @@ import { SelectField } from '@/components/ui/SelectField';
 import { supportsMlAnalysis } from '@/lib/ml-analysis';
 import { useTranslations } from 'next-intl';
 
+// Sorting rules and parent component contract
 type SortDirection = 'asc' | 'desc';
 type SortKey = 'ai' | 'dp' | 'favorite' | 'name';
 type SortState = {
+  // favoritesFirst is independent because favorite ordering is always applied.
   direction: SortDirection;
   favoritesFirst: boolean;
   key: SortKey;
 };
 
 type WatchlistNavProps = {
+  // Market values are owned by DashboardClient and supplied to both nav layouts.
   assets: WatchlistAsset[];
   mobile?: boolean;
   onAssetAdd: (asset: WatchlistAsset) => void;
@@ -39,11 +42,13 @@ type AssetSearchResult = {
   type: string | null;
 };
 
+// Performance selection and presentation helpers
 function getAssetPerformance(
   asset: WatchlistAsset,
   performanceBySymbol: Record<string, number | null>,
   performanceRange: ChartRange
 ) {
+  // Daily performance is embedded in snapshots; longer ranges arrive separately.
   return performanceRange === '1D'
     ? asset.dayChangePercent
     : performanceBySymbol[asset.symbol] ?? null;
@@ -53,6 +58,7 @@ function formatPerformancePercent(
   value: number | null,
   loading = false
 ) {
+  // Loading uses an ellipsis so it cannot be confused with unavailable data.
   if (loading) {
     return '…';
   }
@@ -75,6 +81,7 @@ function getDayChangeClass(value: number | null) {
 }
 
 function compareAssetNames(a: WatchlistAsset, b: WatchlistAsset) {
+  // A stable case-insensitive comparison provides predictable alphabetical order.
   return a.name.localeCompare(b.name, 'en', {
     sensitivity: 'base'
   });
@@ -99,6 +106,7 @@ function compareAssetPerformance(
   );
 
   if (aPerformance === null && bPerformance === null) {
+    // Names provide deterministic order when both assets lack market data.
     return compareAssetNames(a, b);
   }
 
@@ -120,6 +128,7 @@ function compareAssetFavorites(
   b: WatchlistAsset,
   favoritesFirst: boolean
 ) {
+  // Equal favorite state defers ordering to the next comparator.
   if (a.isFavorite === b.isFavorite) {
     return 0;
   }
@@ -135,10 +144,12 @@ function compareAssetAiAvailability(
   a: WatchlistAsset,
   b: WatchlistAsset
 ) {
+  // Boolean-to-number conversion places supported AI assets before all others.
   return Number(supportsMlAnalysis(b.symbol)) -
     Number(supportsMlAnalysis(a.symbol));
 }
 
+// AI assets always remain first, then favorites, then the selected user sort.
 function sortAssets(
   assets: WatchlistAsset[],
   sortState: SortState,
@@ -146,6 +157,7 @@ function sortAssets(
   performanceRange: ChartRange
 ) {
   return [...assets].sort((a, b) => {
+    // Clone before sorting because props must remain immutable.
     const aiResult = compareAssetAiAvailability(a, b);
 
     if (aiResult !== 0) {
@@ -159,6 +171,7 @@ function sortAssets(
     );
 
     if (favoriteResult !== 0) {
+      // Favorites remain grouped even when sorting by name or performance.
       return favoriteResult;
     }
 
@@ -197,6 +210,7 @@ function AiAnalysisIndicator({
   label: string;
   visible: boolean;
 }) {
+  // A fixed slot keeps row columns aligned even when the badge is absent.
   return (
     <span className='watchlist-ai-indicator-slot'>
       {visible ? (
@@ -212,6 +226,7 @@ function AiAnalysisIndicator({
   );
 }
 
+// One watchlist row, adapted to desktop buttons or the CSS mobile drawer.
 function WatchlistItem({
   aiBadge,
   aiAnalysisLabel,
@@ -243,6 +258,7 @@ function WatchlistItem({
     selected ? ' sidebar-asset-selected' : ''
   }`;
   const hasMlAnalysis = supportsMlAnalysis(asset.symbol);
+  // Content is shared between desktop Button and mobile drawer label variants.
   const content = (
     <>
       <span className='sidebar-asset-main'>
@@ -274,6 +290,7 @@ function WatchlistItem({
     </IconButton>
   );
   const assetActions = (
+    // AI availability and favorite state occupy one stable action column.
     <span className='watchlist-asset-actions'>
       <AiAnalysisIndicator
         badge={aiBadge}
@@ -285,6 +302,7 @@ function WatchlistItem({
   );
 
   if (mobile) {
+    // Selecting through a label also closes the checkbox-driven mobile drawer.
     return (
       <div
         className={className}
@@ -332,6 +350,7 @@ export function WatchlistNav({
   performanceRange,
   selectedSymbol
 }: WatchlistNavProps) {
+  // Search, sorting, pending mutations, and element references
   const t = useTranslations('watchlist');
   const commonT = useTranslations('common');
   const [sortState, setSortState] = useState<SortState>({
@@ -346,17 +365,21 @@ export function WatchlistNav({
   const [pendingFavorites, setPendingFavorites] = useState<Set<string>>(
     () => new Set()
   );
+  // A map supports direct scrolling without querying duplicated desktop/mobile ids.
   const itemRefs = useRef(new Map<string, HTMLElement>());
   const previousSelectedSymbolRef = useRef(selectedSymbol);
 
+  // Debounced asset search with cancellation when the query changes.
   useEffect(() => {
     const trimmedQuery = query.trim();
 
     if (trimmedQuery.length < 2) {
+      // Short queries do not call the backend and are cleared by the input handler.
       return;
     }
 
     const controller = new AbortController();
+    // Debounce limits search traffic while the user is still typing.
     const timeoutId = window.setTimeout(async () => {
       setIsSearching(true);
       setSearchMessage(null);
@@ -379,6 +402,7 @@ export function WatchlistNav({
         };
         const nextResults = body.results ?? [];
 
+        // Empty results and request failures intentionally use different messages.
         setResults(nextResults);
         setSearchMessage(nextResults.length === 0 ? t('noResult') : null);
       } catch {
@@ -400,6 +424,7 @@ export function WatchlistNav({
   }, [query, t]);
 
   const sortedAssets = useMemo(
+    // Re-sort only when assets, values, range, or user sort state changes.
     () =>
       sortAssets(
         assets,
@@ -411,6 +436,7 @@ export function WatchlistNav({
   );
   const searchInputId = mobile ? 'asset-search-mobile' : 'asset-search-desktop';
 
+  // Keep a newly selected item visible inside a long scrollable watchlist.
   useEffect(() => {
     const previousSelectedSymbol = previousSelectedSymbolRef.current;
 
@@ -430,6 +456,7 @@ export function WatchlistNav({
   }, [selectedSymbol]);
 
   function setItemRef(symbol: string, element: HTMLElement | null) {
+    // React calls ref callbacks with null when rows unmount.
     if (element) {
       itemRefs.current.set(symbol, element);
       return;
@@ -442,6 +469,7 @@ export function WatchlistNav({
     setQuery(value);
 
     if (value.trim().length < 2) {
+      // Clear stale results immediately instead of waiting for effect cleanup.
       setResults([]);
       setIsSearching(false);
       setSearchMessage(null);
@@ -451,6 +479,7 @@ export function WatchlistNav({
   function handleSortChange(key: SortKey) {
     setSortState(currentSort => {
       if (key === 'favorite') {
+        // Favorite sorting toggles its own grouping direction.
         return {
           ...currentSort,
           favoritesFirst:
@@ -462,6 +491,7 @@ export function WatchlistNav({
       }
 
       if (currentSort.key === key) {
+        // Repeating the active sort reverses its direction.
         return {
           ...currentSort,
           direction: getNextSortDirection(currentSort.direction),
@@ -470,6 +500,7 @@ export function WatchlistNav({
       }
 
       return {
+        // Performance starts highest-first; textual sorts start ascending.
         ...currentSort,
         direction: key === 'dp' ? 'desc' : 'asc',
         key
@@ -478,6 +509,7 @@ export function WatchlistNav({
   }
 
   function setFavoritePending(symbol: string, isPending: boolean) {
+    // A copied Set is required so React observes the pending-state change.
     setPendingFavorites(currentPending => {
       const nextPending = new Set(currentPending);
 
@@ -493,6 +525,7 @@ export function WatchlistNav({
 
   async function handleFavoriteToggle(symbol: string, isFavorite: boolean) {
     if (pendingFavorites.has(symbol)) {
+      // Prevent duplicate PATCH requests for the same row.
       return;
     }
 
@@ -515,6 +548,7 @@ export function WatchlistNav({
     const normalizedSymbol = symbol.trim().toUpperCase();
 
     if (assets.some(asset => asset.symbol === normalizedSymbol)) {
+      // Existing assets are selected instead of duplicated.
       onSelectSymbol(normalizedSymbol);
       setQuery('');
       setResults([]);
@@ -540,6 +574,7 @@ export function WatchlistNav({
       };
       const [asset] = body.assets ?? [];
 
+      // The watchlist endpoint returns normalized market metadata for the symbol.
       if (!asset) {
         throw new Error('No asset returned');
       }
@@ -554,8 +589,10 @@ export function WatchlistNav({
     }
   }
 
+  // Search controls, sort toolbar, and the ordered asset list
   return (
     <div className='watchlist-panel mt-5'>
+      {/* Lightweight symbol search for quickly adding one asset */}
       <div className='asset-search'>
         <label className='asset-search-label' htmlFor={searchInputId}>
           {t('searchAsset')}
@@ -605,6 +642,7 @@ export function WatchlistNav({
       </div>
 
       <div aria-label={t('sort')} className='watchlist-sort-bar' role='group'>
+        {/* AI priority is permanent; these controls order within that grouping. */}
         <Button
           aria-label={t('sortFavorites')}
           className='watchlist-sort-button watchlist-sort-button-favorite'
@@ -659,6 +697,7 @@ export function WatchlistNav({
       </div>
 
       <nav className='watchlist-nav space-y-2'>
+        {/* Rows receive already resolved performance for the selected range. */}
         {sortedAssets.map(asset => {
           const performancePercent = getAssetPerformance(
             asset,

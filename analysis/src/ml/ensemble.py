@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from ..market_data_config import LONG_HISTORY_TICKERS, sanitize_ticker
-from .attention_signal import apewisdom_attention
-from .historical_regression import HORIZON_SESSIONS, analyze_history
-from .reddit_sentiment import reddit_sentiment
+from ..market_data.config import LONG_HISTORY_TICKERS, sanitize_ticker
+from .attention import apewisdom_attention
+from .regression import HORIZON_SESSIONS, analyze_history
+from .sentiment import reddit_sentiment
+from .utils import clamp
 
 SUPPORTED_TICKERS = tuple(LONG_HISTORY_TICKERS)
 HORIZON_WEIGHTS = {
@@ -14,9 +15,6 @@ HORIZON_WEIGHTS = {
     "1M": (0.80, 0.20),
 }
 
-
-def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
-    return max(minimum, min(maximum, value))
 
 
 def _trend_label(score: float) -> str:
@@ -93,8 +91,8 @@ def combine_signals(
         score = history_score
         confidence = history_confidence * 0.8
 
-    score = _clamp(score)
-    confidence = _clamp(confidence, maximum=0.95)
+    score = clamp(score)
+    confidence = clamp(confidence, maximum=0.95)
 
     return {
         "score": round(score, 4),

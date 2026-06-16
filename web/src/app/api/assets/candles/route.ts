@@ -10,11 +10,12 @@ export const dynamic = 'force-dynamic';
 
 const symbolPattern = /^[A-Z0-9.=-]{1,15}$/;
 
+// Authenticated proxy exposing one normalized chart dataset to the browser.
 export async function GET(req: Request) {
   const { response } = await requireApiIdentity(req);
 
   if (response) {
-    // unauthorized session or api key
+    // Stop before parsing user input when neither session nor API key is valid.
     return response;
   }
 
@@ -36,12 +37,13 @@ export async function GET(req: Request) {
   }
 
   try {
+    // The service URL remains private; only the normalized response crosses this route.
     const data = await fetchAnalysisCandles(symbol, range);
 
     return NextResponse.json(data);
   } catch (error) {
     console.error(error);
-    
+
     return NextResponse.json(
       {
         error: 'Chart data failed.'

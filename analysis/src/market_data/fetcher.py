@@ -6,15 +6,16 @@ import pandas as pd
 import requests
 import yfinance as yf
 
-from .market_data_config import (
+from .config import (
     LONG_HISTORY_TICKERS,
     SP500_WIKI_URL,
     source_ticker,
 )
-from .market_data_storage import list_cached_tickers, save_frame
+from .storage import list_cached_tickers, save_frame
 
 
 def fetch_sp500_tickers() -> list[str]:
+    """Read the current S&P 500 symbol universe from Wikipedia."""
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     resp = requests.get(SP500_WIKI_URL, headers=headers, timeout=15)
     resp.raise_for_status()
@@ -24,6 +25,7 @@ def fetch_sp500_tickers() -> list[str]:
 
 
 def get_refresh_source_tickers() -> list[str]:
+    """Reuse the cached universe so intraday refreshes do not rediscover symbols."""
     cached = list_cached_tickers()
 
     if cached:
@@ -40,6 +42,7 @@ def download_batch(
     interval: str,
     period: str,
 ) -> pd.DataFrame | None:
+    """Download one Yahoo batch for the period and interval chosen by history.py."""
     try:
         return yf.download(
             tickers,
@@ -55,6 +58,7 @@ def download_batch(
 
 
 def extract_ticker(df_multi: pd.DataFrame, ticker: str) -> pd.DataFrame | None:
+    """Extract one ticker frame from either yfinance column layout."""
     try:
         if isinstance(df_multi.columns, pd.MultiIndex):
             if ticker in df_multi.columns.get_level_values(0):
@@ -90,6 +94,7 @@ def process_tickers(
     target_dir: Path,
     target_marker: str | None = None,
 ) -> int:
+    """Download, split, and persist a complete ticker universe in bounded batches."""
     updated = 0
     batches = [
         tickers[i:i + batch_size]

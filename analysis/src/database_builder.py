@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from .market_data import (
     build_daily_history,
@@ -9,19 +9,19 @@ from .market_data import (
     latest_weekly_intraday_source_date,
     refresh_weekly_intraday_from_1d,
 )
-from .market_data_config import (
+from .market_data.config import (
     DAILY_BATCH_PAUSE_SECONDS,
     DAILY_BATCH_SIZE,
     DATA_DIR,
     LONG_HISTORY_PERIOD,
     LONG_HISTORY_TICKERS,
+    intraday_interval_for_refresh_seconds,
     sanitize_ticker,
 )
-from .market_data_fetcher import process_tickers
-from .market_data_storage import latest_file
-from .ml.prediction_store import refresh_all_predictions
-
-INTRADAY_MAX_AGE = timedelta(minutes=5)
+from .config import get_finance_refresh_rate_duration
+from .market_data.fetcher import process_tickers
+from .market_data.storage import latest_file
+from .ml.store import refresh_all_predictions
 
 
 def _refreshed_today(refresh_date: date | None) -> bool:
@@ -59,20 +59,24 @@ def build_missing_or_stale_history() -> None:
         _build_missing_long_history()
 
     # 1W hourly cache is rebuilt from yfinance once per day, then completed
-    # from the 1D/5m cache below.
+    # from the configured 1D intraday cache below.
     if not _refreshed_today(latest_weekly_intraday_source_date()):
         build_weekly_intraday_history()
         weekly_refreshed = True
 
-    intraday_age = latest_intraday_csv_age()
+    refresh_duration = get_finance_refresh_rate_duration()
+    intraday_interval = intraday_interval_for_refresh_seconds(
+        int(refresh_duration.total_seconds())
+    )
+    intraday_age = latest_intraday_csv_age(intraday_interval)
 
     # Warm intraday cache too, otherwise the 1D dashboard range starts empty.
-    if intraday_age is None or intraday_age >= INTRADAY_MAX_AGE:
-        build_intraday_history()
+    if intraday_age is None or intraday_age >= refresh_duration:
+        build_intraday_history(interval=intraday_interval)
         intraday_refreshed = True
 
     if weekly_refreshed or intraday_refreshed:
-        refresh_weekly_intraday_from_1d()
+        refresh_weekly_intraday_from_1d(interval=intraday_interval)
 
     # Train once after startup data warmup. Existing snapshots are skipped when
     # their asset already uses the latest available daily candle.

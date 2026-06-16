@@ -14,6 +14,7 @@ type DashboardPageProps = {
 export default async function DashboardPage({
   searchParams,
 }: DashboardPageProps) {
+  // Authentication and initial database reads happen before client hydration.
   const userProfile = await getCurrentUserProfile();
 
   if (!userProfile) {
@@ -22,6 +23,7 @@ export default async function DashboardPage({
 
   const params = (await searchParams) ?? {};
   const financeRefreshRateSeconds = await getFinanceRefreshRateSeconds();
+  // Market snapshots load in the client so the first server render stays lightweight.
   const watchlistAssets = await getUserWatchlistAssets(
     userProfile.id,
     undefined,

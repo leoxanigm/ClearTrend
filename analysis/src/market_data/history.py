@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
 from fastapi import HTTPException
 
-from .market_data_config import (
+from .config import (
     DAILY_BATCH_PAUSE_SECONDS,
     DAILY_BATCH_SIZE,
     DATA_DIR,
@@ -12,6 +13,7 @@ from .market_data_config import (
     INTRADAY_BATCH_PAUSE_SECONDS,
     INTRADAY_BATCH_SIZE,
     INTRADAY_CANDLE_DURATION,
+    INTRADAY_CANDLE_DURATION_BY_INTERVAL,
     INTRADAY_DATA_DIR,
     INTRADAY_INTERVAL,
     INTRADAY_PERIOD,
@@ -23,14 +25,15 @@ from .market_data_config import (
     WEEKLY_INTRADAY_INTERVAL,
     WEEKLY_INTRADAY_PERIOD,
     WEEKLY_INTRADAY_SOURCE_MARKER,
+    intraday_duration_for_interval,
     sanitize_ticker,
 )
-from .market_data_fetcher import (
+from .fetcher import (
     fetch_sp500_tickers,
     get_refresh_source_tickers,
     process_tickers,
 )
-from .market_data_storage import (
+from .storage import (
     latest_file,
     latest_file_mtime,
     list_cached_tickers,
@@ -39,11 +42,14 @@ from .market_data_storage import (
     write_refresh_marker,
 )
 
+INTRADAY_TRANSITION_REFERENCE_MAX_AGE = timedelta(minutes=30)
+
 
 def build_daily_history(
     sp500_period: str = DEFAULT_DAILY_HISTORY_PERIOD,
     long_period: str = LONG_HISTORY_PERIOD,
 ) -> None:
+    """Refresh daily caches, keeping longer histories for selected assets."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     sp500 = [
@@ -76,6 +82,7 @@ def build_intraday_history(
     interval: str = INTRADAY_INTERVAL,
     period: str = INTRADAY_PERIOD,
 ) -> None:
+    """Refresh the short intraday cache used by the 1D chart."""
     INTRADAY_DATA_DIR.mkdir(parents=True, exist_ok=True)
     source_tickers = (
         tickers
@@ -100,6 +107,7 @@ def build_weekly_intraday_history(
     interval: str = WEEKLY_INTRADAY_INTERVAL,
     period: str = WEEKLY_INTRADAY_PERIOD,
 ) -> None:
+    """Refresh the persisted hourly history used by the 1W chart."""
     WEEKLY_INTRADAY_DATA_DIR.mkdir(parents=True, exist_ok=True)
     source_tickers = (
         tickers
@@ -133,7 +141,10 @@ def _timestamp_to_utc_datetime(value: pd.Timestamp) -> datetime:
 
 def _latest_complete_intraday_session_close(
     df: pd.DataFrame,
+    *,
+    candle_duration: timedelta = INTRADAY_CANDLE_DURATION,
 ) -> datetime | None:
+    """Return session close only when the intraday frame covers a full market day."""
     if df.empty:
         return None
 
@@ -149,14 +160,14 @@ def _latest_complete_intraday_session_close(
     first_timestamp = pd.Timestamp(day_rows.index[0])
     last_timestamp = pd.Timestamp(day_rows.index[-1])
     covered_duration = (
-        last_timestamp - first_timestamp + INTRADAY_CANDLE_DURATION
+        last_timestamp - first_timestamp + candle_duration
     )
 
     if covered_duration < REGULAR_STOCK_SESSION_DURATION:
         return None
 
     return _timestamp_to_utc_datetime(
-        last_timestamp + INTRADAY_CANDLE_DURATION,
+        last_timestamp + candle_duration,
     )
 
 
@@ -169,8 +180,13 @@ def _daily_cache_updated_after(ticker: str, timestamp: datetime) -> bool:
 def _has_official_daily_close(
     ticker: str,
     intraday: pd.DataFrame,
+    *,
+    interval: str = INTRADAY_INTERVAL,
 ) -> bool:
-    session_close = _latest_complete_intraday_session_close(intraday)
+    session_close = _latest_complete_intraday_session_close(
+        intraday,
+        candle_duration=intraday_duration_for_interval(interval),
+    )
 
     return bool(
         session_close and _daily_cache_updated_after(ticker, session_close)
@@ -191,6 +207,7 @@ def _read_cached_history(
     ticker: str,
     data_kind: str,
 ) -> pd.DataFrame:
+    """Read one cache and discard corrupt CSV files so they can be rebuilt."""
     try:
         return read_csv(path)
     except (pd.errors.EmptyDataError, pd.errors.ParserError):
@@ -202,6 +219,7 @@ def _read_cached_history(
 
 
 def load_daily_history(ticker: str) -> pd.DataFrame:
+    """Load the newest daily cache for a sanitized ticker."""
     safe = sanitize_ticker(ticker)
     path = latest_file(DATA_DIR, safe)
 
@@ -218,9 +236,154 @@ def load_daily_history(ticker: str) -> pd.DataFrame:
     )
 
 
-def load_intraday_history(ticker: str) -> pd.DataFrame:
+def _utc_index_summary(
+    df: pd.DataFrame,
+) -> tuple[pd.Timestamp, pd.Timestamp, int] | None:
+    """Return comparable UTC bounds and row count for one market-data frame."""
+    if df.empty:
+        return None
+
+    index = pd.to_datetime(df.index, utc=True).drop_duplicates().sort_values()
+
+    return pd.Timestamp(index[0]), pd.Timestamp(index[-1]), len(index)
+
+
+@lru_cache(maxsize=4096)
+def _cache_covers_reference(
+    candidate_path_value: str,
+    candidate_mtime_ns: int,
+    candidate_size: int,
+    candidate_interval: str,
+    reference_path_value: str,
+    reference_mtime_ns: int,
+    reference_size: int,
+    reference_interval: str,
+) -> bool:
+    """Check that a newly selected interval preserves the visible 1D history."""
+    # mtimes and sizes are part of the cache key so replacing either CSV
+    # automatically invalidates this result.
+    del candidate_mtime_ns, candidate_size, reference_mtime_ns, reference_size
+
+    try:
+        candidate_summary = _utc_index_summary(
+            read_csv(Path(candidate_path_value))
+        )
+        reference_summary = _utc_index_summary(
+            read_csv(Path(reference_path_value))
+        )
+    except (OSError, pd.errors.EmptyDataError, pd.errors.ParserError):
+        return False
+
+    if candidate_summary is None or reference_summary is None:
+        return False
+
+    candidate_start, candidate_end, candidate_count = candidate_summary
+    reference_start, reference_end, reference_count = reference_summary
+    candidate_duration = intraday_duration_for_interval(candidate_interval)
+    reference_duration = intraday_duration_for_interval(reference_interval)
+    tolerance = max(candidate_duration, reference_duration)
+    candidate_span = candidate_end - candidate_start
+    reference_span = reference_end - reference_start
+    has_expected_detail = (
+        candidate_duration >= reference_duration
+        or (
+            candidate_count * candidate_duration.total_seconds()
+            >= (
+                reference_count
+                * reference_duration.total_seconds()
+                * 0.8
+            )
+        )
+    )
+
+    # The new cache may shift by one coarse candle on continuous markets, but
+    # it must preserve both the visible duration and the finer point density.
+    return bool(
+        candidate_end + tolerance >= reference_end
+        and candidate_span + tolerance >= reference_span
+        and has_expected_detail
+    )
+
+
+def resolve_intraday_interval(
+    ticker: str,
+    preferred_interval: str = INTRADAY_INTERVAL,
+) -> str:
+    """Switch intervals only when the preferred cache preserves chart coverage."""
     safe = sanitize_ticker(ticker)
-    prefix = f"{safe}_{INTRADAY_INTERVAL}"
+
+    # An admin change takes effect before the next scheduler download finishes.
+    # Keep every candidate path so coverage can be compared before switching.
+    candidates: list[tuple[int, bool, str, Path]] = []
+
+    for interval in INTRADAY_CANDLE_DURATION_BY_INTERVAL:
+        path = latest_file(INTRADAY_DATA_DIR, f"{safe}_{interval}")
+
+        if path is not None:
+            stat = path.stat()
+            candidates.append(
+                (
+                    stat.st_mtime_ns,
+                    interval == preferred_interval,
+                    interval,
+                    path,
+                )
+            )
+
+    if not candidates:
+        return preferred_interval
+
+    freshest = max(candidates)
+    freshest_mtime_ns, _, freshest_interval, freshest_path = freshest
+
+    if freshest_interval != preferred_interval:
+        return freshest_interval
+
+    references = [
+        candidate
+        for candidate in candidates
+        if candidate[2] != preferred_interval
+    ]
+
+    if not references:
+        return preferred_interval
+
+    reference_mtime_ns, _, reference_interval, reference_path = max(references)
+    transition_age = timedelta(
+        seconds=(freshest_mtime_ns - reference_mtime_ns) / 1_000_000_000
+    )
+
+    # Old caches from a previous day are not useful transition references.
+    if transition_age > INTRADAY_TRANSITION_REFERENCE_MAX_AGE:
+        return preferred_interval
+
+    candidate_stat = freshest_path.stat()
+    reference_stat = reference_path.stat()
+
+    if _cache_covers_reference(
+        str(freshest_path),
+        candidate_stat.st_mtime_ns,
+        candidate_stat.st_size,
+        preferred_interval,
+        str(reference_path),
+        reference_stat.st_mtime_ns,
+        reference_stat.st_size,
+        reference_interval,
+    ):
+        return preferred_interval
+
+    return reference_interval
+
+
+def load_intraday_history(
+    ticker: str,
+    *,
+    interval: str = INTRADAY_INTERVAL,
+) -> pd.DataFrame:
+    """Load the newest configured intraday cache used by the 1D visualization."""
+    safe = sanitize_ticker(ticker)
+    effective_interval = resolve_intraday_interval(ticker, interval)
+    prefix = f"{safe}_{effective_interval}"
     path = latest_file(INTRADAY_DATA_DIR, prefix)
 
     if path is None:
@@ -236,10 +399,23 @@ def load_intraday_history(ticker: str) -> pd.DataFrame:
     )
 
 
-def load_intraday_history_with_official_close(ticker: str) -> pd.DataFrame:
-    intraday = load_intraday_history(ticker)
+def load_intraday_history_with_official_close(
+    ticker: str,
+    *,
+    interval: str = INTRADAY_INTERVAL,
+) -> pd.DataFrame:
+    """Replace the last intraday close once the official daily close is available."""
+    effective_interval = resolve_intraday_interval(ticker, interval)
+    intraday = load_intraday_history(
+        ticker,
+        interval=effective_interval,
+    )
 
-    if not _has_official_daily_close(ticker, intraday):
+    if not _has_official_daily_close(
+        ticker,
+        intraday,
+        interval=effective_interval,
+    ):
         return intraday
 
     try:
@@ -262,7 +438,7 @@ def load_intraday_history_with_official_close(ticker: str) -> pd.DataFrame:
         return intraday
 
     # The closing auction can make the official daily close differ slightly
-    # from Yahoo's final 5 minute candle close.
+    # from Yahoo's final intraday candle close.
     out = intraday.copy()
     last_index = out.index[-1]
     out.loc[last_index, "Close"] = official_close
@@ -289,6 +465,7 @@ def load_intraday_history_with_official_close(ticker: str) -> pd.DataFrame:
 
 
 def load_weekly_intraday_history(ticker: str) -> pd.DataFrame:
+    """Load the persisted hourly cache used by weekly charts."""
     safe = sanitize_ticker(ticker)
     prefix = f"{safe}_{WEEKLY_INTRADAY_INTERVAL}"
     path = latest_file(WEEKLY_INTRADAY_DATA_DIR, prefix)
@@ -307,6 +484,7 @@ def load_weekly_intraday_history(ticker: str) -> pd.DataFrame:
 
 
 def _aggregate_intraday_to_hourly(df: pd.DataFrame) -> pd.DataFrame | None:
+    """Aggregate OHLCV correctly: first open, extrema, last close, summed volume."""
     required_columns = ["Open", "High", "Low", "Close"]
 
     if any(column not in df.columns for column in required_columns):
@@ -338,20 +516,29 @@ def _aggregate_intraday_to_hourly(df: pd.DataFrame) -> pd.DataFrame | None:
 
 
 def filter_recent_days(df: pd.DataFrame, days: int) -> pd.DataFrame:
+    """Keep only rows inside the requested rolling calendar window."""
     cutoff = datetime.now().date() - timedelta(days=days)
     mask = [pd.Timestamp(idx).date() >= cutoff for idx in df.index]
 
     return df.loc[mask]
 
 
-def refresh_weekly_intraday_from_1d(tickers: list[str] | None = None) -> int:
+def refresh_weekly_intraday_from_1d(
+    tickers: list[str] | None = None,
+    *,
+    interval: str = INTRADAY_INTERVAL,
+) -> int:
+    """Merge the newest 1D data into hourly caches without duplicate timestamps."""
     target_tickers = tickers if tickers is not None else list_cached_tickers()
     updated = 0
 
     for ticker in target_tickers:
         try:
             hourly_from_1d = _aggregate_intraday_to_hourly(
-                load_intraday_history_with_official_close(ticker),
+                load_intraday_history_with_official_close(
+                    ticker,
+                    interval=interval,
+                ),
             )
         except HTTPException:
             continue
@@ -393,6 +580,7 @@ def refresh_weekly_intraday_from_1d(tickers: list[str] | None = None) -> int:
 
 
 def _aggregate_latest_intraday_day(df: pd.DataFrame) -> pd.Series | None:
+    """Fold the active intraday session into one provisional daily OHLCV row."""
     required_columns = ["Open", "High", "Low", "Close"]
 
     if any(column not in df.columns for column in required_columns):
@@ -426,11 +614,20 @@ def _aggregate_latest_intraday_day(df: pd.DataFrame) -> pd.Series | None:
     return pd.Series(values, name=pd.Timestamp(latest_day))
 
 
-def load_daily_history_with_latest(ticker: str) -> pd.DataFrame:
+def load_daily_history_with_latest(
+    ticker: str,
+    *,
+    interval: str = INTRADAY_INTERVAL,
+) -> pd.DataFrame:
+    """Overlay the active session until the provider publishes its daily candle."""
     daily = load_daily_history(ticker)
 
     try:
-        intraday = load_intraday_history(ticker)
+        effective_interval = resolve_intraday_interval(ticker, interval)
+        intraday = load_intraday_history(
+            ticker,
+            interval=effective_interval,
+        )
         latest_day = _aggregate_latest_intraday_day(intraday)
     except HTTPException:
         latest_day = None
@@ -445,7 +642,11 @@ def load_daily_history_with_latest(ticker: str) -> pd.DataFrame:
 
     if (
         latest_day.name.date() == latest_daily_day
-        and _has_official_daily_close(ticker, intraday)
+        and _has_official_daily_close(
+            ticker,
+            intraday,
+            interval=effective_interval,
+        )
         and _has_valid_latest_daily_close(daily)
     ):
         return daily

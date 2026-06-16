@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// End-to-end test state: isolated account, IP, cookies, and target web server.
 const webRoot = process.env.TEST_WEB_ROOT ??
   fileURLToPath(new URL("../../web", import.meta.url));
 const require = createRequire(join(webRoot, "package.json"));
@@ -14,6 +15,7 @@ const password = `Avatar-${randomUUID()}`;
 const testIp = `avatar-test-${randomUUID()}`;
 const cookies = new Map();
 
+// Maintain the authenticated session exactly as a browser would across requests.
 function rememberCookies(response) {
   for (const value of response.headers.getSetCookie()) {
     const [pair] = value.split(";", 1);
@@ -29,6 +31,7 @@ function cookieHeader() {
   return Array.from(cookies, ([name, value]) => `${name}=${value}`).join("; ");
 }
 
+// Attach the test identity and accumulated cookies to every API call.
 async function request(path, options = {}) {
   const headers = new Headers(options.headers);
   const cookie = cookieHeader();
@@ -48,6 +51,7 @@ async function request(path, options = {}) {
   return response;
 }
 
+// Include the response body when an unexpected HTTP status makes the test fail.
 async function assertStatus(response, expectedStatus) {
   if (response.status !== expectedStatus) {
     throw new Error(
@@ -56,6 +60,7 @@ async function assertStatus(response, expectedStatus) {
   }
 }
 
+// Build upload inputs with controlled formats and dimensions.
 async function createImage(format, width, height) {
   return sharp({
     create: {
@@ -74,6 +79,7 @@ async function createImage(format, width, height) {
     .toBuffer();
 }
 
+// Submit the same multipart profile contract used by ProfileSettingsDialog.
 async function patchProfile({
   avatar,
   avatarMimeType,
@@ -104,6 +110,7 @@ async function patchProfile({
   });
 }
 
+// Create and authenticate the owner account before exercising private avatar routes.
 const registerResponse = await request("/api/auth/register", {
   body: JSON.stringify({ email, password }),
   headers: {
@@ -143,6 +150,7 @@ assert.ok(
   "No authenticated session cookie was returned."
 );
 
+// Upload a wide image and verify persisted crop metadata.
 const wideInput = await createImage("png", 2400, 600);
 const wideUploadResponse = await patchProfile({
   avatar: wideInput,
@@ -160,6 +168,7 @@ assert.equal(wideProfile.avatarScale, 2);
 assert.equal(wideProfile.avatarOffsetX, 20);
 assert.equal(wideProfile.avatarOffsetY, -15);
 
+// Anonymous and other authenticated users must not read the owner's private avatar.
 const unauthenticatedAvatar = await fetch(`${baseUrl}${wideProfile.avatarUrl}`);
 assert.equal(unauthenticatedAvatar.status, 401);
 
@@ -212,6 +221,7 @@ for (const [name, value] of ownerCookies) {
   cookies.set(name, value);
 }
 
+// The owner receives the normalized WebP with its constrained dimensions.
 const wideAvatarResponse = await request(wideProfile.avatarUrl);
 assert.equal(wideAvatarResponse.status, 200);
 assert.equal(wideAvatarResponse.headers.get("content-type"), "image/webp");
@@ -225,6 +235,7 @@ const wideMetadata = await sharp(
 assert.equal(wideMetadata.width, 1024);
 assert.equal(wideMetadata.height, 256);
 
+// Replacing the avatar must delete the former file and serve the new one.
 const tallInput = await createImage("jpeg", 600, 2400);
 const tallUploadResponse = await patchProfile({
   avatar: tallInput,
@@ -245,6 +256,7 @@ const tallMetadata = await sharp(
 assert.equal(tallMetadata.width, 256);
 assert.equal(tallMetadata.height, 1024);
 
+// Invalid dimensions, spoofed MIME data, and excessive byte size are rejected.
 const smallInput = await createImage("png", 32, 80);
 const smallResponse = await patchProfile({
   avatar: smallInput,
@@ -276,6 +288,7 @@ assert.equal(
   "Avatar must be 5 MB or smaller."
 );
 
+// Explicit removal deletes the active file before the temporary account is deleted.
 const removeResponse = await patchProfile({
   removeAvatar: true,
   scale: 1,

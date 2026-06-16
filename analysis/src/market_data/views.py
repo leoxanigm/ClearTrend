@@ -4,7 +4,7 @@ import math
 import pandas as pd
 from fastapi import HTTPException
 
-from .market_data_config import (
+from .config import (
     DATA_DIR,
     INTRADAY_DATA_DIR,
     INTRADAY_INTERVAL,
@@ -14,29 +14,36 @@ from .market_data_config import (
     WEEKLY_INTRADAY_INTERVAL,
     sanitize_ticker,
 )
-from .market_data_history import (
+from .history import (
     filter_recent_days,
     load_daily_history_with_latest,
     load_intraday_history_with_official_close,
     load_weekly_intraday_history,
+    resolve_intraday_interval,
 )
-from .market_data_storage import latest_datetime, latest_file_mtime
+from .storage import latest_datetime, latest_file_mtime
 
 
 def get_data_updated_at(
     ticker: str,
     *,
+    intraday_interval: str = INTRADAY_INTERVAL,
     range_name: str | None = None,
 ) -> datetime | None:
+    """Return the newest cache timestamp used by the requested chart range."""
     safe = sanitize_ticker(ticker)
 
     if range_name:
         normalized_range = range_name.upper()
 
         if normalized_range == "1D":
+            effective_interval = resolve_intraday_interval(
+                ticker,
+                intraday_interval,
+            )
             intraday_updated_at = latest_file_mtime(
                 INTRADAY_DATA_DIR,
-                f"{safe}_{INTRADAY_INTERVAL}",
+                f"{safe}_{effective_interval}",
             )
             daily_updated_at = latest_file_mtime(DATA_DIR, safe)
 
@@ -48,10 +55,11 @@ def get_data_updated_at(
                 f"{safe}_{WEEKLY_INTRADAY_INTERVAL}",
             )
 
+    effective_interval = resolve_intraday_interval(ticker, intraday_interval)
     daily_updated_at = latest_file_mtime(DATA_DIR, safe)
     intraday_updated_at = latest_file_mtime(
         INTRADAY_DATA_DIR,
-        f"{safe}_{INTRADAY_INTERVAL}",
+        f"{safe}_{effective_interval}",
     )
 
     return latest_datetime(daily_updated_at, intraday_updated_at)
@@ -61,15 +69,20 @@ def get_candles(
     ticker: str,
     *,
     end: str | None = None,
+    intraday_interval: str = INTRADAY_INTERVAL,
     limit: int | None = None,
     range_name: str | None = None,
     start: str | None = None,
 ) -> list[dict]:
+    """Select the stored history and granularity matching a dashboard request."""
     if range_name:
         normalized_range = range_name.upper()
 
         if normalized_range == "1D":
-            df = load_intraday_history_with_official_close(ticker)
+            df = load_intraday_history_with_official_close(
+                ticker,
+                interval=intraday_interval,
+            )
             return df_to_candles(df, include_time=True)
 
         if normalized_range == "1W":
@@ -86,12 +99,18 @@ def get_candles(
             )
 
         df = filter_recent_days(
-            load_daily_history_with_latest(ticker),
+            load_daily_history_with_latest(
+                ticker,
+                interval=intraday_interval,
+            ),
             RANGE_DAYS[normalized_range],
         )
         return df_to_candles(df)
 
-    df = load_daily_history_with_latest(ticker)
+    df = load_daily_history_with_latest(
+        ticker,
+        interval=intraday_interval,
+    )
 
     if start:
         df = df[df.index >= pd.Timestamp(start)]
@@ -103,8 +122,16 @@ def get_candles(
     return df_to_candles(df)
 
 
-def latest_payload(ticker: str) -> dict:
-    df = load_daily_history_with_latest(ticker)
+def latest_payload(
+    ticker: str,
+    *,
+    intraday_interval: str = INTRADAY_INTERVAL,
+) -> dict:
+    """Expose the latest daily row for legacy consumers of the analysis API."""
+    df = load_daily_history_with_latest(
+        ticker,
+        interval=intraday_interval,
+    )
     last = df.iloc[-1]
 
     return {
@@ -115,6 +142,7 @@ def latest_payload(ticker: str) -> dict:
 
 
 def _read_number(value) -> float | None:
+    """Convert pandas values into finite JSON-safe floats."""
     if pd.isna(value):
         return None
 
@@ -123,8 +151,16 @@ def _read_number(value) -> float | None:
     return number if math.isfinite(number) else None
 
 
-def _latest_and_previous_daily_close(ticker: str) -> tuple[float | None, float | None]:
-    df = load_daily_history_with_latest(ticker).sort_index()
+def _latest_and_previous_daily_close(
+    ticker: str,
+    *,
+    intraday_interval: str = INTRADAY_INTERVAL,
+) -> tuple[float | None, float | None]:
+    """Read the two closes required for daily price and performance."""
+    df = load_daily_history_with_latest(
+        ticker,
+        interval=intraday_interval,
+    ).sort_index()
 
     if "Close" not in df.columns or len(df) < 1:
         return None, None
@@ -135,9 +171,17 @@ def _latest_and_previous_daily_close(ticker: str) -> tuple[float | None, float |
     return last_price, previous_close
 
 
-def _snapshot_payload(ticker: str) -> dict | None:
+def _snapshot_payload(
+    ticker: str,
+    *,
+    intraday_interval: str = INTRADAY_INTERVAL,
+) -> dict | None:
+    """Build one compact watchlist snapshot, omitting unavailable tickers."""
     try:
-        last_price, previous_close = _latest_and_previous_daily_close(ticker)
+        last_price, previous_close = _latest_and_previous_daily_close(
+            ticker,
+            intraday_interval=intraday_interval,
+        )
     except HTTPException:
         return None
 
@@ -149,7 +193,10 @@ def _snapshot_payload(ticker: str) -> dict | None:
         if previous_close is not None and previous_close > 0
         else None
     )
-    updated_at = get_data_updated_at(ticker)
+    updated_at = get_data_updated_at(
+        ticker,
+        intraday_interval=intraday_interval,
+    )
 
     return {
         "symbol": sanitize_ticker(ticker),
@@ -165,19 +212,38 @@ def _snapshot_payload(ticker: str) -> dict | None:
     }
 
 
-def snapshot_payloads(tickers: list[str]) -> list[dict]:
+def snapshot_payloads(
+    tickers: list[str],
+    *,
+    intraday_interval: str = INTRADAY_INTERVAL,
+) -> list[dict]:
+    """Build snapshots independently so one missing ticker does not fail the batch."""
     return [
         snapshot
         for ticker in tickers
-        if (snapshot := _snapshot_payload(ticker)) is not None
+        if (
+            snapshot := _snapshot_payload(
+                ticker,
+                intraday_interval=intraday_interval,
+            )
+        ) is not None
     ]
 
 
-def _range_performance_payload(ticker: str, range_name: str) -> dict | None:
+def _range_performance_payload(
+    ticker: str,
+    range_name: str,
+    *,
+    intraday_interval: str = INTRADAY_INTERVAL,
+) -> dict | None:
+    """Calculate first-to-last close performance for one product range."""
     normalized_range = range_name.upper()
 
     if normalized_range == "1D":
-        snapshot = _snapshot_payload(ticker)
+        snapshot = _snapshot_payload(
+            ticker,
+            intraday_interval=intraday_interval,
+        )
 
         return (
             None
@@ -189,7 +255,11 @@ def _range_performance_payload(ticker: str, range_name: str) -> dict | None:
         )
 
     try:
-        candles = get_candles(ticker, range_name=normalized_range)
+        candles = get_candles(
+            ticker,
+            intraday_interval=intraday_interval,
+            range_name=normalized_range,
+        )
     except HTTPException:
         return None
 
@@ -215,17 +285,28 @@ def _range_performance_payload(ticker: str, range_name: str) -> dict | None:
     }
 
 
-def performance_payloads(tickers: list[str], range_name: str) -> list[dict]:
+def performance_payloads(
+    tickers: list[str],
+    range_name: str,
+    *,
+    intraday_interval: str = INTRADAY_INTERVAL,
+) -> list[dict]:
+    """Return every available performance while tolerating partial cache gaps."""
     return [
         performance
         for ticker in tickers
         if (
-            performance := _range_performance_payload(ticker, range_name)
+            performance := _range_performance_payload(
+                ticker,
+                range_name,
+                intraday_interval=intraday_interval,
+            )
         ) is not None
     ]
 
 
 def df_to_candles(df: pd.DataFrame, *, include_time: bool = False) -> list[dict]:
+    """Serialize a pandas OHLCV frame into the compact API candle schema."""
     out: list[dict] = []
 
     for idx, row in df.iterrows():

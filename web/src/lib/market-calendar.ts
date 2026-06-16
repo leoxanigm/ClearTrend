@@ -1,3 +1,4 @@
+// The footer models the regular NYSE opening time in its own timezone.
 const marketTimeZone = "America/New_York";
 const marketOpenHour = 9;
 const marketOpenMinute = 30;
@@ -9,6 +10,7 @@ type CalendarDate = {
   year: number;
 };
 
+// Fixed-date holidays observed on Friday or Monday follow NYSE convention.
 function getObservedDate(year: number, month: number, day: number) {
   const date = new Date(Date.UTC(year, month - 1, day));
   const weekday = date.getUTCDay();
@@ -22,6 +24,7 @@ function getObservedDate(year: number, month: number, day: number) {
   return date;
 }
 
+// Build holidays such as the third Monday of January without hard-coded dates.
 function getNthWeekday(
   year: number,
   month: number,
@@ -35,6 +38,7 @@ function getNthWeekday(
   return date;
 }
 
+// Memorial Day is represented as the last Monday of May.
 function getLastWeekday(year: number, month: number, weekday: number) {
   const date = new Date(Date.UTC(year, month, 0));
   const offset = (date.getUTCDay() - weekday + 7) % 7;
@@ -43,6 +47,7 @@ function getLastWeekday(year: number, month: number, weekday: number) {
   return date;
 }
 
+// Good Friday is derived from Easter, whose date changes every year.
 function getEasterSunday(year: number) {
   const a = year % 19;
   const b = Math.floor(year / 100);
@@ -66,6 +71,7 @@ function toDateKey(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+// Return the regular full-day NYSE closures used by the dashboard indication.
 function getMarketHolidays(year: number) {
   const goodFriday = getEasterSunday(year);
 
@@ -86,6 +92,7 @@ function getMarketHolidays(year: number) {
   ]);
 }
 
+// Read the current instant as wall-clock fields in New York.
 function getZonedDateParts(date: Date): CalendarDate & {
   hour: number;
   minute: number;
@@ -126,6 +133,7 @@ function getZonedDateParts(date: Date): CalendarDate & {
   };
 }
 
+// Calendar arithmetic is performed in UTC to avoid local daylight-saving jumps.
 function addCalendarDays(date: CalendarDate, days: number): CalendarDate {
   const nextDate = new Date(
     Date.UTC(date.year, date.month - 1, date.day) + days * millisecondsPerDay
@@ -138,6 +146,7 @@ function addCalendarDays(date: CalendarDate, days: number): CalendarDate {
   };
 }
 
+// Weekends and configured exchange holidays are not regular trading days.
 function isMarketDay(date: CalendarDate) {
   const utcDate = new Date(Date.UTC(date.year, date.month - 1, date.day));
   const weekday = utcDate.getUTCDay();
@@ -149,6 +158,7 @@ function isMarketDay(date: CalendarDate) {
   );
 }
 
+// Intl supplies the historical New York UTC offset, including daylight saving.
 function getTimeZoneOffsetMilliseconds(date: Date) {
   const parts = new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
@@ -177,6 +187,7 @@ function getTimeZoneOffsetMilliseconds(date: Date) {
   return zonedAsUtc - date.getTime();
 }
 
+// Convert 09:30 New York wall time into the corresponding absolute timestamp.
 function getMarketOpenTimestamp(date: CalendarDate) {
   const approximateTimestamp = Date.UTC(
     date.year,
@@ -192,6 +203,7 @@ function getMarketOpenTimestamp(date: CalendarDate) {
   );
 }
 
+// Find today's opening when still upcoming, otherwise the next market day.
 export function getNextMarketOpen(now = new Date()) {
   const marketNow = getZonedDateParts(now);
   let candidate: CalendarDate = marketNow;

@@ -1,5 +1,7 @@
 "use client";
 
+// Interactive financial chart, including local CSV/JSON export of visible candles.
+
 import {
   useCallback,
   useEffect,
@@ -28,6 +30,7 @@ import { getCandlestickWidth } from "@/lib/chart-layout";
 import { getNextMarketOpen } from "@/lib/market-calendar";
 import { useLocale, useTranslations } from "next-intl";
 
+// Public component contract and internal chart data structures
 type AssetChartProps = {
   asset: WatchlistAsset | null;
   financeRefreshRateSeconds: number;
@@ -37,6 +40,7 @@ type AssetChartProps = {
 };
 
 type ChartResponse = {
+  // Fields remain optional because unavailable providers may return partial metadata.
   candles?: ChartCandle[];
   currency?: string | null;
   dayChangePercent?: number | null;
@@ -46,6 +50,14 @@ type ChartResponse = {
   symbol?: string;
   updatedAt?: string | null;
 };
+
+type ChartMetaResponse = {
+  interval?: string | null;
+  symbol?: string;
+  updatedAt?: string | null;
+};
+
+type ChartRefreshResult = "changed" | "failed" | "unchanged";
 
 type ChartSize = {
   height: number;
@@ -70,6 +82,7 @@ type AssetSnapshotUpdate = {
 };
 
 type ChartPoint = {
+  // Keeping the source candle lets one hover point serve price and OHLC views.
   candle: ChartCandle;
   tooltipDateLabel: string;
   x: number;
@@ -78,6 +91,7 @@ type ChartPoint = {
 
 type ChartVisualization = "candles" | "price";
 
+// Stable SVG dimensions keep axes and interactions consistent across renders.
 const desktopChartSize: ChartSize = {
   height: 400,
   padding: {
@@ -101,10 +115,13 @@ const compactChartSize: ChartSize = {
 };
 
 const chartMetaPollIntervalMs = 5 * 60 * 1000;
+// Poll shortly after expected backend cache refresh boundaries.
 const chartMetaPollOffsetMs = 30 * 1000;
+// Failed checks retry sooner than a normal refresh interval.
 const chartRetryPollMs = 30 * 1000;
 const regularStockSessionMs = 6.5 * 60 * 60 * 1000;
 
+// Small footer metric with a keyboard-accessible explanation.
 function ChartFooterMetric({ label, tooltip }: ChartFooterMetricProps) {
   return (
     <Tooltip
@@ -121,6 +138,7 @@ async function fetchChartCandles(
   range: ChartRange,
   signal?: AbortSignal
 ) {
+  // The browser uses the authenticated Next.js proxy, never FastAPI directly.
   const response = await fetch(
     `/api/assets/candles?symbol=${encodeURIComponent(symbol)}&range=${range}`,
     {
@@ -136,10 +154,32 @@ async function fetchChartCandles(
   return (await response.json()) as ChartResponse;
 }
 
+// Check cache freshness without transferring the complete candle history.
+async function fetchChartMeta(
+  symbol: string,
+  range: ChartRange,
+  signal?: AbortSignal
+) {
+  const response = await fetch(
+    `/api/assets/candles/meta?symbol=${encodeURIComponent(symbol)}&range=${range}`,
+    {
+      cache: "no-store",
+      signal,
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Chart metadata request failed");
+  }
+
+  return (await response.json()) as ChartMetaResponse;
+}
+
 function getNextChartPollDelayMs(
   intervalMs = chartMetaPollIntervalMs,
   now = Date.now()
 ) {
+  // Align polling to shared time slots so clients refresh around the same cache update.
   const currentSlot =
     Math.floor(now / intervalMs) * intervalMs;
   const nextSlotWithOffset = currentSlot + chartMetaPollOffsetMs;
@@ -169,6 +209,7 @@ function formatPrice(
   }).format(value);
 }
 
+// Locale-aware formatting helpers
 function formatPercent(value: number | null, fallback: string) {
   if (value === null) {
     return fallback;
@@ -204,6 +245,7 @@ function formatRelativeUpdate(
   }
 
   const diffSeconds = Math.round((timestamp - Date.now()) / 1000);
+  // Larger units are tested first to produce one concise relative label.
   const divisions: Array<[Intl.RelativeTimeFormatUnit, number]> = [
     ["year", 60 * 60 * 24 * 365],
     ["month", 60 * 60 * 24 * 30],
@@ -233,10 +275,12 @@ function formatAxisPrice(value: number, locale: string) {
 }
 
 function getSystemTimeZone() {
+  // Axis labels and date controls use the timezone selected by the browser.
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
 function formatDateControlValue(timestamp: number, includeTime: boolean) {
+  // datetime-local requires a local value without a timezone suffix.
   const date = new Date(timestamp);
   const pad = (value: number) => String(value).padStart(2, "0");
   const dateValue = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
@@ -257,6 +301,7 @@ function parseDateControlValue(
     return null;
   }
 
+  // Date-only upper bounds include the complete selected calendar day.
   const timestamp = Date.parse(
     includeTime
       ? value
@@ -275,6 +320,7 @@ function formatAxisTime(timestamp: number, locale: string) {
 }
 
 function getDatePart(datetime: string) {
+  // Support both ISO T separators and the space-separated source format.
   return datetime.includes("T")
     ? datetime.split("T")[0]
     : datetime.split(" ")[0];
@@ -285,6 +331,7 @@ function formatCalendarDate(
   range: ChartRange,
   locale: string
 ) {
+  // Rebuild local midnight from the source date to ignore candle time.
   const datePart = getDatePart(datetime);
   const date = new Date(`${datePart}T00:00:00`);
 
@@ -320,6 +367,7 @@ function formatTooltipDate(
   range: ChartRange,
   locale: string
 ) {
+  // Intraday ranges include time while longer ranges show calendar dates.
   if (range === "1D" || range === "1W") {
     return formatTimestampDate(displayTimestamp, range, locale);
   }
@@ -337,6 +385,7 @@ function getPerformanceClass(value: number | null) {
     : "asset-performance-negative";
 }
 
+// Convert financial candles into ready-to-render SVG coordinates and paths.
 function buildChartData(
   candles: ChartCandle[],
   range: ChartRange,
@@ -345,6 +394,7 @@ function buildChartData(
   visualization: ChartVisualization,
   useFullOneDayWindow: boolean
 ) {
+  // A neutral result shape keeps rendering code free from null checks.
   if (candles.length === 0) {
     return {
       areaPath: "",
@@ -368,6 +418,7 @@ function buildChartData(
       ? candles.map((candle) => candle.high)
       : closes)
   );
+  // Always reserve vertical breathing room, including almost flat price series.
   const valuePadding = Math.max(
     (maxPrice - minPrice) * 0.1,
     maxPrice * 0.002,
@@ -399,6 +450,7 @@ function buildChartData(
   );
 
   function getX(index: number) {
+    // Fixed 1D windows use real timestamps to preserve empty session space.
     if (isFixedOneDayWindow) {
       const timestamp = candles[index].timestamp;
 
@@ -409,6 +461,7 @@ function buildChartData(
   }
 
   function getY(value: number) {
+    // SVG y coordinates grow downward, so the normalized ratio is inverted.
     const ratio = (value - minValue) / (maxValue - minValue);
 
     return padding.top + (1 - ratio) * usableHeight;
@@ -441,6 +494,7 @@ function buildChartData(
     lastPoint.split(",")[0]
   },${chartBottom} L ${firstPoint.split(",")[0]},${chartBottom} Z`;
   const yTickValues = [maxValue, (maxValue + minValue) / 2, minValue];
+  // Candle width follows actual point spacing instead of a fixed item count.
   const candleWidth = getCandlestickWidth(
     chartPoints.map((point) => point.x),
     usableWidth,
@@ -455,6 +509,7 @@ function buildChartData(
           const closeY = getY(point.candle.close);
           const rawBodyHeight = Math.abs(closeY - openY);
           const bodyHeight = Math.max(rawBodyHeight, 2);
+          // Flat candles retain a visible body centered around open and close.
           const bodyY =
             rawBodyHeight >= 2
               ? Math.min(openY, closeY)
@@ -474,6 +529,7 @@ function buildChartData(
     linePath: isCandlestickChart ? "" : linePath,
     points: chartPoints,
     xTicks: isFixedOneDayWindow
+      // Fixed sessions show opening, midpoint, and closing timestamps.
       ? [xMin, xMin + xDomain / 2, xMax].map((timestamp, tickIndex) => {
           const isFirstTick = tickIndex === 0;
           const isLastTick = tickIndex === 2;
@@ -524,6 +580,7 @@ export function AssetChart({
   onRangeChange,
   range,
 }: AssetChartProps) {
+  // Chart state and server metadata
   const locale = useLocale();
   const t = useTranslations("chart");
   const commonT = useTranslations("common");
@@ -543,9 +600,12 @@ export function AssetChart({
   const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Ref access avoids restarting polling whenever freshness metadata changes.
+  const intervalRef = useRef<string | null>(null);
   const updatedAtRef = useRef<string | null>(null);
   const chartPollIntervalMs = Math.max(financeRefreshRateSeconds * 1000, 60_000);
 
+  // Apply one complete backend response atomically to the visible chart.
   const applyChartResponse = useCallback(
     (
       body: ChartResponse,
@@ -553,6 +613,7 @@ export function AssetChart({
     ) => {
       const nextCandles = body.candles ?? [];
 
+      // A successful response without points is still unusable chart data.
       if (nextCandles.length === 0) {
         throw new Error("No chart data");
       }
@@ -560,12 +621,14 @@ export function AssetChart({
       setCandles(nextCandles);
       setCurrency(body.currency ?? null);
       setDayChangePercent(body.dayChangePercent ?? null);
+      intervalRef.current = body.interval ?? null;
       setInterval(body.interval ?? null);
       setSource(body.source ?? null);
       updatedAtRef.current = body.updatedAt ?? null;
       setUpdatedAt(body.updatedAt ?? null);
       setHoveredPoint(null);
       setError(null);
+      // Feed selected-asset market values back into the shared watchlist.
       onAssetSnapshotChange?.({
         dayChangePercent: body.dayChangePercent ?? null,
         lastPrice: body.lastPrice ?? nextCandles.at(-1)?.close ?? null,
@@ -575,6 +638,7 @@ export function AssetChart({
     [onAssetSnapshotChange]
   );
 
+  // Responsive chart dimensions
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 600px)");
 
@@ -590,6 +654,7 @@ export function AssetChart({
     };
   }, []);
 
+  // Clock used for relative update labels and the next-market-open indication.
   useEffect(() => {
     function updateCurrentTime() {
       setCurrentTime(Date.now());
@@ -604,6 +669,7 @@ export function AssetChart({
     };
   }, []);
 
+  // Initial candle loading whenever the selected asset or range changes.
   useEffect(() => {
     const symbol = asset?.symbol;
 
@@ -615,6 +681,7 @@ export function AssetChart({
     const controller = new AbortController();
 
     async function loadCandles() {
+      // Reset transient state that belongs to the previously selected request.
       setIsLoading(true);
       setError(null);
       setDayChangePercent(null);
@@ -632,6 +699,8 @@ export function AssetChart({
         if (!controller.signal.aborted) {
           setCandles([]);
           setDayChangePercent(null);
+          intervalRef.current = null;
+          setInterval(null);
           updatedAtRef.current = null;
           setUpdatedAt(null);
           setError(t("unavailable"));
@@ -650,6 +719,7 @@ export function AssetChart({
     };
   }, [applyChartResponse, asset?.symbol, range, t]);
 
+  // Background refresh preserves the last valid chart if a polling request fails.
   useEffect(() => {
     const symbol = asset?.symbol;
 
@@ -662,9 +732,10 @@ export function AssetChart({
     let isDisposed = false;
     let timeoutId: number | null = null;
 
-    async function refreshCandlesIfNeeded() {
+    async function refreshCandlesIfNeeded(): Promise<ChartRefreshResult> {
+      // Hidden tabs postpone work until the visibility handler runs.
       if (document.hidden) {
-        return true;
+        return "unchanged";
       }
 
       activeController?.abort();
@@ -672,23 +743,49 @@ export function AssetChart({
       activeController = controller;
 
       try {
+        const previousUpdatedAt = updatedAtRef.current;
+        const previousInterval = intervalRef.current;
+        const metadata = await fetchChartMeta(
+          requestedSymbol,
+          range,
+          controller.signal
+        );
+
+        if (isDisposed) {
+          return "unchanged";
+        }
+
+        // A matching timestamp proves that the browser already has this cache version.
+        if (
+          previousUpdatedAt &&
+          metadata.updatedAt &&
+          metadata.updatedAt === previousUpdatedAt &&
+          metadata.interval === previousInterval
+        ) {
+          return "unchanged";
+        }
+
+        // Missing or changed metadata falls back to the canonical full response.
         const body = await fetchChartCandles(
           requestedSymbol,
           range,
           controller.signal
         );
         if (isDisposed) {
-          return true;
+          return "unchanged";
         }
 
-        const previousUpdatedAt = updatedAtRef.current;
         applyChartResponse(body, requestedSymbol);
 
-        return Boolean(body.updatedAt && body.updatedAt !== previousUpdatedAt);
-      } catch {
+        return body.updatedAt !== previousUpdatedAt ? "changed" : "unchanged";
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return "unchanged";
+        }
+
         // Background polling should never replace visible chart data with an
         // error state. The next interval can try again.
-        return false;
+        return "failed";
       }
     }
 
@@ -705,9 +802,11 @@ export function AssetChart({
 
       timeoutId = window.setTimeout(() => {
         timeoutId = null;
-        void refreshCandlesIfNeeded().then((changed) => {
+        void refreshCandlesIfNeeded().then((result) => {
           scheduleNextRefresh(
-            changed ? getNextChartPollDelayMs(chartPollIntervalMs) : chartRetryPollMs
+            result === "failed"
+              ? chartRetryPollMs
+              : getNextChartPollDelayMs(chartPollIntervalMs)
           );
         });
       }, delayMs);
@@ -716,6 +815,7 @@ export function AssetChart({
     scheduleNextRefresh();
 
     function handleVisibilityChange() {
+      // Returning to the tab may reveal data missed while polling was paused.
       if (!document.hidden) {
         void refreshCandlesIfNeeded();
         scheduleNextRefresh();
@@ -734,6 +834,7 @@ export function AssetChart({
     };
   }, [applyChartResponse, asset?.symbol, chartPollIntervalMs, range]);
 
+  // Local date filtering and derived visualization values
   const dateControlIncludesTime = range === "1D" || range === "1W";
   const minimumDateValue =
     candles.length > 0
@@ -751,6 +852,7 @@ export function AssetChart({
         : getDatePart(candles.at(-1)?.datetime ?? candles[0].datetime)
       : "";
   const visibleCandles = useMemo(() => {
+    // Date-only ranges compare stable source date strings.
     if (!dateControlIncludesTime) {
       return candles.filter((candle) => {
         const candleDate = getDatePart(candle.datetime);
@@ -763,6 +865,7 @@ export function AssetChart({
     }
 
     const fromTimestamp = parseDateControlValue(dateFrom, true, false);
+    // The upper datetime bound remains inclusive of the entered minute.
     const toTimestamp = parseDateControlValue(dateTo, true, true);
 
     return candles.filter(
@@ -796,6 +899,7 @@ export function AssetChart({
   const lastCandle = visibleCandles.at(-1) ?? null;
   const intradayDayChangePercent =
     range === "1D" ? dayChangePercent : null;
+  // 1D uses provider change; longer ranges derive the visible endpoint change.
   const rangeChangePercent =
     intradayDayChangePercent ??
     (firstCandle && lastCandle
@@ -811,10 +915,12 @@ export function AssetChart({
       }
     : undefined;
   const tooltipAlignsLeft =
+    // Flip wide tooltips before they overflow the right edge.
     hoveredPoint !== null && hoveredPoint.x > chartSize.width * 0.58;
   const nextMarketOpen =
     currentTime === null ? null : getNextMarketOpen(new Date(currentTime));
 
+  // Export the exact candles currently visible after local date filtering.
   function downloadChartData(format: "csv" | "json") {
     if (!asset || visibleCandles.length === 0) {
       return;
@@ -839,6 +945,7 @@ export function AssetChart({
           : "application/json;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
+    // A temporary anchor downloads client-generated data without server storage.
     const link = document.createElement("a");
 
     link.href = url;
@@ -849,12 +956,14 @@ export function AssetChart({
     URL.revokeObjectURL(url);
   }
 
+  // Match the pointer to the nearest candle in SVG coordinates.
   function handleChartMouseMove(event: MouseEvent<SVGSVGElement>) {
     if (isCompactChart || chartData.points.length === 0) {
       return;
     }
 
     const bounds = event.currentTarget.getBoundingClientRect();
+    // Convert browser pixels into the fixed SVG viewBox coordinate system.
     const cursorX =
       ((event.clientX - bounds.left) / bounds.width) * chartSize.width;
     const nearestPoint = chartData.points.reduce((nearest, point) =>
@@ -866,9 +975,11 @@ export function AssetChart({
     setHoveredPoint(nearestPoint);
   }
 
+  // Header, controls, SVG visualization, tooltip, and metadata footer
   return (
     <section className="asset-chart">
       <header className="asset-chart-header">
+        {/* Asset identity and performance for the currently visible range. */}
         <div className="asset-chart-title">
           <p className="app-eyebrow">{asset?.symbol ?? t("titleFallback")}</p>
           <h2>{asset?.name ?? t("noAsset")}</h2>
@@ -890,6 +1001,7 @@ export function AssetChart({
       </header>
 
       <div className="asset-chart-range-row">
+        {/* Primary ranges remain visible when advanced mobile controls collapse. */}
         <div className="asset-chart-ranges" aria-label={t("rangeLabel")}>
           {chartRanges.map((option) => (
             <Button
@@ -935,6 +1047,7 @@ export function AssetChart({
         }`}
         id="asset-chart-controls"
       >
+        {/* Optional date filters, visualization mode, and client-side exports. */}
         <div className="asset-chart-date-filters">
           <label>
             <span>{t("dateFrom")}</span>
@@ -1025,6 +1138,7 @@ export function AssetChart({
       </div>
 
       <div className="asset-chart-body">
+        {/* All states retain one stable viewport to avoid page layout shifts. */}
         {isLoading && <div className="chart-state">{t("loading")}</div>}
 
         {!isLoading && error && <div className="chart-state">{error}</div>}
@@ -1052,6 +1166,7 @@ export function AssetChart({
             preserveAspectRatio="xMinYMid meet"
             viewBox={`0 0 ${chartSize.width} ${chartSize.height}`}
           >
+            {/* Draw grid and axes before financial marks and hover overlays. */}
             <line
               className="asset-chart-grid"
               x1={chartSize.padding.left}
@@ -1114,6 +1229,7 @@ export function AssetChart({
                 <path className="asset-chart-line" d={chartData.linePath} />
               </>
             ) : (
+              // Each OHLC candle is composed of one wick and one body.
               chartData.candlesticks.map((candle, index) => (
                 <g
                   className={
@@ -1168,6 +1284,7 @@ export function AssetChart({
           </svg>
         )}
         {!isCompactChart && hoveredPoint && tooltipStyle ? (
+          // HTML is easier to size responsively than a dense SVG text box.
           <div
             className={`asset-chart-html-tooltip${
               tooltipAlignsLeft ? " asset-chart-html-tooltip-left" : ""
@@ -1217,6 +1334,7 @@ export function AssetChart({
       </div>
 
       <footer className="asset-chart-footer">
+        {/* Concise operational metadata stays explainable through tooltips. */}
         <ChartFooterMetric
           label={t("points", { count: visibleCandles.length })}
           tooltip={t("tooltips.points")}

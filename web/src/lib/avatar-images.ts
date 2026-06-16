@@ -1,5 +1,6 @@
 import sharp from "sharp";
 
+// Security and normalization limits applied while Sharp decodes the upload.
 export const avatarImageRules = {
   maxDimension: 1024,
   maxInputPixels: 25_000_000,
@@ -7,12 +8,14 @@ export const avatarImageRules = {
   outputMimeType: "image/webp",
 };
 
+// The browser-declared MIME type must match the format detected by Sharp.
 const formatByMimeType = new Map([
   ["image/jpeg", "jpeg"],
   ["image/png", "png"],
   ["image/webp", "webp"],
 ]);
 
+// Expected validation failures are separated from low-level Sharp errors.
 export class AvatarImageError extends Error {
   constructor(message: string) {
     super(message);
@@ -28,6 +31,7 @@ export type ProcessedAvatarImage = {
   width: number;
 };
 
+// Decode, validate, resize, and normalize an uploaded avatar into a WebP buffer.
 export async function processAvatarImage(
   input: Buffer,
   claimedMimeType: string
@@ -41,6 +45,7 @@ export async function processAvatarImage(
   }
 
   try {
+    // Decoding the real bytes prevents an extension or MIME-only validation.
     const image = sharp(input, {
       animated: false,
       failOn: "warning",
@@ -48,6 +53,7 @@ export async function processAvatarImage(
     });
     const metadata = await image.metadata();
 
+    // Width and height also prove that Sharp could identify a usable image.
     if (
       metadata.format !== expectedFormat ||
       !metadata.width ||
@@ -58,10 +64,12 @@ export async function processAvatarImage(
       );
     }
 
+    // Multi-page images such as animated WebP files are intentionally rejected.
     if ((metadata.pages ?? 1) > 1) {
       throw new AvatarImageError("Animated avatars are not supported.");
     }
 
+    // Both sides must be large enough for the circular profile rendering.
     if (
       metadata.width < avatarImageRules.minDimension ||
       metadata.height < avatarImageRules.minDimension
@@ -71,6 +79,8 @@ export async function processAvatarImage(
       );
     }
 
+    // rotate() applies EXIF orientation before dimensions are constrained.
+    // Sharp emits fresh WebP bytes, so source EXIF/XMP metadata is not retained.
     const { data, info } = await image
       .rotate()
       .resize({
@@ -97,6 +107,7 @@ export async function processAvatarImage(
       throw error;
     }
 
+    // Translate implementation-specific pixel-limit errors into a stable API error.
     const message = error instanceof Error ? error.message : "";
 
     if (/pixel limit|exceeds.*limit/i.test(message)) {

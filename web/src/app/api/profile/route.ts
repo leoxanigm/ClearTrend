@@ -22,12 +22,14 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+// Metadata stored in the profile after the binary image has been normalized.
 type AvatarUpload = {
   mimeType: string;
   size: number;
   url: string;
 };
 
+// Keep route errors consistent for client-side translation.
 function jsonError(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
 }
@@ -40,10 +42,12 @@ function readBoolean(value: FormDataEntryValue | null) {
   return value === "true" || value === "1";
 }
 
+// FormData values can be text or files, so narrow the avatar entry explicitly.
 function isFileEntry(value: FormDataEntryValue | null): value is File {
   return typeof File !== "undefined" && value instanceof File;
 }
 
+// Validate and persist one avatar before any profile database mutation.
 async function saveAvatar(
   file: File,
   userId: string
@@ -66,6 +70,7 @@ async function saveAvatar(
     };
   }
 
+  // Sharp validates the decoded image and always returns normalized WebP bytes.
   const buffer = Buffer.from(await file.arrayBuffer());
   let processedImage;
 
@@ -80,10 +85,12 @@ async function saveAvatar(
   }
 
   const avatarDirectory = await ensureAvatarDirectory();
+  // A fresh UUID prevents collisions and stale browser-cache reuse.
   const fileName = `${userId}-${randomUUID()}.webp`;
   const filePath = join(avatarDirectory, fileName);
 
   await writeFile(filePath, processedImage.buffer, {
+    // wx refuses the extremely unlikely case where the generated name exists.
     flag: "wx",
     mode: 0o600,
   });
@@ -95,6 +102,7 @@ async function saveAvatar(
   };
 }
 
+// Return the authenticated user's current profile.
 export async function GET() {
   const profile = await getCurrentUserProfile();
 
@@ -105,6 +113,7 @@ export async function GET() {
   return NextResponse.json({ profile });
 }
 
+// Update scalar profile fields and optionally upload, replace, or remove an avatar.
 export async function PATCH(req: Request) {
   const profile = await getCurrentUserProfile();
 
@@ -118,6 +127,7 @@ export async function PATCH(req: Request) {
     return jsonError("Expected multipart form data.", 415);
   }
 
+  // The server repeats all client validation because multipart input is untrusted.
   const formData = await req.formData().catch(() => null);
 
   if (!formData) {
@@ -147,6 +157,7 @@ export async function PATCH(req: Request) {
   let nextAvatarUrl = profile.avatarUrl;
   let nextAvatarMimeType = profile.avatarMimeType;
   let nextAvatarSize = profile.avatarSize;
+  // Track the new file separately so it can be removed if persistence fails.
   let uploadedAvatarUrl: string | null = null;
 
   if (isFileEntry(avatarFile) && avatarFile.size > 0) {
@@ -172,6 +183,7 @@ export async function PATCH(req: Request) {
   const prisma = getPrisma();
 
   try {
+    // Raw SQL updates avatar metadata and crop values as one database operation.
     await prisma.$executeRaw`
       UPDATE users
       SET
@@ -186,6 +198,7 @@ export async function PATCH(req: Request) {
       WHERE id = ${profile.id}
     `;
   } catch {
+    // A failed database update must not leave the newly written file orphaned.
     await deleteStoredAvatar(uploadedAvatarUrl);
 
     return jsonError("Profile could not be saved.", 500);
@@ -195,6 +208,7 @@ export async function PATCH(req: Request) {
     (uploadedAvatarUrl || removeAvatar) &&
     profile.avatarUrl !== nextAvatarUrl
   ) {
+    // Delete the previous file only after the new profile state is committed.
     await deleteStoredAvatar(profile.avatarUrl);
   }
 

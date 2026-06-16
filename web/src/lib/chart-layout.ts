@@ -1,10 +1,12 @@
 import type { ChartRange } from "@/lib/analysis-data";
 
+// Keep bodies readable without letting sparse datasets produce oversized candles.
 const minimumCandleWidth = 2;
 const maximumCandleWidth = 14;
 const maximumOneDayCandleWidth = 6;
 const candleSpacingRatio = 0.62;
 
+// Median spacing ignores isolated gaps better than an arithmetic average.
 function median(values: number[]) {
   const sortedValues = [...values].sort((left, right) => left - right);
   const middleIndex = Math.floor(sortedValues.length / 2);
@@ -18,6 +20,7 @@ function median(values: number[]) {
   return sortedValues[middleIndex];
 }
 
+// Derive a responsive candle width from the SVG positions actually rendered.
 export function getCandlestickWidth(
   xPositions: number[],
   usableWidth: number,

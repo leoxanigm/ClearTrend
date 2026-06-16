@@ -26,10 +26,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Resolve the active locale selected by request.ts: cookie, browser, then English.
   const locale = await getLocale();
+  // Retrieve the JSON dictionary already loaded for this locale.
   const messages = await getMessages();
 
   return (
+    // Expose the active language to browsers and assistive technologies.
     <html lang={locale} suppressHydrationWarning>
       <head>
         <Script
@@ -39,6 +42,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
+        {/* Make the dictionary available to every client component below. */}
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

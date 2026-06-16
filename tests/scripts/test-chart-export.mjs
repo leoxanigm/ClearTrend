@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+// Load TypeScript utilities directly so exports can be tested without a browser.
 const webRoot = process.env.TEST_WEB_ROOT ?? path.resolve("web");
 const chartExportModule = await import(
   pathToFileURL(path.join(webRoot, "src/lib/chart-analytics.ts")).href
@@ -22,6 +23,7 @@ const {
 const { getNextMarketOpen } = marketCalendarModule;
 const { getCandlestickWidth } = chartLayoutModule;
 
+// Two candles cover positive/negative changes and a missing volume value.
 const candles = [
   {
     close: 102,
@@ -51,6 +53,7 @@ const context = {
   updatedAt: "2026-06-05T14:35:10Z",
 };
 
+// CSV must expose a stable header and one flat row per candle.
 const csv = createChartCsvExport(context);
 const csvLines = csv.split("\n");
 
@@ -68,6 +71,7 @@ assert.equal(
   "AAPL,1D,2026-06-05 14:35:00,102,104,98,99,,-2.941176"
 );
 
+// JSON carries the same rows plus format, version, and chart metadata.
 const json = JSON.parse(createChartJsonExport(context));
 
 assert.equal(json.format, chartExportFormat);
@@ -81,6 +85,7 @@ assert.equal(json.candles[0].changePercent, 2);
 assert.equal(json.candles[1].volume, null);
 assert.ok(Number.isFinite(Date.parse(json.exportedAt)));
 
+// Filenames remain deterministic when the export date is injected.
 assert.equal(
   createChartExportFileName(
     "AAPL",
@@ -91,6 +96,7 @@ assert.equal(
   "cleartrend-aapl-1d-2026-06-07.csv"
 );
 
+// The remainder protects other analytics helpers exercised by the same suite.
 assert.equal(
   getNextMarketOpen(new Date("2026-06-07T22:40:00Z")).toISOString(),
   "2026-06-08T13:30:00.000Z"
