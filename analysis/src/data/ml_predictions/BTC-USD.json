@@ -1,0 +1,217 @@
+{
+  "ticker": "BTC-USD",
+  "sourceTicker": "BTC-USD",
+  "generatedAt": "2026-06-15T21:18:29.022303+00:00",
+  "predictions": [
+    {
+      "horizon": "1D",
+      "score": 0.5724,
+      "trend": "bullish",
+      "confidence": 0.2928,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.55,
+        "sentiment": 0.3909
+      },
+      "signalAgreement": 0.5636,
+      "components": {
+        "historical": 0.4818,
+        "sentiment": 0.7,
+        "attention": 0.7978
+      },
+      "estimatedPrice": 65617.5576,
+      "estimatedReturn": -0.001414,
+      "priceInterval": {
+        "lower": 62265.7716,
+        "upper": 69149.7712
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1D",
+        "marketCalendar": "continuous",
+        "observationCount": 1,
+        "sessions": 1,
+        "asOf": "2026-06-14",
+        "currentPrice": 65710.3984,
+        "predictedPrice": 65617.5576,
+        "predictedReturn": -0.001414,
+        "score": 0.4818,
+        "confidence": 0.2653,
+        "priceInterval": {
+          "lower": 62265.7716,
+          "upper": 69149.7712
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5039,
+          "maeReturn": 0.018319,
+          "baselineMaeReturn": 0.018057,
+          "residualStd": 0.026751,
+          "samples": 1825
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-24",
+          "targetDate": "2026-05-25",
+          "startPrice": 76981.125,
+          "predictedPrice": 76870.3757,
+          "actualPrice": 77279.9297,
+          "predictedReturn": -0.00144,
+          "actualReturn": 0.003874,
+          "absolutePriceErrorPercent": 0.53,
+          "directionCorrect": false
+        }
+      }
+    },
+    {
+      "horizon": "1W",
+      "score": 0.5547,
+      "trend": "neutral",
+      "confidence": 0.271,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.65,
+        "sentiment": 0.304
+      },
+      "signalAgreement": 0.5736,
+      "components": {
+        "historical": 0.4868,
+        "sentiment": 0.7,
+        "attention": 0.7978
+      },
+      "estimatedPrice": 65532.1691,
+      "estimatedReturn": -0.002716,
+      "priceInterval": {
+        "lower": 56763.3207,
+        "upper": 75655.6369
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1W",
+        "marketCalendar": "continuous",
+        "observationCount": 7,
+        "sessions": 7,
+        "asOf": "2026-06-14",
+        "currentPrice": 65710.3984,
+        "predictedPrice": 65532.1691,
+        "predictedReturn": -0.002716,
+        "score": 0.4868,
+        "confidence": 0.2566,
+        "priceInterval": {
+          "lower": 56763.3207,
+          "upper": 75655.6369
+        },
+        "metrics": {
+          "directionalAccuracy": 0.501,
+          "maeReturn": 0.052341,
+          "baselineMaeReturn": 0.049848,
+          "residualStd": 0.073291,
+          "samples": 1819
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-24",
+          "targetDate": "2026-05-31",
+          "startPrice": 76981.125,
+          "predictedPrice": 76814.8468,
+          "actualPrice": 73579.6875,
+          "predictedReturn": -0.002162,
+          "actualReturn": -0.045191,
+          "absolutePriceErrorPercent": 4.397,
+          "directionCorrect": true
+        }
+      }
+    },
+    {
+      "horizon": "1M",
+      "score": 0.549,
+      "trend": "neutral",
+      "confidence": 0.2209,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.8,
+        "sentiment": 0.1737
+      },
+      "signalAgreement": 0.6324,
+      "components": {
+        "historical": 0.5162,
+        "sentiment": 0.7,
+        "attention": 0.7978
+      },
+      "estimatedPrice": 66165.4833,
+      "estimatedReturn": 0.006902,
+      "priceInterval": {
+        "lower": 48141.9631,
+        "upper": 90936.6985
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1M",
+        "marketCalendar": "continuous",
+        "observationCount": 30,
+        "sessions": 30,
+        "asOf": "2026-06-14",
+        "currentPrice": 65710.3984,
+        "predictedPrice": 66165.4833,
+        "predictedReturn": 0.006902,
+        "score": 0.5162,
+        "confidence": 0.2128,
+        "priceInterval": {
+          "lower": 48141.9631,
+          "upper": 90936.6985
+        },
+        "metrics": {
+          "directionalAccuracy": 0.4803,
+          "maeReturn": 0.121999,
+          "baselineMaeReturn": 0.114582,
+          "residualStd": 0.162247,
+          "samples": 1796
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-15",
+          "targetDate": "2026-06-14",
+          "startPrice": 79065.6797,
+          "predictedPrice": 80538.6563,
+          "actualPrice": 65710.3984,
+          "predictedReturn": 0.018458,
+          "actualReturn": -0.185022,
+          "absolutePriceErrorPercent": 22.566,
+          "directionCorrect": false
+        }
+      }
+    }
+  ],
+  "social": {
+    "sentiment": {
+      "available": true,
+      "source": "reddit_rss",
+      "periodDays": 7,
+      "postCount": 11,
+      "score": 0.7,
+      "agreement": 0.8,
+      "bullishCount": 2,
+      "neutralCount": 3,
+      "bearishCount": 1,
+      "model": "gemma3:1b"
+    },
+    "attention": {
+      "available": true,
+      "source": "apewisdom",
+      "attention": 0.7978,
+      "mentions": 123,
+      "mentions24hAgo": 150,
+      "mentionGrowth": -0.18,
+      "rank": 8,
+      "rank24hAgo": 1,
+      "matchedTicker": "BTC.X"
+    }
+  },
+  "disclaimer": "Experimental trend estimate for educational use; not financial advice.",
+  "schemaVersion": 1,
+  "marketDataAsOf": "2026-06-14",
+  "modelVersion": "ridge100-reddit50-daily-social-calendar-v8",
+  "socialAttemptedAt": "2026-06-15T21:18:29.022309+00:00",
+  "socialEnabled": true,
+  "trainedAt": "2026-06-15T21:18:29.022309+00:00",
+  "trainingMode": "daily_backend_job"
+}

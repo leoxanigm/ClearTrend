@@ -1,0 +1,210 @@
+{
+  "ticker": "GOOGL",
+  "sourceTicker": "GOOGL",
+  "generatedAt": "2026-06-15T21:20:03.813828+00:00",
+  "predictions": [
+    {
+      "horizon": "1D",
+      "score": 0.5423,
+      "trend": "neutral",
+      "confidence": 0.2832,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.55,
+        "sentiment": 0.0
+      },
+      "signalAgreement": null,
+      "components": {
+        "historical": 0.5423,
+        "sentiment": null,
+        "attention": 0.3053
+      },
+      "estimatedPrice": 361.0626,
+      "estimatedReturn": 0.003837,
+      "priceInterval": {
+        "lower": 346.8975,
+        "upper": 375.8061
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1D",
+        "marketCalendar": "exchange",
+        "observationCount": 1,
+        "sessions": 1,
+        "asOf": "2026-06-12",
+        "currentPrice": 359.68,
+        "predictedPrice": 361.0626,
+        "predictedReturn": 0.003837,
+        "score": 0.5423,
+        "confidence": 0.354,
+        "priceInterval": {
+          "lower": 346.8975,
+          "upper": 375.8061
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5298,
+          "maeReturn": 0.014851,
+          "baselineMaeReturn": 0.014793,
+          "residualStd": 0.020419,
+          "samples": 1253
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-13",
+          "targetDate": "2026-05-14",
+          "startPrice": 402.62,
+          "predictedPrice": 403.7503,
+          "actualPrice": 401.07,
+          "predictedReturn": 0.002803,
+          "actualReturn": -0.003857,
+          "absolutePriceErrorPercent": 0.668,
+          "directionCorrect": false
+        }
+      }
+    },
+    {
+      "horizon": "1W",
+      "score": 0.5615,
+      "trend": "neutral",
+      "confidence": 0.2943,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.65,
+        "sentiment": 0.0
+      },
+      "signalAgreement": null,
+      "components": {
+        "historical": 0.5615,
+        "sentiment": null,
+        "attention": 0.3053
+      },
+      "estimatedPrice": 364.2069,
+      "estimatedReturn": 0.012507,
+      "priceInterval": {
+        "lower": 333.5772,
+        "upper": 397.649
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1W",
+        "marketCalendar": "exchange",
+        "observationCount": 5,
+        "sessions": 5,
+        "asOf": "2026-06-12",
+        "currentPrice": 359.68,
+        "predictedPrice": 364.2069,
+        "predictedReturn": 0.012507,
+        "score": 0.5615,
+        "confidence": 0.3679,
+        "priceInterval": {
+          "lower": 333.5772,
+          "upper": 397.649
+        },
+        "metrics": {
+          "directionalAccuracy": 0.5365,
+          "maeReturn": 0.0357,
+          "baselineMaeReturn": 0.034707,
+          "residualStd": 0.04482,
+          "samples": 1249
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-13",
+          "targetDate": "2026-05-20",
+          "startPrice": 402.62,
+          "predictedPrice": 408.6285,
+          "actualPrice": 388.91,
+          "predictedReturn": 0.014813,
+          "actualReturn": -0.034645,
+          "absolutePriceErrorPercent": 5.07,
+          "directionCorrect": false
+        }
+      }
+    },
+    {
+      "horizon": "1M",
+      "score": 0.5835,
+      "trend": "bullish",
+      "confidence": 0.2409,
+      "confidenceLevel": "low",
+      "weights": {
+        "historical": 0.8,
+        "sentiment": 0.0
+      },
+      "signalAgreement": null,
+      "components": {
+        "historical": 0.5835,
+        "sentiment": null,
+        "attention": 0.3053
+      },
+      "estimatedPrice": 372.4839,
+      "estimatedReturn": 0.034979,
+      "priceInterval": {
+        "lower": 313.9404,
+        "upper": 441.9447
+      },
+      "historical": {
+        "available": true,
+        "method": "ridge_regression",
+        "horizon": "1M",
+        "marketCalendar": "exchange",
+        "observationCount": 21,
+        "sessions": 21,
+        "asOf": "2026-06-12",
+        "currentPrice": 359.68,
+        "predictedPrice": 372.4839,
+        "predictedReturn": 0.034979,
+        "score": 0.5835,
+        "confidence": 0.3011,
+        "priceInterval": {
+          "lower": 313.9404,
+          "upper": 441.9447
+        },
+        "metrics": {
+          "directionalAccuracy": 0.4966,
+          "maeReturn": 0.075816,
+          "baselineMaeReturn": 0.071888,
+          "residualStd": 0.08724,
+          "samples": 1233
+        },
+        "validationSnapshot": {
+          "cutoffDate": "2026-05-13",
+          "targetDate": "2026-06-12",
+          "startPrice": 402.62,
+          "predictedPrice": 414.4316,
+          "actualPrice": 359.68,
+          "predictedReturn": 0.028915,
+          "actualReturn": -0.112778,
+          "absolutePriceErrorPercent": 15.222,
+          "directionCorrect": false
+        }
+      }
+    }
+  ],
+  "social": {
+    "sentiment": {
+      "available": false,
+      "reason": "No recent Reddit posts were found",
+      "postCount": 0
+    },
+    "attention": {
+      "available": true,
+      "source": "apewisdom",
+      "attention": 0.3053,
+      "mentions": 18,
+      "mentions24hAgo": 4,
+      "mentionGrowth": 3.5,
+      "rank": 42,
+      "rank24hAgo": 61,
+      "matchedTicker": "GOOGL"
+    }
+  },
+  "disclaimer": "Experimental trend estimate for educational use; not financial advice.",
+  "schemaVersion": 1,
+  "marketDataAsOf": "2026-06-12",
+  "modelVersion": "ridge100-reddit50-daily-social-calendar-v8",
+  "socialAttemptedAt": "2026-06-15T21:20:03.813834+00:00",
+  "socialEnabled": true,
+  "trainedAt": "2026-06-15T21:20:03.813834+00:00",
+  "trainingMode": "daily_backend_job"
+}
