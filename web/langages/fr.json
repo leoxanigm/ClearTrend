@@ -234,6 +234,7 @@
     }
   },
   "searchPage": {
+    "analysisSearch": "Recherche d'analyses",
     "labels": {
       "query": "Recherche",
       "type": "Type",
@@ -245,7 +246,7 @@
       "to": "Au"
     },
     "placeholders": {
-      "query": "Symbole, entreprise, rapport, notification..."
+      "query": "Symbole, entreprise, analyse, sentiment..."
     },
     "buttons": {
       "reset": "Réinitialiser",
@@ -256,8 +257,7 @@
       "all": "Tout",
       "assets": "Actifs",
       "analyses": "Analyses",
-      "reports": "Rapports",
-      "notifications": "Notifications"
+      "reports": "Rapports"
     },
     "sortOptions": {
       "createdAt": "Date de création",
@@ -285,8 +285,7 @@
     "resultTypes": {
       "asset": "Actif",
       "analysis": "Analyse",
-      "report": "Rapport",
-      "notification": "Notification"
+      "report": "Rapport"
     },
     "states": {
       "loading": "Chargement...",

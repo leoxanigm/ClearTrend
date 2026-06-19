@@ -234,6 +234,7 @@
     }
   },
   "searchPage": {
+    "analysisSearch": "Analysis Search",
     "labels": {
       "query": "Query",
       "type": "Type",
@@ -245,7 +246,7 @@
       "to": "To"
     },
     "placeholders": {
-      "query": "Symbol, company, report, notification..."
+      "query": "Symbol, company, analysis, sentiment..."
     },
     "buttons": {
       "reset": "Reset",
@@ -256,8 +257,7 @@
       "all": "All",
       "assets": "Assets",
       "analyses": "Analyses",
-      "reports": "Reports",
-      "notifications": "Notifications"
+      "reports": "Reports"
     },
     "sortOptions": {
       "createdAt": "Created date",
@@ -285,8 +285,7 @@
     "resultTypes": {
       "asset": "Asset",
       "analysis": "Analysis",
-      "report": "Report",
-      "notification": "Notification"
+      "report": "Report"
     },
     "states": {
       "loading": "Loading...",

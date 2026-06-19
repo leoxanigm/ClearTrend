@@ -22,7 +22,7 @@ export function SearchClient() {
   const tDashboard = useTranslations('dashboard');
   const commonT = useTranslations('common');
   const [query, setQuery] = useState('');
-  const [type, setType] = useState<SearchEntityType>('all');
+  const [type, setType] = useState<SearchEntityType>('assets');
   const [sort, setSort] = useState<SearchSortKey>('createdAt');
   const [direction, setDirection] = useState<SearchDirection>('desc');
   const [sentiment, setSentiment] = useState('');
@@ -118,7 +118,7 @@ export function SearchClient() {
   function resetFilters() {
     // Reset all controlled fields together to produce one canonical search state.
     setQuery('');
-    setType('all');
+    setType('assets');
     setSort('createdAt');
     setDirection('desc');
     setSentiment('');
@@ -132,11 +132,8 @@ export function SearchClient() {
 
   // Translated select options
   const entityTypes: Array<{ label: string; value: SearchEntityType }> = [
-    { label: t('entityTypes.all'), value: 'all' },
     { label: t('entityTypes.assets'), value: 'assets' },
-    { label: t('entityTypes.analyses'), value: 'analyses' },
-    { label: t('entityTypes.reports'), value: 'reports' },
-    { label: t('entityTypes.notifications'), value: 'notifications' }
+    { label: t('entityTypes.analyses'), value: 'analyses' }
   ];
 
   const sortOptions: Array<{ label: string; value: SearchSortKey }> = [
@@ -155,15 +152,6 @@ export function SearchClient() {
     { label: t('sentimentOptions.bullish'), value: 'BULLISH' },
     { label: t('sentimentOptions.neutral'), value: 'NEUTRAL' },
     { label: t('sentimentOptions.bearish'), value: 'BEARISH' }
-  ];
-
-  const sourceOptions = [
-    { label: t('sourceOptions.any'), value: '' },
-    { label: t('sourceOptions.price'), value: 'PRICE' },
-    { label: t('sourceOptions.comment'), value: 'COMMENT' },
-    { label: t('sourceOptions.news'), value: 'NEWS' },
-    { label: t('sourceOptions.api'), value: 'API' },
-    { label: t('sourceOptions.scrape'), value: 'SCRAPE' }
   ];
 
   // Result formatting helpers
@@ -189,11 +177,6 @@ export function SearchClient() {
       return t('resultTypes.analysis');
     }
 
-    if (type === 'report') {
-      return t('resultTypes.report');
-    }
-
-    return t('resultTypes.notification');
   }
 
   function SearchResultCard({ result }: { result: SearchResultItem }) {
@@ -210,10 +193,6 @@ export function SearchClient() {
         </div>
 
         <h2 className='search-result-title'>{result.title}</h2>
-
-        {result.subtitle ? (
-          <p className='search-result-subtitle'>{result.subtitle}</p>
-        ) : null}
 
         {result.description ? (
           <p className='search-result-description'>{result.description}</p>
@@ -258,8 +237,7 @@ export function SearchClient() {
         />
 
         <div>
-          <p className='app-eyebrow'>{commonT('advancedSearch')}</p>
-          <h1>{commonT('search')}</h1>
+          <h1>{t('analysisSearch')}</h1>
         </div>
 
         <a className='search-back-link' href='/dashboard'>
@@ -338,20 +316,6 @@ export function SearchClient() {
           options={sentimentOptions}
           selectClassName=''
           value={sentiment}
-        />
-
-        <SelectField
-          containerClassName='search-field'
-          id='search-source'
-          label={t('labels.source')}
-          labelClassName=''
-          onValueChange={value => {
-            setSource(value);
-            setPage(1);
-          }}
-          options={sourceOptions}
-          selectClassName=''
-          value={source}
         />
 
         <TextInput

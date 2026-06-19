@@ -13,6 +13,7 @@ from ..market_data.config import BASE_DATA_DIR, LONG_HISTORY_TICKERS, sanitize_t
 from ..market_data.history import load_daily_history
 from .regression import clean_completed_market_frame
 from .ensemble import analyze_asset
+from .helpers.prediction_to_db import save_prediction_to_database
 
 logger = logging.getLogger(__name__)
 
@@ -182,6 +183,7 @@ def train_asset_prediction(
         "trainingMode": "daily_backend_job",
     }
     save_prediction(safe, snapshot, directory=directory)
+    save_prediction_to_database(snapshot)
 
     return {
         "marketDataAsOf": data_as_of,
