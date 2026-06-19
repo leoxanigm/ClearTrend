@@ -234,6 +234,7 @@
     }
   },
   "searchPage": {
+    "analysisSearch": "Búsqueda de análisis",
     "labels": {
       "query": "Consulta",
       "type": "Tipo",
@@ -245,7 +246,7 @@
       "to": "Hasta"
     },
     "placeholders": {
-      "query": "Símbolo, empresa, informe, notificación..."
+      "query": "Símbolo, empresa, análisis, confianza..."
     },
     "buttons": {
       "reset": "Restablecer",

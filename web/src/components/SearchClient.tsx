@@ -22,7 +22,7 @@ export function SearchClient() {
   const tDashboard = useTranslations('dashboard');
   const commonT = useTranslations('common');
   const [query, setQuery] = useState('');
-  const [type, setType] = useState<SearchEntityType>('all');
+  const [type, setType] = useState<SearchEntityType>('assets');
   const [sort, setSort] = useState<SearchSortKey>('createdAt');
   const [direction, setDirection] = useState<SearchDirection>('desc');
   const [sentiment, setSentiment] = useState('');
@@ -118,7 +118,7 @@ export function SearchClient() {
   function resetFilters() {
     // Reset all controlled fields together to produce one canonical search state.
     setQuery('');
-    setType('all');
+    setType('assets');
     setSort('createdAt');
     setDirection('desc');
     setSentiment('');
@@ -132,7 +132,6 @@ export function SearchClient() {
 
   // Translated select options
   const entityTypes: Array<{ label: string; value: SearchEntityType }> = [
-    { label: t('entityTypes.all'), value: 'all' },
     { label: t('entityTypes.assets'), value: 'assets' },
     { label: t('entityTypes.analyses'), value: 'analyses' }
   ];
@@ -238,8 +237,7 @@ export function SearchClient() {
         />
 
         <div>
-          <p className='app-eyebrow'>{commonT('advancedSearch')}</p>
-          <h1>{commonT('search')}</h1>
+          <h1>{t('analysisSearch')}</h1>
         </div>
 
         <a className='search-back-link' href='/dashboard'>

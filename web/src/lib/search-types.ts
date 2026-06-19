@@ -1,9 +1,6 @@
 export const searchEntityTypes = [
-  'all',
   'assets',
   'analyses',
-  'reports',
-  'notifications'
 ] as const;
 
 export type SearchEntityType = (typeof searchEntityTypes)[number];

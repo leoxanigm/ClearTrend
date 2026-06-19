@@ -234,6 +234,7 @@
     }
   },
   "searchPage": {
+    "analysisSearch": "Recherche d'analyses",
     "labels": {
       "query": "Recherche",
       "type": "Type",
@@ -245,7 +246,7 @@
       "to": "Au"
     },
     "placeholders": {
-      "query": "Symbole, entreprise, rapport, notification..."
+      "query": "Symbole, entreprise, analyse, sentiment..."
     },
     "buttons": {
       "reset": "Réinitialiser",

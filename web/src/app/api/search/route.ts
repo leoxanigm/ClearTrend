@@ -40,12 +40,24 @@ function readPositiveInteger(value: string | null, fallback: number) {
   return parsed;
 }
 
-function readDate(value: string | null) {
+// We would like to start from midnight of the date specified for a start date
+function readDateStart(value: string | null) {
   if (!value) {
     return null;
   }
 
-  const date = new Date(value);
+  const date = new Date(`${value}T00:00:00.000`);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+// Date to will take till the end of the specified day
+function readDateEnd(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(`${value}T23:59:59.999`);
 
   return Number.isNaN(date.getTime()) ? null : date;
 }
@@ -106,26 +118,6 @@ function getAnalysisTrendLabel(sentiment: string | null) {
   return undefined;
 }
 
-function getSourceKind(source: string | null) {
-  if (!source) {
-    return undefined;
-  }
-
-  const normalized = source.trim().toUpperCase();
-
-  if (
-    normalized === 'PRICE' ||
-    normalized === 'COMMENT' ||
-    normalized === 'NEWS' ||
-    normalized === 'API' ||
-    normalized === 'SCRAPE'
-  ) {
-    return normalized;
-  }
-
-  return undefined;
-}
-
 function getAssetOrderBy(sort: SearchSortKey, direction: SearchDirection) {
   if (sort === 'symbol') {
     return { symbol: direction };
@@ -152,12 +144,6 @@ function getAnalysisOrderBy(sort: SearchSortKey, direction: SearchDirection) {
   }
 
   return { createdAt: direction };
-}
-
-function getCreatedAtOrderBy(direction: SearchDirection) {
-  return {
-    createdAt: direction
-  };
 }
 
 async function searchAssets(input: {
@@ -222,20 +208,10 @@ async function searchAnalyses(input: {
   const skip = (input.page - 1) * input.limit;
   const createdAt = getDateFilter(input.dateFrom, input.dateTo);
   const trendLabel = getAnalysisTrendLabel(input.sentiment) as TrendLabel;
-  const sourceKind = getSourceKind(input.source) as SourceKind;
 
   const where = {
     ...(createdAt ? { createdAt } : {}),
     ...(trendLabel ? { trendLabel } : {}),
-    ...(sourceKind
-      ? {
-          sources: {
-            some: {
-              kind: sourceKind
-            }
-          }
-        }
-      : {}),
     ...(input.q
       ? {
           OR: [
@@ -295,7 +271,7 @@ async function searchAnalyses(input: {
     title: `${analysis.asset.symbol} analysis`,
     subtitle: analysis.status,
     description: analysis.summary,
-    href: null,
+    href: `/dashboard?symbol=${encodeURIComponent(analysis.asset.symbol)}`,
     createdAt: toIso(analysis.createdAt),
     metadata: {
       confidenceScore: analysis.confidenceScore,
@@ -307,29 +283,6 @@ async function searchAnalyses(input: {
   }));
 
   return { results, total };
-}
-
-function mergeSearchResults(
-  groups: Array<{ results: SearchResultItem[]; total: number }>,
-  limit: number,
-  page: number,
-  direction: SearchDirection
-) {
-  const total = groups.reduce((sum, group) => sum + group.total, 0);
-  const sorted = groups
-    .flatMap(group => group.results)
-    .sort((a, b) => {
-      const left = a.createdAt ? Date.parse(a.createdAt) : 0;
-      const right = b.createdAt ? Date.parse(b.createdAt) : 0;
-
-      return direction === 'asc' ? left - right : right - left;
-    });
-
-  return {
-    results: sorted.slice(0, limit),
-    total,
-    page
-  };
 }
 
 export async function GET(req: Request) {
@@ -344,7 +297,7 @@ export async function GET(req: Request) {
   const type = readEnum(
     url.searchParams.get('type'),
     searchEntityTypes,
-    'all'
+    'assets'
   ) as SearchEntityType;
   const sort = readEnum(
     url.searchParams.get('sort'),
@@ -362,8 +315,8 @@ export async function GET(req: Request) {
     defaultLimit
   );
   const limit = Math.min(requestedLimit, maxLimit);
-  const dateFrom = readDate(url.searchParams.get('dateFrom'));
-  const dateTo = readDate(url.searchParams.get('dateTo'));
+  const dateFrom = readDateStart(url.searchParams.get('dateFrom'));
+  const dateTo = readDateEnd(url.searchParams.get('dateTo'));
   const sentiment = normalizeOptional(url.searchParams.get('sentiment'));
   const source = normalizeOptional(url.searchParams.get('source'));
 
@@ -388,16 +341,9 @@ export async function GET(req: Request) {
 
     if (type === 'assets') {
       searchResult = await searchAssets(input);
-    } else if (type === 'analyses') {
-      searchResult = await searchAnalyses(input);
     } else {
-      const groups = await Promise.all([
-        searchAssets(input),
-        searchAnalyses(input)
-      ]);
-
-      searchResult = mergeSearchResults(groups, limit, page, direction);
-    }
+      searchResult = await searchAnalyses(input);
+    } 
 
     const totalPages = Math.max(1, Math.ceil(searchResult.total / limit));
 
