@@ -1,11 +1,18 @@
 import { getCurrentUserProfile, readUserProfileById } from '@/lib/profile';
 import { getPrisma } from '@/lib/prisma';
+import { getClientIp, isRateLimited } from '@/lib/rate-limit';
 import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 
 export type ApiIdentity = {
   authType: 'session' | 'api-key';
   userId: string;
+};
+
+// 120 api requests every minute
+export const publicApiRateLimit = {
+  limit: 120,
+  windowMs: 60_000
 };
 
 function readApiKey(req: Request) {
@@ -78,6 +85,25 @@ export async function getApiIdentity(
   };
 }
 
+function createRateLimitResponse(resetAt: number, remaining: number) {
+  const retryAfter = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+
+  return NextResponse.json(
+    {
+      error: 'Rate limit exceeded.'
+    },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': String(retryAfter),
+        'X-RateLimit-Limit': String(publicApiRateLimit.limit),
+        'X-RateLimit-Remaining': String(remaining),
+        'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000))
+      }
+    }
+  );
+}
+
 export async function requireApiIdentity(req: Request) {
   const identity = await getApiIdentity(req);
 
@@ -92,6 +118,21 @@ export async function requireApiIdentity(req: Request) {
           status: 401
         }
       )
+    };
+  }
+
+  const ip = getClientIp(req);
+  const rateLimitKey =
+    identity.authType === 'api-key'
+      ? `public-api:api-key:${identity.userId}`
+      : `public-api:session:${identity.userId}:${ip}`;
+
+  const result = isRateLimited(rateLimitKey, publicApiRateLimit);
+
+  if (!result.allowed) {
+    return {
+      identity: null,
+      response: createRateLimitResponse(result.resetAt, result.remaining)
     };
   }
 
