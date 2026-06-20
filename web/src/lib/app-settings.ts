@@ -1,6 +1,6 @@
-import { getPrisma } from "@/lib/prisma";
+import { getPrisma } from '@/lib/prisma';
 
-export const financeRefreshRateSettingKey = "financeRefreshRateSeconds";
+export const financeRefreshRateSettingKey = 'financeRefreshRateSeconds';
 export const financeRefreshRateOptions = [60, 300, 900] as const;
 export const defaultFinanceRefreshRateSeconds = 300;
 
@@ -11,9 +11,9 @@ export function normalizeFinanceRefreshRate(
   value: unknown
 ): FinanceRefreshRateSeconds {
   const numericValue =
-    typeof value === "number"
+    typeof value === 'number'
       ? value
-      : typeof value === "string"
+      : typeof value === 'string'
         ? Number.parseInt(value, 10)
         : NaN;
 
@@ -50,4 +50,15 @@ export async function setFinanceRefreshRateSeconds(value: unknown) {
   `;
 
   return refreshRateSeconds;
+}
+
+export async function deleteFinanceRefreshRateSeconds() {
+  const prisma = getPrisma();
+
+  await prisma.$executeRaw`
+    DELETE FROM app_settings
+    WHERE key = ${financeRefreshRateSettingKey}
+  `;
+
+  return defaultFinanceRefreshRateSeconds;
 }
