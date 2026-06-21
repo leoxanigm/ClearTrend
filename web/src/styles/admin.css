@@ -1,0 +1,515 @@
+.admin-panel {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  align-self: stretch;
+  border: 0;
+  overflow: hidden;
+}
+
+.admin-view-switch {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 4px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 4px;
+  background: var(--app-panel);
+}
+
+.admin-view-switch-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--app-muted);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-view-switch-button:hover,
+.admin-view-switch-button-active {
+  background: var(--app-surface);
+  color: var(--app-text);
+}
+
+.admin-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-panel-heading h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.admin-panel-heading p {
+  margin-top: 4px;
+  color: var(--app-muted);
+}
+
+.admin-user-count {
+  flex: 0 0 auto;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: var(--app-panel);
+  font-size: 0.875rem;
+}
+
+.admin-panel-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-sort-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 4px;
+  background: var(--app-panel);
+  scrollbar-width: thin;
+}
+
+.admin-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--app-muted);
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.admin-sort-button:hover,
+.admin-sort-button-active {
+  background: var(--app-surface);
+  color: var(--app-text);
+}
+
+.admin-sort-arrow {
+  color: var(--app-accent);
+  font-size: 0.6875rem;
+}
+
+.admin-user-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.admin-user-search label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--app-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.admin-user-search input[type="search"] {
+  min-width: 0;
+  height: 38px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  padding: 8px 10px;
+  font-size: 0.875rem;
+}
+
+.admin-user-search input[type="search"]:focus {
+  border-color: var(--app-accent);
+  outline: none;
+}
+
+.admin-user-search button,
+.admin-user-search-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.admin-user-search button:hover,
+.admin-user-search-reset:hover {
+  border-color: var(--app-accent);
+  color: var(--app-accent);
+}
+
+.api-key-metadata,
+.admin-metadata {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.api-key-metadata div,
+.admin-metadata div {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 12px;
+}
+
+.api-key-metadata dt,
+.admin-metadata dt,
+.api-docs-auth {
+  color: var(--app-muted);
+}
+
+.api-key-metadata dd,
+.admin-metadata dd {
+  margin: 0;
+}
+
+.admin-users-list {
+  display: grid;
+  align-self: stretch;
+  gap: 8px;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.admin-user-row {
+  border-bottom: 1px solid var(--app-border);
+  background: var(--app-surface);
+}
+
+.admin-user-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-user-summary {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto 20px;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.admin-user-summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-user-summary::after {
+  content: "+";
+  justify-self: end;
+  color: var(--app-muted);
+  font-weight: 800;
+}
+
+.admin-user-row[open] .admin-user-summary::after {
+  content: "-";
+}
+
+.admin-user-summary:hover {
+  background: var(--app-panel);
+}
+
+.admin-notification-summary {
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, auto) 20px;
+}
+
+.admin-user-details {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid var(--app-border);
+  padding: 14px;
+  background: color-mix(in srgb, var(--app-panel) 48%, transparent);
+}
+
+.admin-user-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+}
+
+.admin-user-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.admin-notification-detail-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-user-detail-grid div {
+  min-width: 0;
+}
+
+.admin-user-detail-grid dt {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+}
+
+.admin-user-detail-grid dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.admin-user-profile-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.admin-user-profile-form label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-user-profile-form span {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-user-profile-form input {
+  min-width: 0;
+  min-height: 32px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.admin-user-profile-form input:focus {
+  border-color: var(--app-accent);
+  outline: none;
+}
+
+.admin-notification-body {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--app-border);
+  padding-top: 12px;
+}
+
+.admin-notification-body span {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.admin-notification-body p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.admin-watchlist-details summary {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 800;
+  list-style: none;
+}
+
+.admin-watchlist-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-watchlist-details summary::after {
+  content: "+";
+  margin-left: 8px;
+  color: var(--app-muted);
+}
+
+.admin-watchlist-details[open] summary::after {
+  content: "-";
+}
+
+.admin-watchlist-details p {
+  margin-top: 8px;
+  color: var(--app-text);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.admin-user-identity {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-user-identity strong,
+.admin-user-identity span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-user-identity span {
+  color: var(--app-muted);
+}
+
+.admin-role-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.admin-role-badge-admin {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-role-badge-analyst {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.admin-role-badge-user {
+  background: var(--app-panel);
+  color: var(--app-text);
+}
+
+.admin-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.admin-status-badge-active {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.admin-status-badge-banned {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.admin-user-action-button {
+  min-height: 32px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.admin-user-action-button:hover:not(:disabled) {
+  border-color: var(--app-accent);
+  color: var(--app-accent);
+}
+
+.admin-user-action-button-danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.admin-user-action-button-danger:hover:not(:disabled) {
+  border-color: #b91c1c;
+  color: #991b1b;
+}
+
+.admin-user-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.admin-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  justify-self: start;
+}
+
+.admin-user-role-select {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-user-role-select span {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-user-role-select select {
+  min-height: 32px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 6px 28px 6px 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.admin-user-role-select select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}

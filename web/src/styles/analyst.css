@@ -1,0 +1,137 @@
+.analyst-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.analyst-summary-panel,
+.analyst-metric-card,
+.analyst-panel,
+.analyst-status-grid article {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+}
+
+.analyst-summary-panel {
+  display: grid;
+  grid-row: span 2;
+  align-content: start;
+  gap: 10px;
+  padding: 16px;
+}
+
+.analyst-summary-panel h2 {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.analyst-summary-panel p:last-child {
+  color: var(--app-muted);
+  line-height: 1.5;
+}
+
+.analyst-metric-card {
+  display: grid;
+  gap: 8px;
+  min-height: 96px;
+  padding: 14px;
+}
+
+.analyst-metric-card p,
+.analyst-status-grid span {
+  color: var(--app-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.analyst-metric-card strong {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.analyst-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 20px;
+}
+
+.analyst-run-list {
+  display: grid;
+  gap: 8px;
+}
+
+.analyst-run-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
+  gap: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--app-panel);
+}
+
+.analyst-run-row > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.analyst-run-row strong,
+.analyst-run-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analyst-run-row span {
+  color: var(--app-muted);
+  font-size: 0.8125rem;
+}
+
+.analyst-run-row dl {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.analyst-run-row dt {
+  color: var(--app-muted);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.analyst-run-row dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.analyst-empty-state {
+  border: 1px dashed var(--app-border);
+  border-radius: 8px;
+  padding: 16px;
+  color: var(--app-muted);
+}
+
+.analyst-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.analyst-status-grid article {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.analyst-status-grid strong {
+  font-size: 22px;
+}

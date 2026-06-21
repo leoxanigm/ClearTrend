@@ -1,0 +1,335 @@
+.asset-search-input {
+    width: 100%;
+    border: 1px solid var(--app-border);
+    border-radius: 0.375rem;
+    background: var(--app-surface);
+    color: var(--app-text);
+    padding: 0.5rem 0.625rem;
+    font-size: 0.875rem;
+    outline: none;
+}
+
+.asset-search-input:focus {
+    border-color: var(--app-accent);
+}
+
+.asset-advanced-search-button {
+  border: 1px solid var(--app-border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.625rem;
+  color: var(--app-text);
+  text-align: center;
+}
+
+.asset-advanced-search-button:hover
+{
+  border-color: var(--app-accent);
+  color: var(--app-accent);
+}
+
+.asset-search-results {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% - 2.5rem);
+    right: 0;
+    left: 0;
+    max-height: 16rem;
+    overflow-y: auto;
+    border: 1px solid var(--app-border);
+    border-radius: 0.375rem;
+    background: var(--app-surface);
+    padding: 0.25rem;
+    box-shadow: 0 16px 32px rgb(15 23 42 / 0.16);
+}
+
+.asset-search-result {
+    display: grid;
+    width: 100%;
+    gap: 0.125rem;
+    border-radius: 0.25rem;
+    color: var(--app-text);
+    cursor: pointer;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.asset-search-result:hover {
+    background: var(--app-panel);
+}
+
+.asset-search-result-name,
+.asset-search-result-symbol {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.asset-search-result-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.asset-search-result-symbol,
+.asset-search-message {
+    color: var(--app-muted);
+    font-size: 0.75rem;
+}
+
+.asset-search-message {
+    padding: 0.5rem;
+}
+
+.asset-search-label {
+    color: var(--app-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Advanced Search page start */
+
+.search-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+.search-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1180px;
+  margin: 0 auto 24px;
+  text-align: center;
+}
+
+.search-page-header h1 {
+  margin: 4px 0 0;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.search-back-link {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--app-text);
+  text-decoration: none;
+}
+
+.search-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 1180px;
+  margin: 0 auto 24px;
+  padding: 16px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+}
+
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.search-field-wide {
+  grid-column: span 2;
+}
+
+.search-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--app-muted);
+  text-transform: uppercase;
+}
+
+.search-field input,
+.search-field select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--app-input-bg, var(--app-bg));
+  color: var(--app-text);
+}
+
+.search-actions {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.search-actions button,
+.search-pagination button {
+  min-height: 40px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  background: var(--app-accent);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.search-actions button[type="button"],
+.search-pagination button {
+  background: transparent;
+  color: var(--app-text);
+}
+
+.search-actions button:disabled,
+.search-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.search-results-section {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.search-results-toolbar,
+.search-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 16px 0;
+  color: var(--app-muted);
+}
+
+.search-results-list {
+  display: grid;
+  gap: 12px;
+}
+
+.search-result-card {
+  display: block;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  text-decoration: none;
+}
+
+.search-result-card:hover {
+  border-color: var(--app-accent);
+}
+
+.search-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.search-result-type {
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: var(--app-accent-soft, rgba(59, 130, 246, 0.12));
+  color: var(--app-accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.search-result-date,
+.search-result-subtitle,
+.search-result-description,
+.search-state {
+  color: var(--app-muted);
+}
+
+.search-result-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.search-result-subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.search-result-description {
+  margin: 10px 0 0;
+  line-height: 1.5;
+}
+
+.search-result-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 14px 0 0;
+}
+
+.search-result-metadata div {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.search-result-metadata dt {
+  color: var(--app-muted);
+}
+
+.search-result-metadata dd {
+  margin: 0;
+}
+
+.search-state {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 24px;
+  background: var(--app-surface);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .search-page {
+    padding: 20px;
+  }
+
+  .search-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search-field-wide {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 620px) {
+  .search-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .search-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .search-field-wide {
+    grid-column: span 1;
+  }
+
+  .search-actions,
+  .search-results-toolbar,
+  .search-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search-actions button,
+  .search-pagination button {
+    width: 100%;
+  }
+}
+
+/* Search page end */

@@ -1,0 +1,200 @@
+/* API key settings and docs pages start */
+
+.api-key-page,
+.api-docs-page,
+.analyst-page,
+.admin-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: var(--app-background);
+  color: var(--app-text);
+}
+
+.api-key-panel,
+.admin-panel {
+  margin-top: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 20px;
+  background: var(--app-surface);
+}
+
+.admin-page {
+  display: grid;
+  height: 100vh;
+  height: 100svh;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.api-key-page-header,
+.api-docs-header,
+.admin-page-header,
+.api-key-page-content,
+.api-docs-content,
+.analyst-page .api-docs-content,
+.admin-page-content {
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+.api-key-page-header,
+.api-docs-header,
+.admin-page-header,
+.api-key-page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-page-header {
+  width: 100%;
+}
+
+.api-key-page-content,
+.api-docs-content,
+.analyst-page .api-docs-content,
+.admin-page-content {
+  margin-top: 48px;
+}
+
+.admin-page-content {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: start;
+  width: 100%;
+  overflow: hidden;
+}
+
+.admin-refresh-rate-row {
+  display: flex;
+  margin-top: 10px;
+}
+
+.language-select.admin-refresh-rate-select {
+  display: inline-grid;
+  grid-template-columns: max-content max-content;
+  width: auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-refresh-rate-select .language-select-label {
+  white-space: nowrap;
+}
+
+.admin-refresh-rate-select .language-select-control {
+  min-width: 9rem;
+  width: auto;
+}
+
+.admin-page-footer {
+  display: grid;
+  max-width: 960px;
+  gap: 8px;
+  justify-items: center;
+  margin: 24px auto 0;
+}
+
+.api-key-page-content h1,
+.api-docs-content h1,
+.analyst-page .api-docs-content h1,
+.admin-page-content h1 {
+  margin-top: 4px;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.api-key-page-description,
+.api-docs-description,
+.admin-page-description {
+  max-width: 720px;
+  margin-top: 12px;
+  color: var(--app-muted);
+  line-height: 1.6;
+}
+
+.api-key-secret {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  border-top: 1px solid var(--app-border);
+  padding-top: 20px;
+}
+
+.api-key-secret code,
+.api-docs-description code,
+.api-docs-endpoint code {
+  overflow-wrap: anywhere;
+}
+
+.api-key-secret > code,
+.api-docs-endpoint pre {
+  overflow-x: auto;
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--app-panel);
+}
+
+.api-key-error {
+  margin-top: 16px;
+  color: #dc2626;
+}
+
+.api-docs-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.api-docs-endpoint {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--app-surface);
+}
+
+.api-docs-endpoint header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.api-docs-endpoint p {
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.api-docs-endpoint pre {
+  margin-top: 12px;
+  white-space: pre;
+}
+
+.api-method {
+  border-radius: 4px;
+  padding: 3px 7px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.api-method-get {
+  background: #047857;
+}
+
+.api-method-post {
+  background: #1d4ed8;
+}
+
+.api-method-put {
+  background: #a16207;
+}
+
+.api-method-delete {
+  background: #b91c1c;
+}
+
+/* API key settings and docs pages end */
