@@ -335,23 +335,39 @@
   "apiDocsPage": {
     "eyebrow": "API publique ClearTrend",
     "title": "Documentation API",
-    "description": "Crée une clé API depuis le menu de ton profil. Transmets-la avec",
+    "description": "Créez une clé API depuis le menu de votre profil. Transmettez-la avec",
     "or": "ou",
+    "rateLimit": "Les requêtes authentifiées sont limitées à 120 requêtes par minute et par compte. Lorsque cette limite est dépassée, l'API retourne le statut HTTP 429 avec les en-têtes Retry-After et X-RateLimit-*.",
+    "errors": "Les erreurs sont retournées sous forme d'un objet JSON contenant un champ error. Les statuts courants sont 400, 401, 403, 404, 409, 429, 502 et 503.",
     "buttons": {
       "settings": "Paramètres de la clé API"
     },
     "auth": {
       "public": "Aucune clé API requise",
-      "authenticated": "Clé API ou session navigateur"
+      "authenticated": "Clé API ou session navigateur",
+      "admin": "Clé API ou session appartenant à un administrateur"
     },
     "endpoints": {
       "health": "Retourne l'état des services web, base de données et analyse.",
-      "candles": "Retourne les chandeliers de prix. Périodes prises en charge : 1D, 1W, 1M, 3M, 1Y.",
-      "watchlistGet": "Retourne la watchlist de l'utilisateur courant.",
-      "watchlistPost": "Ajoute un symbole à la watchlist de l'utilisateur courant.",
-      "watchlistPut": "Remplace toute la watchlist de l'utilisateur courant.",
-      "watchlistDelete": "Supprime un symbole. Envoie une requête sans body pour vider toute la watchlist.",
-      "search": "Recherche des actifs, analyses, rapports et notifications avec filtres et pagination."
+      "watchlistGet": "Retourne la watchlist de l'utilisateur authentifié.",
+      "watchlistPost": "Ajoute un symbole à la watchlist.",
+      "watchlistPut": "Remplace toute la watchlist.",
+      "watchlistPatch": "Modifie l'état favori d'un symbole.",
+      "watchlistDelete": "Supprime un symbole. Omettez le body pour vider la watchlist.",
+      "watchlistFileGet": "Exporte la watchlist dans un fichier JSON versionné.",
+      "watchlistFilePost": "Valide et importe un fichier JSON de watchlist versionné.",
+      "search": "Recherche des actifs et des analyses dans la base de données avec filtres et pagination.",
+      "assetSearch": "Recherche les symboles financiers disponibles.",
+      "candles": "Retourne les bougies OHLCV d'un symbole et d'une période.",
+      "candlesMeta": "Retourne les métadonnées du cache sans les données des bougies.",
+      "performance": "Retourne la performance de plusieurs symboles sur une période.",
+      "mlAnalyse": "Retourne l'analyse de tendance ML pour un symbole et un horizon.",
+      "adminPing": "Vérifie que l'identité API dispose des droits d'administrateur.",
+      "financeGet": "Retourne la fréquence actuelle de rafraîchissement des données financières.",
+      "financePost": "Crée ou met à jour la fréquence de rafraîchissement.",
+      "financePut": "Remplace la fréquence de rafraîchissement.",
+      "financePatch": "Met à jour la fréquence de rafraîchissement.",
+      "financeDelete": "Supprime le réglage enregistré et rétablit la valeur par défaut."
     }
   },
   "statusPage": {

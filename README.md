@@ -102,18 +102,18 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 | Advanced Analytics Dashboard with Data Visualization | Major | Valid | 2 | elhirond, mathboye |
 | Real-time WebSocket/SSE | Major | Not implemented | 0 | |
 | ML Trend Prediction (custom) | Major | Implemented, live Gemini test pending | 0 | mathboye, elhirond |
-| Secure Public API | Major | Partial, not validated | 0 | zalemu |
+| Secure Public API | Major | Valid | 2 | zalemu |
 | Advanced Permissions | Major | Partial, not validated | 0 | amoureau |
 | Additional Browsers | Minor | Valid | 1 | elhirond |
 | Custom Design System | Minor | Valid | 1 | elhirond, amoureau |
 | ORM | Minor | Valid | 1 | elhirond, amoureau, zalemu |
-| Advanced Search | Minor | Partial, not validated | 0 | zalemu |
+| Advanced Search | Minor | Valid | 1 | zalemu |
 | Health, Status, Backups, DR | Minor | Valid | 1 | elhirond, mathboye, zalemu |
 | OAuth 2.0 | Minor | Valid | 1 | amoureau |
 | Notifications CRUD | Minor | Not implemented | 0 | amoureau |
 | 3 Languages | Minor | Valid | 1 | elhirond |
 | File Upload Management | Minor | Valid | 1 | elhirond |
-| **Total defendable now** |  |  | **13** | |
+| **Total defendable now** |  |  | **16** | |
 
 Participants are inferred from non-merge commits with a functional link to the
 module, not every incidental file touch. Aliases are normalized: `leoxanigm` is

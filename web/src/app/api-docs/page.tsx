@@ -1,63 +1,163 @@
 import { AppLogo } from '@/components/AppLogo';
 import { getTranslations } from 'next-intl/server';
 
-const endpoints = [
-  {
-    method: 'GET',
-    path: '/api/health',
-    auth: 'public',
-    description: 'health',
-    example: 'curl http://localhost:3000/api/health'
-  },
-  {
-    method: 'GET',
-    path: '/api/assets/candles?symbol=AAPL&range=1M',
-    auth: 'authenticated',
-    description: 'candles',
-    example:
-      'curl -H "Authorization: Bearer $CLEARTREND_API_KEY" \\\n  "http://localhost:3000/api/assets/candles?symbol=AAPL&range=1M"'
-  },
+type Endpoint = {
+  auth: 'public' | 'authenticated' | 'admin';
+  body?: string;
+  description: string;
+  form?: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  path: string;
+};
+
+const endpoints: Endpoint[] = [
+  { method: 'GET', path: '/api/health', auth: 'public', description: 'health' },
+
   {
     method: 'GET',
     path: '/api/assets/watchlist',
     auth: 'authenticated',
-    description: 'watchlistGet',
-    example:
-      'curl -H "Authorization: Bearer $CLEARTREND_API_KEY" \\\n  http://localhost:3000/api/assets/watchlist'
+    description: 'watchlistGet'
   },
   {
     method: 'POST',
     path: '/api/assets/watchlist',
     auth: 'authenticated',
     description: 'watchlistPost',
-    example:
-      'curl -X POST -H "Authorization: Bearer $CLEARTREND_API_KEY" \\\n  -H "Content-Type: application/json" -d \'{"symbol":"AAPL"}\' \\\n  http://localhost:3000/api/assets/watchlist'
+    body: '{"symbol":"AAPL"}'
   },
   {
     method: 'PUT',
     path: '/api/assets/watchlist',
     auth: 'authenticated',
     description: 'watchlistPut',
-    example:
-      'curl -X PUT -H "Authorization: Bearer $CLEARTREND_API_KEY" \\\n  -H "Content-Type: application/json" -d \'{"symbols":["AAPL","MSFT"]}\' \\\n  http://localhost:3000/api/assets/watchlist'
+    body: '{"symbols":["AAPL","MSFT"]}'
+  },
+  {
+    method: 'PATCH',
+    path: '/api/assets/watchlist',
+    auth: 'authenticated',
+    description: 'watchlistPatch',
+    body: '{"symbol":"AAPL","isFavorite":true}'
   },
   {
     method: 'DELETE',
     path: '/api/assets/watchlist',
     auth: 'authenticated',
     description: 'watchlistDelete',
-    example:
-      'curl -X DELETE -H "Authorization: Bearer $CLEARTREND_API_KEY" \\\n  -H "Content-Type: application/json" -d \'{"symbol":"AAPL"}\' \\\n  http://localhost:3000/api/assets/watchlist'
+    body: '{"symbol":"AAPL"}'
   },
+
+  {
+    method: 'GET',
+    path: '/api/assets/watchlist/file',
+    auth: 'authenticated',
+    description: 'watchlistFileGet'
+  },
+  {
+    method: 'POST',
+    path: '/api/assets/watchlist/file',
+    auth: 'authenticated',
+    description: 'watchlistFilePost',
+    form: 'watchlist=@watchlist.json;type=application/json'
+  },
+
   {
     method: 'GET',
     path: '/api/search?q=AAPL&type=assets&page=1&limit=10',
     auth: 'authenticated',
-    description: 'search',
-    example:
-      'curl -H "Authorization: Bearer $CLEARTREND_API_KEY" \\\n  "http://localhost:3000/api/search?q=AAPL&type=assets&page=1&limit=10"'
+    description: 'search'
+  },
+  {
+    method: 'GET',
+    path: '/api/assets/search?q=AAPL',
+    auth: 'authenticated',
+    description: 'assetSearch'
+  },
+  {
+    method: 'GET',
+    path: '/api/assets/candles?symbol=AAPL&range=1M',
+    auth: 'authenticated',
+    description: 'candles'
+  },
+  {
+    method: 'GET',
+    path: '/api/assets/candles/meta?symbol=AAPL&range=1M',
+    auth: 'authenticated',
+    description: 'candlesMeta'
+  },
+  {
+    method: 'GET',
+    path: '/api/assets/performance?symbols=AAPL,MSFT&range=1D',
+    auth: 'authenticated',
+    description: 'performance'
+  },
+  {
+    method: 'GET',
+    path: '/api/ml/analyse?symbol=AAPL&horizon=1D',
+    auth: 'authenticated',
+    description: 'mlAnalyse'
+  },
+
+  {
+    method: 'GET',
+    path: '/api/admin/ping',
+    auth: 'admin',
+    description: 'adminPing'
+  },
+  {
+    method: 'GET',
+    path: '/api/admin/settings/finance-refresh-rate',
+    auth: 'admin',
+    description: 'financeGet'
+  },
+  {
+    method: 'POST',
+    path: '/api/admin/settings/finance-refresh-rate',
+    auth: 'admin',
+    description: 'financePost',
+    body: '{"refreshRateSeconds":60}'
+  },
+  {
+    method: 'PUT',
+    path: '/api/admin/settings/finance-refresh-rate',
+    auth: 'admin',
+    description: 'financePut',
+    body: '{"refreshRateSeconds":300}'
+  },
+  {
+    method: 'PATCH',
+    path: '/api/admin/settings/finance-refresh-rate',
+    auth: 'admin',
+    description: 'financePatch',
+    body: '{"refreshRateSeconds":900}'
+  },
+  {
+    method: 'DELETE',
+    path: '/api/admin/settings/finance-refresh-rate',
+    auth: 'admin',
+    description: 'financeDelete'
   }
 ];
+
+function buildCurlExample(endpoint: Endpoint) {
+  const key =
+    endpoint.auth === 'admin'
+      ? '$CLEARTREND_ADMIN_API_KEY'
+      : '$CLEARTREND_API_KEY';
+
+  return [
+    'curl',
+    endpoint.method === 'GET' ? null : `-X ${endpoint.method}`,
+    endpoint.auth === 'public' ? null : `-H "Authorization: Bearer ${key}"`,
+    endpoint.body ? '-H "Content-Type: application/json"' : null,
+    endpoint.body ? `-d '${endpoint.body}'` : null,
+    endpoint.form ? `-F '${endpoint.form}'` : null,
+    `"https://localhost${endpoint.path}"`
+  ]
+    .filter(Boolean)
+    .join(' \\\n  ');
+}
 
 export default async function ApiDocsPage() {
   const t = await getTranslations('apiDocsPage');
@@ -88,10 +188,12 @@ export default async function ApiDocsPage() {
           <p className='app-eyebrow'>{t('eyebrow')}</p>
           <h1>{t('title')}</h1>
           <p className='api-docs-description'>
-            {t('description')} <code>Authorization: Bearer &lt;api_key&gt;</code>{' '}
-            {t('or')}{' '}
+            {t('description')}{' '}
+            <code>Authorization: Bearer &lt;api_key&gt;</code> {t('or')}{' '}
             <code>X-API-Key: &lt;api_key&gt;</code>.
           </p>
+          <p className='api-docs-description'>{t('rateLimit')}</p>
+          <p className='api-docs-description'>{t('errors')}</p>
         </div>
 
         <div className='api-docs-list'>
@@ -100,7 +202,8 @@ export default async function ApiDocsPage() {
               className='api-docs-endpoint'
               key={`${endpoint.method}-${endpoint.path}`}>
               <header>
-                <span className={`api-method api-method-${endpoint.method.toLowerCase()}`}>
+                <span
+                  className={`api-method api-method-${endpoint.method.toLowerCase()}`}>
                   {endpoint.method}
                 </span>
                 <code>{endpoint.path}</code>
@@ -108,7 +211,7 @@ export default async function ApiDocsPage() {
               <p>{t(`endpoints.${endpoint.description}`)}</p>
               <p className='api-docs-auth'>{t(`auth.${endpoint.auth}`)}</p>
               <pre>
-                <code>{endpoint.example}</code>
+                <code>{buildCurlExample(endpoint)}</code>
               </pre>
             </article>
           ))}

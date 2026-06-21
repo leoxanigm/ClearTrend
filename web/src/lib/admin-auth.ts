@@ -1,27 +1,54 @@
-import type { Role } from "@/generated/prisma/enums";
-import { getCurrentUserProfile } from "@/lib/profile";
-import { NextResponse } from "next/server";
+import type { Role } from '@/generated/prisma/enums';
+import { requireApiIdentity } from '@/lib/api-auth';
+import { getCurrentUserProfile, readUserProfileById } from '@/lib/profile';
+import { NextResponse } from 'next/server';
 
-export async function requireAdminUser() {
-  const profile = await getCurrentUserProfile();
+async function getAdminApiProfile(req: Request) {
+  const { identity, response } = await requireApiIdentity(req);
+
+  if (!identity) {
+    return { profile: null, response };
+  }
+
+  const profile = await readUserProfileById(identity.userId);
 
   if (!profile) {
     return {
       profile: null,
-      response: NextResponse.json({ error: "Unauthorized." }, { status: 401 }),
+      response: NextResponse.json({ error: 'User not found.' }, { status: 404 })
     };
   }
 
-  if (profile.role !== "ADMIN") {
+  return { profile, response: null };
+}
+
+export async function requireAdminUser(req?: Request) {
+  const result = req
+    ? await getAdminApiProfile(req)
+    : {
+        profile: await getCurrentUserProfile(),
+        response: null
+      };
+
+  if (!result.profile) {
     return {
       profile: null,
-      response: NextResponse.json({ error: "Forbidden." }, { status: 403 }),
+      response:
+        result.response ??
+        NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
+    };
+  }
+
+  if (result.profile.role !== 'ADMIN') {
+    return {
+      profile: null,
+      response: NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
     };
   }
 
   return {
-    profile,
-    response: null,
+    profile: result.profile,
+    response: null
   };
 }
 
@@ -31,19 +58,19 @@ export async function requireRole(roles: readonly Role[]) {
   if (!profile) {
     return {
       profile: null,
-      response: NextResponse.json({ error: "Unauthorized." }, { status: 401 }),
+      response: NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
     };
   }
 
   if (!roles.includes(profile.role)) {
     return {
       profile: null,
-      response: NextResponse.json({ error: "Forbidden." }, { status: 403 }),
+      response: NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
     };
   }
 
   return {
     profile,
-    response: null,
+    response: null
   };
 }
