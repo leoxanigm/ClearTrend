@@ -335,23 +335,39 @@
   "apiDocsPage": {
     "eyebrow": "ClearTrend public API",
     "title": "API documentation",
-    "description": "Create one API key from your profile menu. Pass it as",
+    "description": "Create an API key from your profile menu. Pass it as",
     "or": "or",
+    "rateLimit": "Authenticated requests are limited to 120 requests per minute per account. Exceeding the limit returns HTTP 429 with Retry-After and X-RateLimit-* headers.",
+    "errors": "Errors use a JSON object with an error field. Common statuses are 400, 401, 403, 404, 409, 429, 502 and 503.",
     "buttons": {
       "settings": "API key settings"
     },
     "auth": {
       "public": "No API key required",
-      "authenticated": "API key or browser session"
+      "authenticated": "API key or browser session",
+      "admin": "API key or session belonging to an administrator"
     },
     "endpoints": {
       "health": "Returns web, database, and analysis service health.",
-      "candles": "Returns price candles. Supported ranges: 1D, 1W, 1M, 3M, 1Y.",
-      "watchlistGet": "Returns the current user watchlist.",
-      "watchlistPost": "Adds one symbol to the current user watchlist.",
-      "watchlistPut": "Replaces the complete current user watchlist.",
-      "watchlistDelete": "Removes one symbol. Send no request body to clear the complete watchlist.",
-      "search": "Searches assets, analyses, reports, and notifications with filters and pagination."
+      "watchlistGet": "Returns the authenticated user's watchlist.",
+      "watchlistPost": "Adds one symbol to the watchlist.",
+      "watchlistPut": "Replaces the complete watchlist.",
+      "watchlistPatch": "Changes the favorite state of one symbol.",
+      "watchlistDelete": "Removes one symbol. Omit the body to clear the watchlist.",
+      "watchlistFileGet": "Exports the watchlist as a versioned JSON file.",
+      "watchlistFilePost": "Validates and imports a versioned JSON watchlist file.",
+      "search": "Searches database assets and analyses with filters and pagination.",
+      "assetSearch": "Searches available market symbols.",
+      "candles": "Returns OHLCV candles for a symbol and range.",
+      "candlesMeta": "Returns candle cache metadata without the candle dataset.",
+      "performance": "Returns range performance for multiple symbols.",
+      "mlAnalyse": "Returns ML trend analysis for a symbol and horizon.",
+      "adminPing": "Verifies that the API identity has administrator access.",
+      "financeGet": "Returns the current finance refresh rate.",
+      "financePost": "Creates or updates the finance refresh rate.",
+      "financePut": "Replaces the finance refresh rate.",
+      "financePatch": "Updates the finance refresh rate.",
+      "financeDelete": "Deletes the stored setting and restores the default rate."
     }
   },
   "statusPage": {
