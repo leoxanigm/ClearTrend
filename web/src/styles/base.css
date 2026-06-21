@@ -1,0 +1,15 @@
+/* Base document appearance. */
+html,
+body {
+  background: var(--app-background);
+  color: var(--app-text);
+}
+
+body {
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}

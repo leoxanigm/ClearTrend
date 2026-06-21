@@ -1,0 +1,49 @@
+/* Default light-theme design tokens used throughout the application. */
+:root {
+  color-scheme: light;
+  --app-background: #f6f8fa;
+  --app-surface: #ffffff;
+  --app-panel: #eef4f6;
+  --app-border: #dce5ea;
+  --app-text: #102027;
+  --app-muted: #647985;
+  --app-accent: #0f766e;
+  --app-secondary: #1d4ed8;
+  --app-accent-contrast: #ffffff;
+}
+
+/*
+ * Explicit dark theme selected from the interface.
+ * ThemeSwitch stores this choice and JavaScript adds data-theme="dark" to <html>.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --app-background: #0b1116;
+  --app-surface: #111a22;
+  --app-panel: #16232d;
+  --app-border: #263642;
+  --app-text: #eaf2f5;
+  --app-muted: #8fa4ae;
+  --app-accent: #2dd4bf;
+  --app-secondary: #2563eb;
+  --app-accent-contrast: #04100e;
+}
+
+/*
+ * Automatic dark theme based on the operating-system preference.
+ * It applies only when no explicit data-theme choice exists on <html>.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --app-background: #0b1116;
+    --app-surface: #111a22;
+    --app-panel: #16232d;
+    --app-border: #263642;
+    --app-text: #eaf2f5;
+    --app-muted: #8fa4ae;
+    --app-accent: #2dd4bf;
+    --app-secondary: #2563eb;
+    --app-accent-contrast: #04100e;
+  }
+}
