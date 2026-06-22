@@ -30,7 +30,7 @@ ASSET_SEARCH_QUERIES = {
     "BTC-USD": '"Bitcoin" OR "BTC crypto"',
     "ETH-USD": '"Ethereum" OR "ETH crypto"',
     "GC=F": '"gold price" OR "GLD ETF"',
-    "GOOGL": '"GOOGL" OR "Alphabet stock"',
+    "GOOGL": '"GOOGL" OR "Alphabet stock" OR "Google stock" OR "Alphabet Inc"',
     "NVDA": '"NVDA" OR "Nvidia stock"',
 }
 
@@ -40,7 +40,7 @@ ASSET_MATCH_TERMS = {
     "BTC-USD": ("bitcoin", "btc"),
     "ETH-USD": ("ethereum", "ether", "eth"),
     "GC=F": ("gold", "xau", "gld"),
-    "GOOGL": ("googl", "alphabet stock", "google stock"),
+    "GOOGL": ("googl", "alphabet stock", "google stock", "alphabet inc", "google"),
     "NVDA": ("nvda", "nvidia"),
 }
 
