@@ -1,5 +1,5 @@
 import type { ChartRange } from "@/lib/analysis-data";
-import { mlAnalyzedSymbols } from "@/lib/asset-symbols";
+import { mlAnalyzedSymbols, mlSymbolAliases } from "@/lib/asset-symbols";
 
 export type MlHorizon = "1D" | "1W" | "1M";
 export type MlTrend = "bearish" | "bullish" | "neutral";
@@ -46,9 +46,9 @@ export type MlAnalysis = {
 const mlAnalyzedSymbolSet = new Set<string>(mlAnalyzedSymbols);
 
 export function supportsMlAnalysis(symbol: string | null | undefined) {
-  return symbol
-    ? mlAnalyzedSymbolSet.has(symbol.trim().replace(/^\^/, "").toUpperCase())
-    : false;
+  if (!symbol) return false;
+  const normalized = symbol.trim().replace(/^\^/, "").toUpperCase();
+  return mlAnalyzedSymbolSet.has(normalized) || normalized in mlSymbolAliases;
 }
 
 export function chartRangeToMlHorizon(range: ChartRange): MlHorizon {

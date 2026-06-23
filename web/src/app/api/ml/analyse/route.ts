@@ -24,7 +24,7 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(req.url);
-  const symbol = url.searchParams.get("symbol")?.trim().toUpperCase() ?? "";
+  let symbol = url.searchParams.get("symbol")?.trim().toUpperCase() ?? "";
   const horizonValue =
     url.searchParams.get("horizon")?.trim().toUpperCase() ?? "1D";
 
@@ -42,6 +42,8 @@ export async function GET(req: Request) {
     );
   }
 
+  if (symbol === "GOOG") symbol = "GOOGL";
+
   const target = new URL(
     `/ml/analyse/${encodeURIComponent(symbol)}`,
     analysisUrl
@@ -56,6 +58,12 @@ export async function GET(req: Request) {
     const body = await analysisResponse.json();
 
     if (!analysisResponse.ok) {
+      const mappedStatus =
+        analysisResponse.status === 400
+          ? 400
+          : analysisResponse.status === 503
+            ? 503
+            : 502;
       return NextResponse.json(
         {
           error:
@@ -63,9 +71,7 @@ export async function GET(req: Request) {
               ? body.detail
               : "ML analysis failed.",
         },
-        {
-          status: analysisResponse.status === 400 ? 400 : 502,
-        }
+        { status: mappedStatus }
       );
     }
 

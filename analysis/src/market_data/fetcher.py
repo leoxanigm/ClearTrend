@@ -1,10 +1,13 @@
 import io
+import logging
 import time
 from pathlib import Path
 
 import pandas as pd
 import requests
 import yfinance as yf
+
+logger = logging.getLogger(__name__)
 
 from .config import (
     LONG_HISTORY_TICKERS,
@@ -100,13 +103,20 @@ def process_tickers(
         tickers[i:i + batch_size]
         for i in range(0, len(tickers), batch_size)
     ]
+    total = len(batches)
 
-    for batch in batches:
+    for index, batch in enumerate(batches, 1):
+        logger.info(
+            "Batch %d/%d : %d tickers [%s/%s]",
+            index, total, len(batch), interval, period,
+        )
         df_batch = download_batch(batch, interval=interval, period=period)
 
         if df_batch is None or df_batch.empty:
+            logger.warning("Batch %d/%d returned no data", index, total)
             continue
 
+        saved = 0
         for ticker in batch:
             sub = extract_ticker(df_batch, ticker)
 
@@ -119,8 +129,10 @@ def process_tickers(
                 directory=target_dir,
                 marker=target_marker,
             )
-            updated += 1
+            saved += 1
 
+        updated += saved
+        logger.info("Batch %d/%d | %d/%d tickers saved", index, total, saved, len(batch))
         time.sleep(pause_seconds)
 
     return updated

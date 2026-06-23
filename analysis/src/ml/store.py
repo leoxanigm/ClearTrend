@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,6 +22,8 @@ PREDICTION_DIR = BASE_DATA_DIR / "ml_predictions"
 PREDICTION_SCHEMA_VERSION = 1
 MODEL_VERSION = "ridge100-reddit50-daily-social-calendar-v8"
 _REFRESH_LOCK = threading.Lock()
+# Pause between tickers to avoid Reddit rate-limiting (429) during bulk refresh.
+INTER_TICKER_PAUSE_SECONDS = 20
 
 
 def _supported_ticker(ticker: str) -> str:
@@ -208,7 +211,8 @@ def refresh_all_predictions(
         }
 
     try:
-        for ticker in LONG_HISTORY_TICKERS:
+        tickers = list(LONG_HISTORY_TICKERS)
+        for index, ticker in enumerate(tickers):
             try:
                 result = train_asset_prediction(
                     ticker,
@@ -218,7 +222,7 @@ def refresh_all_predictions(
                 )
                 results.append(result)
                 logger.info(
-                    "ML prediction %s for %s using daily data %s.",
+                    "ML prediction %s for %s using daily data %s",
                     result["status"],
                     result["ticker"],
                     result["marketDataAsOf"],
@@ -235,6 +239,8 @@ def refresh_all_predictions(
                         "ticker": sanitize_ticker(ticker),
                     }
                 )
+            if include_social and index < len(tickers) - 1:
+                time.sleep(INTER_TICKER_PAUSE_SECONDS)
     finally:
         _REFRESH_LOCK.release()
 

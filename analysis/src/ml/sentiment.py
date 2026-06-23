@@ -30,7 +30,7 @@ ASSET_SEARCH_QUERIES = {
     "BTC-USD": '"Bitcoin" OR "BTC crypto"',
     "ETH-USD": '"Ethereum" OR "ETH crypto"',
     "GC=F": '"gold price" OR "GLD ETF"',
-    "GOOGL": '"GOOGL" OR "Alphabet stock"',
+    "GOOGL": '"GOOGL" OR "Alphabet stock" OR "Google stock" OR "Alphabet Inc"',
     "NVDA": '"NVDA" OR "Nvidia stock"',
 }
 
@@ -40,7 +40,7 @@ ASSET_MATCH_TERMS = {
     "BTC-USD": ("bitcoin", "btc"),
     "ETH-USD": ("ethereum", "ether", "eth"),
     "GC=F": ("gold", "xau", "gld"),
-    "GOOGL": ("googl", "alphabet stock", "google stock"),
+    "GOOGL": ("googl", "alphabet stock", "google stock", "alphabet inc", "google"),
     "NVDA": ("nvda", "nvidia"),
 }
 
@@ -93,6 +93,8 @@ IRRELEVANT_CONTEXT_TERMS = (
 )
 
 _CACHE: dict[str, tuple[float, dict]] = {}
+_LAST_REDDIT_REQUEST: float = 0.0
+_REDDIT_MIN_INTERVAL: float = 8.0  # seconds between consecutive Reddit requests
 
 
 class _TextExtractor(HTMLParser):
@@ -232,26 +234,45 @@ def fetch_reddit_posts(
     max_posts: int = MAX_POSTS,
     timeout: float = 15,
 ) -> list[dict]:
-    response = requests.get(
-        REDDIT_SEARCH_URL,
-        params={
-            "limit": "100",
-            "q": _query_for_ticker(ticker),
-            "sort": "new",
-            "t": "week",
-            "type": "link",
-        },
-        headers={"User-Agent": REDDIT_USER_AGENT},
-        timeout=timeout,
-    )
-    response.raise_for_status()
+    global _LAST_REDDIT_REQUEST
+    elapsed = time.monotonic() - _LAST_REDDIT_REQUEST
+    if elapsed < _REDDIT_MIN_INTERVAL:
+        time.sleep(_REDDIT_MIN_INTERVAL - elapsed)
 
-    return parse_reddit_feed(
-        response.content,
-        ticker=ticker,
-        days=days,
-        max_posts=max_posts,
-    )
+    params = {
+        "limit": "100",
+        "q": _query_for_ticker(ticker),
+        "sort": "new",
+        "t": "week",
+        "type": "link",
+    }
+    headers = {"User-Agent": REDDIT_USER_AGENT}
+    last_exc: Exception | None = None
+
+    for delay in [0, 10, 30]:
+        if delay:
+            time.sleep(delay)
+        try:
+            _LAST_REDDIT_REQUEST = time.monotonic()
+            response = requests.get(
+                REDDIT_SEARCH_URL,
+                params=params,
+                headers=headers,
+                timeout=timeout,
+            )
+            response.raise_for_status()
+            return parse_reddit_feed(
+                response.content,
+                ticker=ticker,
+                days=days,
+                max_posts=max_posts,
+            )
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 429:
+                last_exc = exc
+                continue
+            raise
+    raise last_exc  # type: ignore[misc]
 
 
 def _qwen_schema() -> dict[str, Any]:
@@ -422,6 +443,15 @@ def reddit_sentiment(ticker: str) -> dict:
             "reason": str(error),
             "postCount": 0,
         }
+        # Managing potential rate limit from reddit
+        is_429 = (
+            isinstance(error, requests.HTTPError)
+            and error.response is not None
+            and error.response.status_code == 429
+        )
+        ttl = 60 if is_429 else CACHE_SECONDS
+        _CACHE[cache_key] = (time.monotonic() + ttl, result)
+        return result
 
     _CACHE[cache_key] = (time.monotonic() + CACHE_SECONDS, result)
 

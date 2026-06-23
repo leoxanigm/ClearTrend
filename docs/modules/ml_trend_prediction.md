@@ -5,9 +5,9 @@
 Implémentation terminée pour la régression, Reddit RSS, ApeWisdom, la fusion,
 l'API et le dashboard.
 
-L'intégration Gemini a été testée avec une clé réelle. Un cycle quotidien
+L'intégration Gemma a été testée avec une clé réelle. Un cycle quotidien
 complet sur les sept assets reste à confirmer après renouvellement du quota:
-les premiers appels ont fonctionné, puis Gemini a retourné HTTP `429`.
+les premiers appels ont fonctionné, puis Gemma a retourné HTTP `429`.
 
 ## Pourquoi ce module
 
@@ -145,7 +145,7 @@ extrême du modèle ne produise pas un prix absurde.
 Le prix estimé reste indicatif. Pour un asset volatil et un horizon mensuel,
 l'intervalle peut être large.
 
-### 2. Sentiment Reddit et Gemini
+### 2. Sentiment Reddit et Gemma
 
 Fichier: `analysis/src/ml/reddit_sentiment.py`.
 
@@ -158,7 +158,7 @@ Flux:
 5. limite de 50 publications pertinentes;
 6. titre limité à 180 caractères;
 7. extrait limité à 360 caractères;
-8. envoi temporaire à Gemini;
+8. envoi temporaire à Gemma;
 9. réponse JSON structurée.
 
 Sorties:
@@ -168,21 +168,21 @@ Sorties:
 - nombre de messages haussiers, neutres et baissiers;
 - nombre de publications analysées.
 
-Gemini ne produit aucun texte destiné au frontend. Les publications nettoyées
+Gemma ne produit aucun texte destiné au frontend. Les publications nettoyées
 et limitées en taille lui sont envoyées uniquement pour obtenir ces mesures
 structurées de sentiment.
 
 La clé n'est jamais exposée au navigateur et ne doit pas être versionnée.
 
 ```dotenv
-GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-2.5-flash-lite
+Gemma_API_KEY=...
+Gemma_MODEL=Gemma-2.5-flash-lite
 ```
 
 Sans clé, le signal est marqué indisponible et la prédiction historique continue
 de fonctionner.
 
-Si Gemini refuse un appel, le snapshot conserve le nombre de publications
+Si Gemma refuse un appel, le snapshot conserve le nombre de publications
 collectées dans `collectedPostCount`. Cela permet de distinguer une limite API
 d'une absence de messages Reddit, sans multiplier les nouvelles tentatives.
 
@@ -201,7 +201,7 @@ Le score d'attention `0..1` combine le volume de mentions et le rang.
 
 Une hausse du nombre de messages n'est pas considérée comme haussière: un crash
 peut aussi provoquer beaucoup de discussions. L'attention sert à augmenter ou
-réduire le poids et la confiance du sentiment Gemini.
+réduire le poids et la confiance du sentiment Gemma.
 
 ### 4. Fusion des signaux
 
@@ -255,7 +255,7 @@ Cycle normal:
 2. les nouveaux CSV daily sont téléchargés;
 3. le job ML parcourt les sept assets;
 4. chaque asset entraîne indépendamment ses modèles `1D`, `1W` et `1M`;
-5. Reddit, Gemini et ApeWisdom sont appelés une seule fois pour cet asset;
+5. Reddit, Gemma et ApeWisdom sont appelés une seule fois pour cet asset;
 6. un snapshot JSON temporaire est écrit;
 7. le snapshot remplace atomiquement l'ancien fichier;
 8. les clients lisent tous ce même résultat.
@@ -287,12 +287,12 @@ Un asset est recalculé si au moins une condition est vraie:
 - le snapshot n'a pas été entraîné aujourd'hui;
 - une nouvelle date daily est disponible pour cet asset;
 - la version du modèle a changé;
-- Gemini vient d'être configuré ou retiré;
+- Gemma vient d'être configuré ou retiré;
 - aucune tentative de sentiment n'a encore été enregistrée aujourd'hui.
 
 Le démarrage du serveur constitue la première occasion de remplir les sentiments
 manquants. `socialAttemptedAt` est enregistré même si Reddit ne retourne aucun
-message ou si Gemini répond `429`. Une seule tentative est donc effectuée par
+message ou si Gemma répond `429`. Une seule tentative est donc effectuée par
 asset et par jour; la suivante attend le job quotidien. Un refresh navigateur
 ou un redémarrage supplémentaire le même jour ne lance aucun appel.
 
@@ -350,7 +350,7 @@ La tuile Tendance affiche:
 
 La tuile Sentiment affiche:
 
-- direction lisible et score Gemini sur 100;
+- direction lisible et score Gemma sur 100;
 - nombre de messages;
 - accord entre les messages.
 - mentions ApeWisdom et variation sur 24 heures.
@@ -374,15 +374,15 @@ Les assets hors du périmètre affichent `Non disponible`.
 
 - un calcul planifié par asset et par jour;
 - aucun appel externe lors d'une requête utilisateur;
-- sentiment Reddit/Gemini garde en mémoire 30 minutes pendant un même job;
+- sentiment Reddit/Gemma garde en mémoire 30 minutes pendant un même job;
 - attention ApeWisdom gardée en mémoire 15 minutes pendant un même job;
 - maximum 100 candidats récupérés par recherche;
-- maximum 50 publications pertinentes envoyées à Gemini;
+- maximum 50 publications pertinentes envoyées à Gemma;
 - maximum 180 caractères de titre;
 - maximum 360 caractères d'extrait.
 
 Les trois horizons réutilisent le même sentiment récent. Tous les utilisateurs
-réutilisent ensuite le snapshot daily au lieu d'appeler Gemini.
+réutilisent ensuite le snapshot daily au lieu d'appeler Gemma.
 
 ## Tests
 
@@ -428,7 +428,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml \
 
 ## Scénario de validation
 
-1. Configurer `GEMINI_API_KEY`.
+1. Configurer `Gemma_API_KEY`.
 2. Recréer le service `analysis`.
 3. Sélectionner NVDA sur le dashboard.
 4. Montrer le résultat `1D`.
@@ -446,7 +446,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml \
 - Reddit n'est pas représentatif de tous les investisseurs.
 - ApeWisdom mesure l'attention, pas la direction.
 - Le flux RSS peut changer ou devenir indisponible.
-- Gemini peut mal classer un message ambigu.
+- Gemma peut mal classer un message ambigu.
 - Les poids sont explicites et non appris, faute d'historique social aligné avec
   les prix.
 

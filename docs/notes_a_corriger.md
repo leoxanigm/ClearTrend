@@ -11,7 +11,7 @@ grandeur en difficulte et en lignes code/docs/tests, pas un chiffrage exact.
 | Module / sujet | A modifier / ajouter / supprimer |
 |---|---|
 | Watchlist chargee en entier | Le cache et les lots sont faits; ajouter seulement un chargement progressif ou une pagination si la liste grandit encore. |
-| ML Trend Prediction | Ajouter la cle Gemini, tester le sentiment reel et valider le scenario de demo. |
+| ML Trend Prediction | Ajouter la cle Gemma, tester le sentiment reel et valider le scenario de demo. |
 | Recherche avancee | Ajouter donnees demo, alimenter les tables recherchees et valider filtres/tri/pagination. |
 | Public API securisee | Ajouter namespace public versionne, rate limit API key, OpenAPI et endpoints manquants. |
 | OAuth 2.0 | Nettoyer `.env.example`, documenter callbacks et gerer l'affichage des providers non configures. |
@@ -50,7 +50,7 @@ Pistes:
 ## ML Trend Prediction a finaliser
 
 Estimation restante: difficulte 2/5, environ 20-80 lignes de correction selon
-les retours Gemini, puis documentation et verification manuelle.
+les retours Gemma, puis documentation et verification manuelle.
 
 Etat:
 
@@ -61,15 +61,15 @@ Etat:
 - Chaque asset est entraine independamment une fois par jour dans un job backend
   apres le refresh daily. Les clients lisent tous le meme snapshot persiste.
 - Les tests locaux et le parcours authentifie web vers FastAPI passent.
-- La partie Gemini n'a pas encore ete executee avec une vraie cle.
+- La partie Gemma n'a pas encore ete executee avec une vraie cle.
 
 Reste a faire avant validation:
 
-- Ajouter `GEMINI_API_KEY` dans `.env`, sans la commit.
+- Ajouter `Gemma_API_KEY` dans `.env`, sans la commit.
 - Recreer `analysis` pour charger la variable d'environnement.
 - Tester NVDA, Bitcoin et un asset avec peu de messages.
 - Verifier que les messages Reddit retenus parlent bien de l'investissement.
-- Ajuster seulement les filtres ou le prompt si Gemini classe du contenu hors
+- Ajuster seulement les filtres ou le prompt si Gemma classe du contenu hors
   sujet; ne pas modifier les poids pour fabriquer une tendance attendue.
 - Conserver une capture ou une sortie JSON des trois horizons pour la demo.
 - Expliquer que le prix estime est experimental et que la confiance n'est pas

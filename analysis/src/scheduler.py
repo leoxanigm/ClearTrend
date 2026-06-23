@@ -58,15 +58,15 @@ async def refresh_daily_history_if_needed() -> bool:
     refresh_date = latest_daily_csv_date()
 
     if _refreshed_today(refresh_date):
-        logger.info("Daily history refresh skipped; already refreshed today.")
+        logger.info("Daily history refresh skipped (already refreshed today)")
         return False
 
-    logger.info("Daily history refresh started.")
+    logger.info("Daily history refresh started")
     await asyncio.to_thread(build_daily_history)
-    logger.info("Daily history refresh completed.")
-    logger.info("Daily ML prediction refresh started.")
+    logger.info("Daily history refresh completed")
+    logger.info("Daily ML prediction refresh started")
     await asyncio.to_thread(refresh_all_predictions)
-    logger.info("Daily ML prediction refresh completed.")
+    logger.info("Daily ML prediction refresh completed")
     return True
 
 
@@ -75,20 +75,20 @@ async def refresh_weekly_intraday_history_if_needed() -> bool:
     refresh_date = latest_weekly_intraday_source_date()
 
     if _refreshed_today(refresh_date):
-        logger.info("Weekly intraday refresh skipped; already refreshed today.")
+        logger.info("Weekly intraday refresh skipped (already refreshed today)")
         return False
 
-    logger.info("Weekly intraday refresh started.")
+    logger.info("Weekly intraday refresh started")
     await asyncio.to_thread(build_weekly_intraday_history)
-    logger.info("Weekly intraday refresh completed.")
+    logger.info("Weekly intraday refresh completed")
     return True
 
 
 async def refresh_intraday_history(interval: str) -> bool:
     """Refresh current intraday candles on every configured scheduler cycle."""
-    logger.info("Intraday history refresh started at %s.", interval)
+    logger.info("Intraday history refresh started at %s", interval)
     await asyncio.to_thread(build_intraday_history, interval=interval)
-    logger.info("Intraday history refresh completed.")
+    logger.info("Intraday history refresh completed")
     return True
 
 
@@ -102,7 +102,7 @@ async def run_market_data_scheduler() -> None:
             int(refresh_duration.total_seconds())
         )
         logger.info(
-            "Next intraday refresh cadence: %s seconds (%s candles).",
+            "Next intraday refresh cadence : %s seconds (%s candles)",
             int(refresh_duration.total_seconds()),
             intraday_interval,
         )
@@ -140,4 +140,4 @@ async def run_market_data_scheduler() -> None:
         except asyncio.CancelledError:
             raise
         except Exception:
-            logger.exception("Market data refresh failed.")
+            logger.exception("!!! Market data refresh failed !!!")

@@ -8,6 +8,12 @@ export const mlAnalyzedSymbols = [
   "NVDA",
 ] as const;
 
+// Symbols that alias to an mlAnalyzedSymbol — supports ML panel without
+// appearing in the default watchlist.
+export const mlSymbolAliases: Record<string, string> = {
+  GOOG: "GOOGL",
+};
+
 export const defaultWatchlistSymbols = [
   ...mlAnalyzedSymbols,
   "AAPL",
