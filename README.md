@@ -101,7 +101,7 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 | Backend Microservices | Major | Valid | 2 | elhirond, mathboye, amoureau |
 | Advanced Analytics Dashboard with Data Visualization | Major | Valid | 2 | elhirond, mathboye |
 | Real-time WebSocket/SSE | Major | Not implemented | 0 | |
-| ML Trend Prediction (custom) | Major | Implemented, live Gemini test pending | 0 | mathboye, elhirond |
+| ML Trend Prediction (custom) | Major | Implemented, live Gemma test pending | 0 | mathboye, elhirond |
 | Secure Public API | Major | Partial, not validated | 0 | zalemu |
 | Advanced Permissions | Major | Partial, not validated | 0 | amoureau |
 | Additional Browsers | Minor | Valid | 1 | elhirond |
@@ -187,7 +187,7 @@ Still missing before validation:
 
 ### Major - ML Trend Prediction (custom module)
 
-Status: implemented, live Gemini test pending before validation.
+Status: implemented, live Gemma test pending before validation.
 
 ClearTrend combines historical market data, recent Reddit sentiment, and
 ApeWisdom attention to estimate a bearish, neutral, or bullish trend over one
@@ -210,7 +210,7 @@ Proof:
 - Time-series cross-validation prevents future data from leaking into training.
 - Each asset and horizon is trained independently; no universal model mixes
   Bitcoin, equities, indices, and gold histories.
-- Reddit RSS supplies short posts from the latest seven days; Gemini classifies
+- Reddit RSS supplies short posts from the latest seven days; Gemma classifies
   their investment sentiment.
 - ApeWisdom measures how much attention the asset receives and adjusts the
   importance of the social signal without treating popularity as bullish.
@@ -229,7 +229,7 @@ documented in `docs/modules/ml_trend_prediction.md`.
 
 Still missing before claiming the two points:
 
-- Configure `GEMINI_API_KEY` locally.
+- Configure `Gemma_API_KEY` locally.
 - Run and inspect at least one real social analysis.
 - Demonstrate the three horizons and explain why confidence can remain low.
 

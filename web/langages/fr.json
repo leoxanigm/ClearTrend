@@ -86,7 +86,7 @@
     "mlMentionsHelp": "Volume de discussions mesuré par ApeWisdom. Une hausse des mentions peut accompagner une hausse comme une baisse.",
     "mlMentionsLabel": "Mentions du sujet",
     "mlMentionsValue": "{count} mentions ({growth}/24 h)",
-    "mlMessagesHelp": "Messages Reddit pertinents publiés pendant les 7 derniers jours et analysés par Gemini.",
+    "mlMessagesHelp": "Messages Reddit pertinents publiés pendant les 7 derniers jours et analysés par Gemma.",
     "mlMessagesLabel": "Messages analysés",
     "mlMessagesValue": "{count} messages",
     "mlSentimentbearish": "Plutôt baissier · {score}/100",

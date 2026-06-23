@@ -86,7 +86,7 @@
     "mlMentionsHelp": "Discussion volume measured by ApeWisdom. Rising mentions may accompany either a rally or a decline.",
     "mlMentionsLabel": "Topic mentions",
     "mlMentionsValue": "{count} mentions ({growth}/24h)",
-    "mlMessagesHelp": "Relevant Reddit posts published during the last 7 days and analyzed by Gemini.",
+    "mlMessagesHelp": "Relevant Reddit posts published during the last 7 days and analyzed by Gemma.",
     "mlMessagesLabel": "Analyzed posts",
     "mlMessagesValue": "{count} posts",
     "mlSentimentbearish": "Leans bearish · {score}/100",

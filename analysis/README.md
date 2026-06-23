@@ -41,7 +41,7 @@ cached data without calling Yahoo.
   `updatedAt`.
 - `ml/regression.py`: OHLCV features, Ridge Regression, chronological
   backtests, estimated prices, and normalized trend scores.
-- `ml/sentiment.py`: seven-day Reddit RSS sampling and Gemini sentiment.
+- `ml/sentiment.py`: seven-day Reddit RSS sampling and Gemma sentiment.
 - `ml/attention.py`: ApeWisdom mention and rank attention.
 - `ml/ensemble.py`: multi-source weighting, trend, and confidence.
 - `ml/store.py`: daily per-asset training orchestration, atomic JSON
@@ -93,8 +93,8 @@ curl "http://localhost:8000/ml/analyse/NVDA?horizon=1W"
 Required environment for social sentiment:
 
 ```dotenv
-GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-2.5-flash-lite
+Gemma_API_KEY=...
+Gemma_MODEL=Gemma-2.5-flash-lite
 ```
 
 Inspect training freshness:
@@ -106,10 +106,10 @@ curl "http://localhost:8000/ml/status"
 The daily backend job runs after the daily market-data refresh. It trains each
 asset independently, writes one JSON snapshot per asset under
 `/app/data/ml_predictions`, and skips a repeated run when the model version,
-Gemini configuration, training day, and latest daily candle are unchanged.
+Gemma configuration, training day, and latest daily candle are unchanged.
 
 API requests only read these files. They do not fit a model, call Reddit,
-Gemini, or ApeWisdom. The endpoint still serves the historical component when a
+Gemma, or ApeWisdom. The endpoint still serves the historical component when a
 social source was unavailable during the scheduled run.
 
 ## Latest
