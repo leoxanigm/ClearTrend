@@ -26,7 +26,6 @@ export function SearchClient() {
   const [sort, setSort] = useState<SearchSortKey>('createdAt');
   const [direction, setDirection] = useState<SearchDirection>('desc');
   const [sentiment, setSentiment] = useState('');
-  const [source, setSource] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
@@ -51,10 +50,6 @@ export function SearchClient() {
       params.set('sentiment', sentiment);
     }
 
-    if (source) {
-      params.set('source', source);
-    }
-
     if (dateFrom) {
       params.set('dateFrom', dateFrom);
     }
@@ -64,7 +59,7 @@ export function SearchClient() {
     }
 
     return `/api/search?${params.toString()}`;
-  }, [dateFrom, dateTo, direction, page, query, sentiment, sort, source, type]);
+  }, [dateFrom, dateTo, direction, page, query, sentiment, sort, type]);
 
   // Search request lifecycle
   useEffect(() => {
@@ -122,7 +117,6 @@ export function SearchClient() {
     setSort('createdAt');
     setDirection('desc');
     setSentiment('');
-    setSource('');
     setDateFrom('');
     setDateTo('');
     setPage(1);
