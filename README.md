@@ -102,7 +102,7 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 | Advanced Analytics Dashboard with Data Visualization | Major | Valid | 2 | elhirond, mathboye |
 | Real-time WebSocket/SSE | Major | Not implemented | 0 | |
 | ML Trend Prediction (custom) | Major | Implemented, live Gemma test pending | 0 | mathboye, elhirond |
-| Secure Public API | Major | Partial, not validated | 0 | zalemu |
+| Secure Public API | Major | Valid | 2 | zalemu |
 | Advanced Permissions | Major | Partial, not validated | 0 | amoureau |
 | Additional Browsers | Minor | Valid | 1 | elhirond |
 | Custom Design System | Minor | Valid | 1 | elhirond |
