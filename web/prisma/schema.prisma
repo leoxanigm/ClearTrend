@@ -76,7 +76,7 @@ model AppSetting {
 
 model User {
   id                     String   @id @default(uuid())
-  email                  String
+  email                  String   @unique
   oauthProvider          String?
   oauthProviderAccountId String?
   passwordHash           String?
