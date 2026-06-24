@@ -11,7 +11,7 @@ import {
   type SearchSortKey
 } from '@/lib/search-types';
 import { NextResponse } from 'next/server';
-import { TrendLabel, SourceKind } from '@/generated/prisma/enums';
+import { TrendLabel } from '@/generated/prisma/enums';
 
 export const dynamic = 'force-dynamic';
 
@@ -200,7 +200,6 @@ async function searchAnalyses(input: {
   page: number;
   q: string;
   sentiment: string | null;
-  source: string | null;
   userId: string;
   sort: SearchSortKey;
 }) {
@@ -318,7 +317,6 @@ export async function GET(req: Request) {
   const dateFrom = readDateStart(url.searchParams.get('dateFrom'));
   const dateTo = readDateEnd(url.searchParams.get('dateTo'));
   const sentiment = normalizeOptional(url.searchParams.get('sentiment'));
-  const source = normalizeOptional(url.searchParams.get('source'));
 
   try {
     const input = {
@@ -330,7 +328,6 @@ export async function GET(req: Request) {
       q,
       sentiment,
       sort,
-      source,
       userId: profile.id
     };
 
@@ -357,7 +354,6 @@ export async function GET(req: Request) {
         q,
         sentiment,
         sort,
-        source,
         type
       },
       pagination: {

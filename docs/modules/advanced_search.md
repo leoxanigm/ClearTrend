@@ -287,8 +287,7 @@ The response has three sections:
     "limit": 10,
     "dateFrom": null,
     "dateTo": null,
-    "sentiment": null,
-    "source": null
+    "sentiment": null
   },
   "pagination": {
     "page": 1,
@@ -397,20 +396,15 @@ An evaluator demonstration can follow these steps:
 
 ## Current Scope
 
-The implemented entity types are assets and analyses. The API response contains
-a reserved `source` field, but source filtering is not exposed in the interface
-and is not applied to the current database query. It is therefore not claimed
-as part of the module.
+The implemented entity types are assets and analyses.
 
-This scope still exceeds the subject requirement because the module provides
-multiple functional filters, configurable sorting, and complete server-side
-pagination over two related database entity types.
+This module's implementation provides multiple functional filters, configurable 
+sorting, and complete server-side pagination over two related database entity types.
 
 ## Conclusion
 
 ClearTrend implements advanced search as a complete user workflow rather than a
 single text field. Search combines multiple filters, database-backed sorting,
-bounded server-side pagination, normalized heterogeneous results, protected API
-access, request cancellation, and translated interface states.
+bounded server-side pagination, normalized results and key protected API access.
 
 The implementation therefore satisfies the Advanced Search minor module.

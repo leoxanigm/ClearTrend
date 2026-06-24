@@ -34,7 +34,6 @@ export type SearchResponse = {
     q: string;
     sentiment: string | null;
     sort: SearchSortKey;
-    source: string | null;
     type: SearchEntityType;
   };
   pagination: {

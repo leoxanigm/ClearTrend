@@ -53,7 +53,7 @@ stocké.
 
 Le module couvre les actions de création, modification et suppression via les
 types Prisma `NotificationType`.
-
+ 
 | Famille | Création | Modification | Suppression |
 |---|---|---|---|
 | Watchlist | `WATCHLIST_CREATED` | `WATCHLIST_UPDATED` | `WATCHLIST_DELETED` |
@@ -237,18 +237,6 @@ SYSTEM
 
 Un type inconnu est remplacé par `SYSTEM`.
 
-## Recherche
-
-Les notifications persistantes sont déjà prises en compte par la recherche
-globale via :
-
-```text
-GET /api/search?type=notifications
-```
-
-La recherche filtre les notifications par `userId`. Un utilisateur ne voit donc
-que ses propres notifications.
-
 ## Sécurité
 
 - L'écriture en base exige une session utilisateur.
@@ -269,11 +257,6 @@ que ses propres notifications.
    `notify(...)`.
 4. Vérifier que le toast apparaît.
 5. Vérifier que la table `notifications` contient une nouvelle ligne.
-6. Vérifier la recherche :
-
-```text
-/api/search?type=notifications
-```
 
 Cas à tester :
 
@@ -293,5 +276,4 @@ web/src/components/ui/Notifications.tsx
 web/src/components/ui/Toast.tsx
 web/src/app/api/notifications/route.ts
 web/prisma/schema.prisma
-web/src/app/api/search/route.ts
 ```
