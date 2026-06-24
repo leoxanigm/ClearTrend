@@ -1,4 +1,4 @@
-.PHONY: dev up down logs ps health db-push db-shell db-studio reset-db backup restore restore-check test-file-upload clean fclean certs dev-info up-info sync-dev-data
+.PHONY: dev up down logs ps health db-migrate db-migrate-status db-shell db-studio reset-db backup restore restore-check test-file-upload clean fclean certs dev-info up-info sync-dev-data
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
@@ -10,7 +10,7 @@ COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 dev: .env sync-dev-data
 	$(COMPOSE_DEV) up -d --build --remove-orphans db analysis
 	$(COMPOSE_DEV) build web
-	$(COMPOSE_DEV) run --rm --no-deps web npm run db:push
+	$(COMPOSE_DEV) run --rm --no-deps web npm run db:migrate
 	-$(COMPOSE_DEV) stop proxy
 	@printf '\nWaiting for the analysis API to be ready before starting the web app...\n'
 	$(COMPOSE_DEV) up -d web
@@ -19,8 +19,9 @@ dev: .env sync-dev-data
 
 # up starts the evaluation-like environment: built containers and HTTPS through nginx.
 up: .env certs
-	$(COMPOSE) up -d --build --remove-orphans db analysis backup web proxy
-	$(COMPOSE) exec web npm run db:push
+	$(COMPOSE) up -d --build --remove-orphans db analysis backup
+	$(COMPOSE) run --rm --no-deps web npm run db:migrate:deploy
+	$(COMPOSE) up -d web proxy
 	$(MAKE) up-info
 
 down:
@@ -38,8 +39,11 @@ health:
 	@$(COMPOSE) exec analysis python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read().decode())"
 	@printf '\n'
 
-db-push:
-	$(COMPOSE_DEV) exec web npm run db:push
+db-migrate:
+	$(COMPOSE_DEV) exec web npm run db:migrate
+
+db-migrate-status:
+	$(COMPOSE_DEV) exec web npm run db:migrate:status
 
 db-shell:
 	$(COMPOSE_DEV) exec db sh -c 'psql -U "$$POSTGRES_USER" "$$POSTGRES_DB"'
