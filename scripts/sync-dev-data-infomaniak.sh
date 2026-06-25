@@ -14,6 +14,26 @@ run_backup() {
   ${COMPOSE_BASE} run --rm --no-deps backup "$@"
 }
 
+wait_for_database() {
+  printf 'Waiting for database to accept connections...\n'
+
+  for attempt in $(seq 1 60); do
+    if ${COMPOSE_DEV} exec -T db pg_isready \
+      -U "${POSTGRES_USER:-transcendence}" \
+      -d "${POSTGRES_DB:-transcendence}" \
+      >/dev/null 2>&1; then
+      printf 'Database is ready.\n'
+      return 0
+    fi
+
+    sleep 1
+  done
+
+  printf 'Database did not become ready in time.\n' >&2
+  ${COMPOSE_DEV} logs db
+  exit 1
+}
+
 latest_remote_file() {
   remote_path="$1"
   pattern="$2"
@@ -221,6 +241,8 @@ sync_dataset() {
 
 printf 'Starting database only for restore checks/imports...\n'
 ${COMPOSE_DEV} up -d --build db
+
+wait_for_database # we need to wait for database when a new volume is created
 
 sync_dataset \
   database \

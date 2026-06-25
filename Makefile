@@ -20,6 +20,7 @@ dev: .env sync-dev-data
 # up starts the evaluation-like environment: built containers and HTTPS through nginx.
 up: .env certs
 	$(COMPOSE) up -d --build --remove-orphans db analysis backup
+	$(COMPOSE) build web
 	$(COMPOSE) run --rm --no-deps web npm run db:migrate:deploy
 	$(COMPOSE) up -d web proxy
 	$(MAKE) up-info
