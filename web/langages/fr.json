@@ -564,15 +564,77 @@
   "legal": {
     "privacy": {
       "title": "Politique de confidentialité",
-      "p1": "ClearTrend est un projet éducatif. L'application peut stocker les informations de compte, les entrées de watchlist, les préférences et les logs techniques nécessaires au fonctionnement et à la sécurité du service.",
-      "p2": "Les données financières, les résultats de sentiment et les analyses générées servent à afficher des tendances dans le produit. Ils ne doivent pas être considérés comme des conseils financiers professionnels.",
-      "p3": "Les utilisateurs pourront demander une mise à jour du profil ou la suppression du compte lorsque la gestion de compte sera implémentée."
+      "updated": "Dernière mise à jour : 25 juin 2026",
+      "intro": "Cette politique explique ce que ClearTrend collecte, comment ces données sont utilisées et quels choix sont proposés aux utilisateurs de l'application.",
+      "sections": {
+        "overview": {
+          "title": "Périmètre du projet",
+          "body": "ClearTrend est un projet éducatif d'analyse de marché. Il permet d'explorer des dashboards, des watchlists, des données de marché publiques, du sentiment social et des analyses générées dans un environnement d'apprentissage contrôlé."
+        },
+        "data": {
+          "title": "Données stockées",
+          "body": "L'application peut stocker les données d'identité du compte, les informations du fournisseur d'authentification, les paramètres de profil, les avatars et leurs métadonnées de recadrage, les entrées de watchlist, les préférences de notification, les rôles et permissions, les métadonnées de clés API, les clés API hashées et les logs techniques nécessaires au fonctionnement et à la sécurité du service."
+        },
+        "use": {
+          "title": "Utilisation des données",
+          "body": "Les données personnelles servent à connecter les utilisateurs, maintenir leur profil, afficher leur dashboard et leur watchlist, appliquer les permissions, protéger l'accès API, diagnostiquer les erreurs et maintenir les sauvegardes. ClearTrend ne vend pas les données personnelles et ne les utilise pas pour de la publicité."
+        },
+        "sharing": {
+          "title": "Services externes",
+          "body": "ClearTrend peut s'appuyer sur des fournisseurs OAuth, des fournisseurs de données de marché, des sources de sentiment social, des services d'analyse IA et un stockage de sauvegarde optionnel. Des symboles de marché publics ou des publications publiques peuvent être traités pour l'analyse, mais les données de profil du compte ne sont pas envoyées volontairement à ces sources d'analyse."
+        },
+        "security": {
+          "title": "Sécurité et sauvegardes",
+          "body": "Les mots de passe et les clés API sont stockés sous forme de hash, les avatars uploadés sont servis via des routes authentifiées, et les accès sont limités par les rôles et permissions. Les sauvegardes peuvent contenir des enregistrements de base de données, des données d'analyse et des avatars uploadés, avec une conservation définie par la configuration des sauvegardes."
+        },
+        "rights": {
+          "title": "Choix et droits utilisateur",
+          "body": "Les utilisateurs peuvent mettre à jour leur profil, gérer leur watchlist, révoquer leurs clés API et supprimer leur compte depuis l'application. La suppression du compte retire l'enregistrement actif et l'avatar local, même si d'anciennes copies de sauvegarde peuvent rester présentes jusqu'à leur rotation."
+        },
+        "cookies": {
+          "title": "Cookies et préférences locales",
+          "body": "ClearTrend utilise le stockage de session, des cookies ou le stockage local du navigateur lorsque c'est nécessaire pour l'authentification, le choix de langue, le thème et les préférences normales de l'application. Il n'inclut pas de suivi publicitaire."
+        }
+      }
     },
     "terms": {
       "title": "Conditions d'utilisation",
-      "p1": "ClearTrend fournit des outils pour explorer des données de marché, des watchlists et des analyses automatisées dans un contexte éducatif.",
-      "p2": "Les informations affichées par l'application ne constituent pas un conseil en investissement. Les utilisateurs restent responsables de toute décision prise à partir de données de marché externes ou de contenu généré.",
-      "p3": "L'accès au service peut évoluer pendant le développement à mesure que l'authentification, les permissions et les sources de données sont ajoutées."
+      "updated": "Dernière mise à jour : 25 juin 2026",
+      "intro": "Ces conditions définissent les règles d'utilisation de ClearTrend et les limites des informations affichées par l'application.",
+      "sections": {
+        "scope": {
+          "title": "Usage éducatif",
+          "body": "ClearTrend est un projet scolaire et une application de démonstration pour explorer des données de marché, des watchlists, des dashboards, des permissions, des API et de l'analyse automatisée. Ce n'est pas un courtier, une plateforme d'échange, un conseiller financier ou une plateforme de trading en production."
+        },
+        "account": {
+          "title": "Comptes et accès",
+          "body": "Les utilisateurs sont responsables de la confidentialité de leurs identifiants de connexion et de leurs clés API. Les administrateurs peuvent restreindre, suspendre ou supprimer des comptes lorsque c'est nécessaire pour protéger le service, appliquer les permissions ou répondre à un usage abusif."
+        },
+        "financialDisclaimer": {
+          "title": "Aucun conseil financier",
+          "body": "Les données de marché, indicateurs de sentiment, prédictions de modèles, recommandations et explications générées sont fournis uniquement pour l'exploration éducative. Ils ne doivent pas être considérés comme des conseils d'investissement, juridiques, fiscaux ou financiers professionnels."
+        },
+        "dataSources": {
+          "title": "Sources de données et sorties IA",
+          "body": "ClearTrend peut afficher des informations provenant de sources externes de données de marché, de sources sociales publiques et de services IA. Ces résultats peuvent être retardés, incomplets, indisponibles ou inexacts, et ClearTrend ne garantit pas leur exactitude."
+        },
+        "acceptableUse": {
+          "title": "Utilisation acceptable",
+          "body": "Les utilisateurs ne doivent pas contourner l'authentification, abuser de l'API publique, attaquer le service, uploader des fichiers malveillants, scraper au-delà d'un usage raisonnable du projet, ni utiliser ClearTrend d'une manière contraire aux lois, aux droits de tiers ou aux règles des fournisseurs de sources."
+        },
+        "availability": {
+          "title": "Disponibilité",
+          "body": "Le service peut évoluer, perdre l'accès à des sources externes, contenir des défauts ou devenir temporairement indisponible. ClearTrend est fourni comme projet éducatif, sans garantie de fonctionnement ininterrompu ni d'adéquation à un usage particulier."
+        },
+        "exports": {
+          "title": "Exports et données API",
+          "body": "Les fichiers téléchargés et les réponses API sont fournis pour un usage personnel éducatif dans le contexte du projet. Les utilisateurs restent responsables du respect des règles attachées aux données de marché, données sociales ou sources tierces d'origine."
+        },
+        "changes": {
+          "title": "Mises à jour des conditions",
+          "body": "Ces conditions peuvent être mises à jour à mesure que ClearTrend évolue. Continuer à utiliser l'application après une mise à jour signifie que l'utilisateur accepte la dernière version affichée sur cette page."
+        }
+      }
     }
   }
 }

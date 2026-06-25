@@ -173,8 +173,8 @@ are sent only to obtain these structured sentiment measures.
 The key is never exposed to the browser and must not be committed.
 
 ```dotenv
-Gemma_API_KEY=...
-Gemma_MODEL=Gemma-2.5-flash-lite
+QWEN_API_KEY=...
+QWEN_MODEL=gemma3:1b
 ```
 
 Without a key, the signal is marked unavailable and historical prediction
@@ -426,7 +426,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml \
 
 ## Validation Scenario
 
-1. Configure `Gemma_API_KEY`.
+1. Configure `QWEN_API_KEY`.
 2. Recreate the `analysis` service.
 3. Select NVDA on the dashboard.
 4. Show the `1D` result.

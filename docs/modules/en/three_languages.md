@@ -149,7 +149,7 @@ web/langages/es.json
 Each dictionary currently contains:
 
 - 17 main namespaces;
-- 399 messages;
+- 442 messages;
 - exactly the same keys.
 
 Namespaces separate interface domains, including:
@@ -273,9 +273,9 @@ PY
 Expected result:
 
 ```text
-en 399 messages
-fr 399 messages
-es 399 messages
+en 442 messages
+fr 442 messages
+es 442 messages
 ```
 
 TypeScript and ESLint verification complete this check:

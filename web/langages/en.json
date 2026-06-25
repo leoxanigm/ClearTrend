@@ -564,15 +564,77 @@
   "legal": {
     "privacy": {
       "title": "Privacy Policy",
-      "p1": "ClearTrend is an educational project. The application may store account information, watchlist entries, preferences, and technical logs needed to run and secure the service.",
-      "p2": "Financial data, sentiment results, and generated analysis are used to display trends inside the product. They should not be treated as professional financial advice.",
-      "p3": "Users can request profile updates or account deletion when account management is implemented."
+      "updated": "Last updated: June 25, 2026",
+      "intro": "This policy explains what ClearTrend collects, how it is used, and what choices are available to users of the application.",
+      "sections": {
+        "overview": {
+          "title": "Project Scope",
+          "body": "ClearTrend is an educational market-analysis project. It is designed to help users explore dashboards, watchlists, public market data, social sentiment, and generated analysis inside a controlled learning environment."
+        },
+        "data": {
+          "title": "Data We Store",
+          "body": "The application may store account identity data, authentication provider details, profile settings, avatar files and crop metadata, watchlist entries, notification preferences, role and permission settings, API key metadata, hashed API keys, and technical logs needed to operate and secure the service."
+        },
+        "use": {
+          "title": "How Data Is Used",
+          "body": "Personal data is used to sign users in, maintain their profile, display their dashboard and watchlist, apply permissions, protect API access, troubleshoot errors, and maintain backups. ClearTrend does not sell personal data or use it for advertising."
+        },
+        "sharing": {
+          "title": "External Services",
+          "body": "ClearTrend can rely on OAuth providers, market-data providers, social-sentiment sources, AI analysis services, and optional backup storage. Public market symbols or public posts may be processed for analysis, but account profile data is not intentionally sent to those analysis sources."
+        },
+        "security": {
+          "title": "Security And Backups",
+          "body": "Passwords and API keys are stored as hashes, uploaded avatars are served through authenticated routes, and access is limited by roles and permissions. Backups may contain database records, analysis data, and uploaded avatars, and are retained according to the configured backup policy."
+        },
+        "rights": {
+          "title": "User Choices And Rights",
+          "body": "Users can update their profile, manage their watchlist, revoke API keys, and delete their account from the application. Account deletion removes the active account record and local avatar file, although older backup copies may remain until backup rotation removes them."
+        },
+        "cookies": {
+          "title": "Cookies And Local Preferences",
+          "body": "ClearTrend uses session storage, cookies, or local browser storage when required for authentication, language selection, theme selection, and normal application preferences. It does not include advertising tracking."
+        }
+      }
     },
     "terms": {
       "title": "Terms of Service",
-      "p1": "ClearTrend provides tools for exploring market data, watchlists, and automated analysis in an educational context.",
-      "p2": "The information shown by the application is not investment advice. Users remain responsible for any decision made from external market information or generated content.",
-      "p3": "Access to the service can change during development as authentication, permissions, and data sources are added."
+      "updated": "Last updated: June 25, 2026",
+      "intro": "These terms define the rules for using ClearTrend and the limits of the information shown by the application.",
+      "sections": {
+        "scope": {
+          "title": "Educational Use",
+          "body": "ClearTrend is a school project and a demonstration application for exploring market data, watchlists, dashboards, permissions, APIs, and automated analysis. It is not a broker, exchange, financial adviser, or production trading platform."
+        },
+        "account": {
+          "title": "Accounts And Access",
+          "body": "Users are responsible for keeping their login credentials and API keys private. Administrators may restrict, suspend, or remove accounts when needed to protect the service, enforce permissions, or respond to misuse."
+        },
+        "financialDisclaimer": {
+          "title": "No Financial Advice",
+          "body": "Market data, sentiment indicators, model predictions, recommendations, and generated explanations are provided for educational exploration only. They must not be treated as investment, legal, tax, or professional financial advice."
+        },
+        "dataSources": {
+          "title": "Data Sources And AI Output",
+          "body": "ClearTrend may display information from external market-data sources, public social sources, and AI services. Those results can be delayed, incomplete, unavailable, or inaccurate, and ClearTrend does not guarantee their correctness."
+        },
+        "acceptableUse": {
+          "title": "Acceptable Use",
+          "body": "Users must not bypass authentication, abuse the public API, attack the service, upload malicious files, scrape beyond reasonable project use, or use ClearTrend in a way that violates laws, third-party rights, or source-provider rules."
+        },
+        "availability": {
+          "title": "Availability",
+          "body": "The service may change, lose access to external sources, contain defects, or become temporarily unavailable. ClearTrend is provided as an educational project without a guarantee of uninterrupted operation or fitness for a particular purpose."
+        },
+        "exports": {
+          "title": "Exports And API Data",
+          "body": "Downloaded files and API responses are provided for personal educational use inside the project context. Users remain responsible for respecting any rules attached to the original market-data, social-data, or third-party sources."
+        },
+        "changes": {
+          "title": "Updates To These Terms",
+          "body": "These terms may be updated as ClearTrend evolves. Continued use of the application after an update means the user accepts the latest version displayed on this page."
+        }
+      }
     }
   }
 }
