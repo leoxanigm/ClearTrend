@@ -54,7 +54,7 @@ navigateur des données déjà chargees et ne transmet aucun fichier au serveur.
 
 ### Parcours utilisateur
 
-Code associé : [`ProfileSettingsDialog`](../../web/src/components/ProfileSettingsDialog.tsx#L94)
+Code associé : [`ProfileSettingsDialog`](../../../web/src/components/ProfileSettingsDialog.tsx#L94)
 
 Depuis les paramètres du profil, l'utilisateur peut :
 
@@ -74,7 +74,7 @@ Le zoom et le déplacement restent pilotés par :
 
 ### Validation client
 
-Code associé : [`handleFileChange`](../../web/src/components/ProfileSettingsDialog.tsx#L281)
+Code associé : [`handleFileChange`](../../../web/src/components/ProfileSettingsDialog.tsx#L281)
 
 Le navigateur vérifie avant l'envoi :
 
@@ -87,7 +87,7 @@ Un aperçu local est créé avec `URL.createObjectURL`. Le formulaire utilise
 
 ### Traitement serveur avec Sharp
 
-Code associé : [`processAvatarImage`](../../web/src/lib/avatar-images.ts#L35)
+Code associé : [`processAvatarImage`](../../../web/src/lib/avatar-images.ts#L35)
 
 Le serveur ne se contente pas de l'extension ou des premiers octets. Sharp
 décode reellement l'image.
@@ -136,7 +136,7 @@ une qualité suffisante pour un avatar.
 
 ### Stockage privé
 
-Code associé : [`ensureAvatarDirectory`](../../web/src/lib/avatar-storage.ts#L16)
+Code associé : [`ensureAvatarDirectory`](../../../web/src/lib/avatar-storage.ts#L16)
 
 Les avatars sont stockes hors du dossier `public/` de Next.js :
 
@@ -174,7 +174,7 @@ collisions de noms et permet de remplacer un avatar sans problème de cache.
 
 ### Contrôle d'accès
 
-Code associé : [`GET /api/profile/avatar/[fileName]`](../../web/src/app/api/profile/avatar/[fileName]/route.ts#L20)
+Code associé : [`GET /api/profile/avatar/[fileName]`](../../../web/src/app/api/profile/avatar/[fileName]/route.ts#L20)
 
 Les fichiers ne sont pas accessibles par une URL publique directe. Ils sont
 servis par :
@@ -202,7 +202,7 @@ version de l'avatar.
 
 ### Remplacement et suppression
 
-Code associé : [`PATCH /api/profile`](../../web/src/app/api/profile/route.ts#L117)
+Code associé : [`PATCH /api/profile`](../../../web/src/app/api/profile/route.ts#L117)
 
 Lors d'un remplacement :
 
@@ -231,7 +231,7 @@ de fichiers artificielle n'a été ajoutée.
 
 ### Format
 
-Code associé : [`validateWatchlistFile`](../../web/src/lib/watchlist-file.ts#L37)
+Code associé : [`validateWatchlistFile`](../../../web/src/lib/watchlist-file.ts#L37)
 
 Le format est volontairement petit et versionné :
 
@@ -265,7 +265,7 @@ ne peut pas supprimer silencieusement les favoris déjà enregistrés.
 
 ### Export
 
-Code associé : [`GET /api/assets/watchlist/file`](../../web/src/app/api/assets/watchlist/file/route.ts#L29)
+Code associé : [`GET /api/assets/watchlist/file`](../../../web/src/app/api/assets/watchlist/file/route.ts#L29)
 
 Endpoint :
 
@@ -288,7 +288,7 @@ cleartrend-watchlist-YYYY-MM-DD.json
 
 ### Validation client de l'import
 
-Code associé : [`handleWatchlistFileChange`](../../web/src/components/ProfileSettingsDialog.tsx#L327)
+Code associé : [`handleWatchlistFileChange`](../../../web/src/components/ProfileSettingsDialog.tsx#L327)
 
 Avant l'upload, le navigateur vérifie :
 
@@ -314,7 +314,7 @@ fichier et de connaitre le nombre d'entrées invalides sans modifier la base.
 
 ### Progression
 
-Code associé : [`handleWatchlistImport`](../../web/src/components/ProfileSettingsDialog.tsx#L418)
+Code associé : [`handleWatchlistImport`](../../../web/src/components/ProfileSettingsDialog.tsx#L418)
 
 L'import utilise `XMLHttpRequest` et `request.upload.progress`.
 
@@ -323,7 +323,7 @@ désactivé pendant l'envoi pour éviter les doubles imports.
 
 ### Validation serveur
 
-Code associé : [`POST /api/assets/watchlist/file`](../../web/src/app/api/assets/watchlist/file/route.ts#L52)
+Code associé : [`POST /api/assets/watchlist/file`](../../../web/src/app/api/assets/watchlist/file/route.ts#L52)
 
 Endpoint :
 
@@ -389,7 +389,7 @@ bougie n'est visible.
 
 ### Contenu exporte
 
-Code associé : [`createChartCsvExport` et `createChartJsonExport`](../../web/src/lib/chart-analytics.ts#L58)
+Code associé : [`createChartCsvExport` et `createChartJsonExport`](../../../web/src/lib/chart-analytics.ts#L58)
 
 Chaque bougie contient :
 
@@ -412,7 +412,7 @@ Son format versionné permet d'identifier clairement un export ClearTrend.
 
 ### Génération du téléchargement
 
-Code associé : [`downloadChartData`](../../web/src/components/AssetChart.tsx#L864)
+Code associé : [`downloadChartData`](../../../web/src/components/AssetChart.tsx#L864)
 
 Le contenu est généré entièrement dans `AssetChart` :
 

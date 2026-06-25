@@ -27,9 +27,9 @@ rafraîchissement et les exports.
 
 **Fichiers concernés :**
 
-- [`dashboard/page.tsx`](../../web/src/app/dashboard/page.tsx#L14) : chargement serveur initial de la page ;
-- [`candles/route.ts`](../../web/src/app/api/assets/candles/route.ts#L14) : route Next.js authentifiée ;
-- [`main.py`](../../analysis/src/main.py#L159) : endpoint FastAPI qui fournit les bougies.
+- [`dashboard/page.tsx`](../../../web/src/app/dashboard/page.tsx#L14) : chargement serveur initial de la page ;
+- [`candles/route.ts`](../../../web/src/app/api/assets/candles/route.ts#L14) : route Next.js authentifiée ;
+- [`main.py`](../../../analysis/src/main.py#L159) : endpoint FastAPI qui fournit les bougies.
 
 Le dashboard traverse les trois couches suivantes :
 
@@ -68,8 +68,8 @@ consultent donc la même version de marché.
 
 **Fichiers concernés :**
 
-- [`DashboardClient.tsx`](../../web/src/components/DashboardClient.tsx#L149) : sélection de l'asset et de la période ;
-- [`AssetChart.tsx`](../../web/src/components/AssetChart.tsx#L575) : contrôles et affichage du graphique.
+- [`DashboardClient.tsx`](../../../web/src/components/DashboardClient.tsx#L149) : sélection de l'asset et de la période ;
+- [`AssetChart.tsx`](../../../web/src/components/AssetChart.tsx#L575) : contrôles et affichage du graphique.
 
 Depuis le dashboard, l'utilisateur peut :
 
@@ -92,9 +92,9 @@ Ce lien permet de retrouver directement la même vue.
 
 **Fichiers concernés :**
 
-- [`analysis-data.ts`](../../web/src/lib/analysis-data.ts#L357) : appel à FastAPI, validation et normalisation ;
-- [`market_data/views.py`](../../analysis/src/market_data/views.py#L68) : choix de l'historique selon la période ;
-- [`market_data/history.py`](../../analysis/src/market_data/history.py#L502) : lecture et composition des caches OHLCV.
+- [`analysis-data.ts`](../../../web/src/lib/analysis-data.ts#L357) : appel à FastAPI, validation et normalisation ;
+- [`market_data/views.py`](../../../analysis/src/market_data/views.py#L68) : choix de l'historique selon la période ;
+- [`market_data/history.py`](../../../analysis/src/market_data/history.py#L502) : lecture et composition des caches OHLCV.
 
 Le frontend appelle :
 
@@ -130,9 +130,9 @@ donc pas remplacer la nouvelle sélection.
 
 **Fichiers concernés :**
 
-- [`get_candles`](../../analysis/src/market_data/views.py#L68) : associe chaque période à une source de données ;
-- [`load_intraday_history_with_official_close`](../../analysis/src/market_data/history.py#L287) : corrige la dernière bougie intraday ;
-- [`load_daily_history_with_latest`](../../analysis/src/market_data/history.py#L502) : ajoute la séance courante à l'historique journalier.
+- [`get_candles`](../../../analysis/src/market_data/views.py#L68) : associe chaque période à une source de données ;
+- [`load_intraday_history_with_official_close`](../../../analysis/src/market_data/history.py#L287) : corrige la dernière bougie intraday ;
+- [`load_daily_history_with_latest`](../../../analysis/src/market_data/history.py#L502) : ajoute la séance courante à l'historique journalier.
 
 | Période | Granularité | Source servie |
 |---|---|---|
@@ -155,7 +155,7 @@ collecte et la granularité des bougies `1D` :
 | 15 minutes | `15m` | une bougie toutes les quinze minutes |
 
 La correspondance est centralisée dans
-[`market_data/config.py`](../../analysis/src/market_data/config.py#L42).
+[`market_data/config.py`](../../../analysis/src/market_data/config.py#L42).
 FastAPI renvoie l'intervalle réellement servi avec les bougies ; le frontend
 l'affiche donc sans maintenir une seconde configuration.
 
@@ -170,9 +170,9 @@ un téléchargement `1m` partiel ne remplace pas prématurément le graphique `5
 
 **Fichiers concernés :**
 
-- [`buildChartData`](../../web/src/components/AssetChart.tsx#L388) : calcul des axes, points, courbe et bougies SVG ;
-- [`chart-layout.ts`](../../web/src/lib/chart-layout.ts#L24) : largeur responsive des bougies ;
-- [`globals.css`](../../web/src/app/globals.css#L1253) : apparence du graphique, des axes et des tooltips.
+- [`buildChartData`](../../../web/src/components/AssetChart.tsx#L388) : calcul des axes, points, courbe et bougies SVG ;
+- [`chart-layout.ts`](../../../web/src/lib/chart-layout.ts#L24) : largeur responsive des bougies ;
+- [`globals.css`](../../../web/src/app/globals.css#L1253) : apparence du graphique, des axes et des tooltips.
 
 Le graphique est dessiné directement en SVG par React. Aucune bibliothèque de
 visualisation externe n'est utilisée.
@@ -212,9 +212,9 @@ retourne momentanément peu de points.
 
 **Fichiers concernés :**
 
-- [`visibleCandles`](../../web/src/components/AssetChart.tsx#L847) : filtrage local entre les dates choisies ;
-- [`handleRangeChange`](../../web/src/components/DashboardClient.tsx#L342) : changement de période et synchronisation de l'URL ;
-- [`performance/route.ts`](../../web/src/app/api/assets/performance/route.ts#L13) : performances de la watchlist pour la période active.
+- [`visibleCandles`](../../../web/src/components/AssetChart.tsx#L847) : filtrage local entre les dates choisies ;
+- [`handleRangeChange`](../../../web/src/components/DashboardClient.tsx#L342) : changement de période et synchronisation de l'URL ;
+- [`performance/route.ts`](../../../web/src/app/api/assets/performance/route.ts#L13) : performances de la watchlist pour la période active.
 
 Filtres disponibles :
 
@@ -244,10 +244,10 @@ une absence réelle de données pour l'asset et la période.
 
 **Fichiers concernés :**
 
-- [`fetchChartMeta`](../../web/src/components/AssetChart.tsx#L157) : contrôle léger de la fraîcheur côté navigateur ;
-- [`candles/meta/route.ts`](../../web/src/app/api/assets/candles/meta/route.ts#L14) : proxy authentifié des métadonnées ;
-- [`market-calendar.ts`](../../web/src/lib/market-calendar.ts#L207) : calcul de la prochaine ouverture régulière ;
-- [`scheduler.py`](../../analysis/src/scheduler.py#L93) : mise à jour des caches indépendamment des utilisateurs.
+- [`fetchChartMeta`](../../../web/src/components/AssetChart.tsx#L157) : contrôle léger de la fraîcheur côté navigateur ;
+- [`candles/meta/route.ts`](../../../web/src/app/api/assets/candles/meta/route.ts#L14) : proxy authentifié des métadonnées ;
+- [`market-calendar.ts`](../../../web/src/lib/market-calendar.ts#L207) : calcul de la prochaine ouverture régulière ;
+- [`scheduler.py`](../../../analysis/src/scheduler.py#L93) : mise à jour des caches indépendamment des utilisateurs.
 
 Le dashboard utilise la fréquence configurée par l'administrateur, avec une
 valeur minimale d'une minute.
@@ -276,7 +276,7 @@ version et évite de retransférer le même historique. Une erreur réseau est
 retentée après 30 secondes, sans effacer les données visibles.
 
 Le scheduler FastAPI tourne indépendamment des utilisateurs :
-[`run_market_data_scheduler`](../../analysis/src/scheduler.py#L93). Il recharge
+[`run_market_data_scheduler`](../../../analysis/src/scheduler.py#L93). Il recharge
 les historiques intraday selon la fréquence configurée, les historiques daily
 une fois par jour et reconstruit le cache horaire hebdomadaire lorsque
 nécessaire.
@@ -288,8 +288,8 @@ distinct WebSocket/SSE.
 
 **Fichiers concernés :**
 
-- [`createChartCsvExport`](../../web/src/lib/chart-analytics.ts#L88) : construction du contenu CSV ;
-- [`downloadChartData`](../../web/src/components/AssetChart.tsx#L917) : téléchargement local du fichier.
+- [`createChartCsvExport`](../../../web/src/lib/chart-analytics.ts#L88) : construction du contenu CSV ;
+- [`downloadChartData`](../../../web/src/components/AssetChart.tsx#L917) : téléchargement local du fichier.
 
 Le bouton `Export CSV` génère un fichier :
 
@@ -321,8 +321,8 @@ la bougie.
 
 **Fichiers concernés :**
 
-- [`createChartJsonExport`](../../web/src/lib/chart-analytics.ts#L58) : document JSON versionné ;
-- [`downloadChartData`](../../web/src/components/AssetChart.tsx#L917) : création du `Blob` et téléchargement.
+- [`createChartJsonExport`](../../../web/src/lib/chart-analytics.ts#L58) : document JSON versionné ;
+- [`downloadChartData`](../../../web/src/components/AssetChart.tsx#L917) : création du `Blob` et téléchargement.
 
 Le bouton `Export JSON` génère un document versionné :
 
@@ -353,7 +353,7 @@ correspond exactement au filtre actuellement visible.
 
 **Fichier concerné :**
 
-- [`AssetChart.tsx`](../../web/src/components/AssetChart.tsx#L575) : états de chargement, erreur, données absentes et conservation du dernier graphique valide.
+- [`AssetChart.tsx`](../../../web/src/components/AssetChart.tsx#L575) : états de chargement, erreur, données absentes et conservation du dernier graphique valide.
 
 Le graphique gère :
 
@@ -367,9 +367,9 @@ Le graphique gère :
 
 **Fichiers concernés :**
 
-- [`AssetChart.tsx`](../../web/src/components/AssetChart.tsx#L1017) : attributs ARIA et contrôles mobiles ;
-- [`globals.css`](../../web/src/app/globals.css#L1253) : mise en page desktop du graphique ;
-- [`globals.css`, media mobile](../../web/src/app/globals.css#L1855) : repli des contrôles et dimensions compactes.
+- [`AssetChart.tsx`](../../../web/src/components/AssetChart.tsx#L1017) : attributs ARIA et contrôles mobiles ;
+- [`globals.css`](../../../web/src/app/globals.css#L1253) : mise en page desktop du graphique ;
+- [`globals.css`, media mobile](../../../web/src/app/globals.css#L1855) : repli des contrôles et dimensions compactes.
 
 Sur mobile :
 
@@ -388,8 +388,8 @@ des labels accessibles pour les visualisations et les exports.
 
 **Fichiers concernés :**
 
-- [`test-chart-export.mjs`](../../tests/scripts/test-chart-export.mjs) : scénarios automatisés du module ;
-- [`Makefile`](../../Makefile#L85) : commande `make test-analytics-dashboard`.
+- [`test-chart-export.mjs`](../../../tests/scripts/test-chart-export.mjs) : scénarios automatisés du module ;
+- [`Makefile`](../../../Makefile#L85) : commande `make test-analytics-dashboard`.
 
 Commande :
 

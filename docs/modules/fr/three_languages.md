@@ -58,7 +58,7 @@ La configuration `web/src/i18n/request.ts` :
 ## Intégration Next.js
 
 Implémentation :
-[web/src/app/layout.tsx](../../web/src/app/layout.tsx)
+[web/src/app/layout.tsx](../../../web/src/app/layout.tsx)
 
 Le layout racine récupère la locale et les messages côté serveur avec :
 

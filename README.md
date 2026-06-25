@@ -164,7 +164,7 @@ The Trend and Sentiment tiles are supplied by the separate ML module. They enric
 the page but are not used as proof for this analytics module.
 
 Detailed architecture, operation, limitations, and tests:
-[Advanced Analytics Dashboard](docs/modules/advanced_analytics_dashboard.md).
+[Advanced Analytics Dashboard](docs/modules/en/advanced_analytics_dashboard.md).
 
 ### Major - Real-time WebSocket/SSE
 
@@ -225,7 +225,7 @@ Supported assets: S&P 500, Nasdaq Composite, Bitcoin, Ethereum, gold, Alphabet,
 and Nvidia.
 
 The complete design, formulas, variables, endpoints, tests, and limitations are
-documented in `docs/modules/ml_trend_prediction.md`.
+documented in `docs/modules/en/ml_trend_prediction.md`.
 
 Still missing before claiming the two points:
 
@@ -306,7 +306,7 @@ Proofs:
 - Edge: same user flows display correctly.
 
 Validation scope and known limitations:
-[Additional Browsers](docs/modules/additional_browsers.md).
+[Additional Browsers](docs/modules/en/additional_browsers.md).
 
 ### Minor - Custom Design System
 
@@ -330,7 +330,7 @@ forms, with UI assets such as logo variants, OAuth icons, theme icons, and
 favorite icons.
 
 Architecture, component inventory, and limitations:
-[Custom Design System](docs/modules/custom_design_system.md).
+[Custom Design System](docs/modules/en/custom_design_system.md).
 
 ### Minor - ORM
 
@@ -382,7 +382,7 @@ ClearTrend exposes live service health, a public status page, automated database
 backups, and tested PostgreSQL recovery tooling.
 
 Detailed module documentation:
-[Health, Status, Backups and DR](docs/modules/health_status_backups_dr.md).
+[Health, Status, Backups and DR](docs/modules/en/health_status_backups_dr.md).
 
 Proof:
 
@@ -505,7 +505,7 @@ Validation:
   `es`.
 
 Architecture, coverage, validation, and limitations:
-[3 Languages](docs/modules/three_languages.md).
+[3 Languages](docs/modules/en/three_languages.md).
 
 ### Minor - File Upload Management
 
@@ -515,7 +515,7 @@ ClearTrend supports two controlled file workflows: private avatar images and
 versioned JSON watchlist import/export.
 
 Detailed module documentation:
-[File Upload Management](docs/modules/file_upload_management.md).
+[File Upload Management](docs/modules/en/file_upload_management.md).
 
 Proof:
 
