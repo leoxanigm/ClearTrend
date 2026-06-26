@@ -35,7 +35,7 @@ services:
       PYTHONUNBUFFERED: "1"
       DATABASE_URL: ${DATABASE_URL}
     volumes:
-      - analysis_data:/app/data
+      - analysis_data:/app/src/data
     depends_on:
       db:
         condition: service_healthy
