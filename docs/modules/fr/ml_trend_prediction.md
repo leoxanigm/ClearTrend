@@ -175,8 +175,8 @@ structurées de sentiment.
 La clé n'est jamais exposée au navigateur et ne doit pas être versionnée.
 
 ```dotenv
-Gemma_API_KEY=...
-Gemma_MODEL=Gemma-2.5-flash-lite
+QWEN_API_KEY=...
+QWEN_MODEL=gemma3:1b
 ```
 
 Sans clé, le signal est marqué indisponible et la prédiction historique continue
@@ -428,7 +428,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml \
 
 ## Scénario de validation
 
-1. Configurer `Gemma_API_KEY`.
+1. Configurer `QWEN_API_KEY`.
 2. Recréer le service `analysis`.
 3. Sélectionner NVDA sur le dashboard.
 4. Montrer le résultat `1D`.

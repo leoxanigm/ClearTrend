@@ -100,20 +100,19 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 | Frontend and Backend Frameworks | Major | Valid | 2 | elhirond, amoureau, mathboye, zalemu |
 | Backend Microservices | Major | Valid | 2 | elhirond, mathboye, amoureau, zalemu |
 | Advanced Analytics Dashboard with Data Visualization | Major | Valid | 2 | elhirond, mathboye |
-| Real-time WebSocket/SSE | Major | Not implemented | 0 | |
-| ML Trend Prediction (custom) | Major | Implemented, live Gemma test pending | 0 | mathboye, elhirond |
+| ML Trend Prediction (custom) | Major | Implemented, full live social cycle pending | 0 | mathboye, elhirond |
 | Secure Public API | Major | Valid | 2 | zalemu |
-| Advanced Permissions | Major | Partial, not validated | 0 | amoureau |
+| Advanced Permissions | Major | Valid | 2 | amoureau |
 | Additional Browsers | Minor | Valid | 1 | elhirond |
 | Custom Design System | Minor | Valid | 1 | elhirond |
 | ORM | Minor | Valid | 1 | mathboye |
 | Advanced Search | Minor | Valid | 1 | zalemu |
 | Health, Status, Backups, DR | Minor | Valid | 1 | mathboye |
 | OAuth 2.0 | Minor | Valid | 1 | amoureau |
-| Notifications CRUD | Minor | Not implemented | 0 | amoureau |
+| Complete Notification System | Minor | Valid | 1 | amoureau |
 | 3 Languages | Minor | Valid | 1 | elhirond |
 | File Upload Management | Minor | Valid | 1 | elhirond |
-| **Total defendable** |  |  | **16** | |
+| **Total defendable** |  |  | **19** | |
 
 Participants are inferred from non-merge commits with a functional link to the
 module, not every incidental file touch. Aliases are normalized: `leoxanigm` is
@@ -164,30 +163,11 @@ The Trend and Sentiment tiles are supplied by the separate ML module. They enric
 the page but are not used as proof for this analytics module.
 
 Detailed architecture, operation, limitations, and tests:
-[Advanced Analytics Dashboard](docs/modules/advanced_analytics_dashboard.md).
-
-### Major - Real-time WebSocket/SSE
-
-Status: not implemented yet, not validated.
-
-The application currently has periodic dashboard refreshes, but it does not yet implement a real-time WebSocket or SSE channel. Chart data is refreshed by client polling, and UI notifications are local to the current browser session.
-
-Current progress:
-
-- Dashboard chart polling refreshes market data from the analysis cache.
-- The notification UI can display local toasts through `NotificationProvider`.
-- The data model already contains notification-related tables for future work.
-
-Still missing before validation:
-
-- A real `/api/events` endpoint using `text/event-stream` or a WebSocket endpoint.
-- A client `EventSource` or WebSocket hook with reconnect handling.
-- Server-side broadcast events such as `notification.created`, `analysis.updated`, and `watchlist.updated`.
-- Cross-tab or cross-client demo proving that one backend event updates another connected client without manual refresh.
+[Advanced Analytics Dashboard](docs/modules/en/advanced_analytics_dashboard.md).
 
 ### Major - ML Trend Prediction (custom module)
 
-Status: implemented, live Gemma test pending before validation.
+Status: implemented, full live social cycle pending before validation.
 
 ClearTrend combines historical market data, recent Reddit sentiment, and
 ApeWisdom attention to estimate a bearish, neutral, or bullish trend over one
@@ -225,73 +205,67 @@ Supported assets: S&P 500, Nasdaq Composite, Bitcoin, Ethereum, gold, Alphabet,
 and Nvidia.
 
 The complete design, formulas, variables, endpoints, tests, and limitations are
-documented in `docs/modules/ml_trend_prediction.md`.
+documented in `docs/modules/en/ml_trend_prediction.md`.
 
 Still missing before claiming the two points:
 
-- Configure `Gemma_API_KEY` locally.
-- Run and inspect at least one real social analysis.
+- Configure `QWEN_API_KEY` locally.
+- Run and inspect a complete daily social-analysis cycle once quota is
+  available.
 - Demonstrate the three horizons and explain why confidence can remain low.
 
 ### Major - Secure Public API
 
-Status: partially implemented, not validated yet.
+Status: valid.
 
-The project already has the foundations for external API access: users can
-create an API key, the secret is displayed once, only the hash is stored, and
-several backend routes accept either a browser session or an API key.
+ClearTrend exposes documented authenticated API routes that can be used by
+external clients. Users can create an API key, the secret is displayed once,
+only its SHA-256 hash is stored, and protected routes accept either a browser
+session or an API key.
 
-Current progress:
+Proof:
 
 - API keys are stored in PostgreSQL with a hash, prefix, creation date, last use
   date, and revocation field.
 - Account settings can create, display metadata for, and delete an API key.
 - API authentication accepts `Authorization: Bearer <api_key>` and
   `X-API-Key: <api_key>`.
-- API-key requests update `lastUsedAt`.
-- Authenticated endpoints already exist for watchlist CRUD, asset candles,
-  asset search, asset performance, and advanced search.
+- API-key requests update `lastUsedAt` and pass through the shared API rate
+  limiter.
+- Authenticated endpoints cover watchlist `GET`, `POST`, `PUT`, `PATCH`, and
+  `DELETE`, plus asset candles, asset search, asset performance, ML analysis,
+  advanced search, and administrator finance settings.
 - `/api-docs` lists curl examples for the current API routes.
 
-Still missing before validation:
-
-- Add a clear public/versioned namespace, for example `/api/public/v1`.
-- Add API-key rate limiting on the public endpoints, not only on login/register.
-- Provide at least five public endpoints covering the expected resource surface,
-  including assets, watchlists, reports, and notifications.
-- Add a machine-readable API contract such as `/api/public/v1/openapi.json`.
-- Standardize public API errors and document `401`, `403`, `404`, `409`, `429`,
-  and `5xx` responses.
-- Validate the full curl flow with a generated key, including unauthorized and
-  rate-limited requests.
+Detailed architecture, endpoints, validation, rate limiting, tests, and
+limitations:
+[Secure Public API](docs/modules/en/secure_public_api.md).
 
 ### Major - Advanced Permissions
 
-Status: partially implemented, not validated yet.
+Status: valid.
 
-The project has a real admin foundation: roles exist in the database, admin-only
-screens are protected server-side, and admins can inspect users and ban/unban
-accounts. This is a good start, but it is not yet the complete "Advanced
-permissions" module.
+ClearTrend implements role-based access with separate `USER`, `ANALYST`, and
+`ADMIN` surfaces. Admin-only screens and API routes are protected server-side,
+analysts have a dedicated read-only analysis view, and administrators can manage
+users, roles, bans, and account deletion from the admin interface.
 
-Current progress:
+Proof:
 
 - Prisma defines `USER`, `ADMIN`, and `ANALYST` roles.
 - Users have a `role` and optional `bannedAt` field.
 - `/admin` is only accessible to admins.
-- Admin API routes use a server-side `requireAdminUser` guard.
+- `/analyst` is accessible to admins and analysts, but not regular users.
+- Admin API routes use a server-side `requireAdminUser` guard, while analyst
+  access uses the generic `requireRole` helper.
 - The admin page lists users, supports search/sort, displays role/status/API key
-  count/watchlist metadata, and can ban or unban users.
-- Banned users are blocked from profile reads and sign-in/session refresh flows.
+  count/watchlist metadata, updates profile fields, changes roles, bans/unbans
+  users, and deletes accounts.
+- Role changes and admin deletion protect against removing the last admin.
+- Banned users are blocked from sign-in and profile/session refresh flows.
 
-Still missing before validation:
-
-- Full user CRUD from the admin interface.
-- Admin action to change a user's role.
-- Reusable `requireRole` or policy helpers for more than admin-only checks.
-- A real `ANALYST` permission surface, because the role exists but is not used
-  for specific views/actions yet.
-- A short manual validation scenario proving user/admin/analyst behavior.
+Detailed behavior, files, validation flow, and limits:
+[Advanced Permissions](docs/modules/en/advanced_permissions.md).
 
 ## Minor Modules
 
@@ -306,7 +280,7 @@ Proofs:
 - Edge: same user flows display correctly.
 
 Validation scope and known limitations:
-[Additional Browsers](docs/modules/additional_browsers.md).
+[Additional Browsers](docs/modules/en/additional_browsers.md).
 
 ### Minor - Custom Design System
 
@@ -330,7 +304,7 @@ forms, with UI assets such as logo variants, OAuth icons, theme icons, and
 favorite icons.
 
 Architecture, component inventory, and limitations:
-[Custom Design System](docs/modules/custom_design_system.md).
+[Custom Design System](docs/modules/en/custom_design_system.md).
 
 ### Minor - ORM
 
@@ -349,30 +323,26 @@ Validation:
 
 ### Minor - Advanced Search
 
-Status: partially implemented, not validated yet.
+Status: valid.
 
-The project has two search surfaces. The quick watchlist search is functional for
-asset lookup. The dedicated `/search` interface also exists and calls the
-backend, but the module is not validated yet because the searchable database
-content is not reliably populated by the current user flows.
+ClearTrend provides a protected `/search` page backed by `GET /api/search`.
+Users can combine text search, entity type, sentiment, date range, sort key,
+sort direction, page, and page size. The backend normalizes the query and uses
+Prisma filters, ordering, count, `skip`, and `take` for database-backed
+pagination.
 
-Current progress:
+Proof:
 
 - Watchlist asset search uses `/api/assets/search`.
 - The "Advanced Search" button opens the protected `/search` page.
 - The `/search` page calls `/api/search` with filters, sorting, direction,
-  pagination, date range, sentiment, and source parameters.
-- `/api/search` uses Prisma to search assets, analyses, reports, and
-  notifications.
+  pagination, date range, and sentiment.
+- `/api/search` uses Prisma to search assets and analyses, then returns
+  normalized result cards and pagination metadata.
+- Browser sessions and API keys are both supported.
 
-Still missing before validation:
-
-- Seed or generate useful demo data for every searched type.
-- Ensure the dashboard, watchlist, and analysis flows create searchable records
-  in the database.
-- Validate the full flow from the Advanced Search button to real results.
-- Document a demo proving filters, sorting, pagination, and multiple result
-  types.
+Detailed implementation, response contract, security, testing, and demo flow:
+[Advanced Search](docs/modules/en/advanced_search.md).
 
 ### Minor - Health, Status, Backups, DR
 
@@ -382,7 +352,7 @@ ClearTrend exposes live service health, a public status page, automated database
 backups, and tested PostgreSQL recovery tooling.
 
 Detailed module documentation:
-[Health, Status, Backups and DR](docs/modules/health_status_backups_dr.md).
+[Health, Status, Backups and DR](docs/modules/en/health_status_backups_dr.md).
 
 Proof:
 
@@ -450,34 +420,31 @@ Setup notes:
 - Configure only the OAuth providers you want to expose; missing or placeholder
   credentials are ignored by NextAuth and hidden on the login page.
 
-### Minor - Notifications CRUD
+### Minor - Complete Notification System
 
-Status: not implemented yet, not validated.
+Status: implemented.
 
-The project has the data model and local toast UI needed to support
-notifications, but it does not yet provide a complete persistent notification
-system.
+ClearTrend has a centralized notification provider for creation, update, and
+deletion actions. A feature component calls `notify(...)`; the UI displays a
+toast immediately, and authenticated users also persist the same event through
+`POST /api/notifications`.
 
-Current foundation:
+Proof:
 
 - Prisma contains a `Notification` model with type, title, body, entity
   metadata, read date, and timestamps.
-- The `NotificationType` enum already covers watchlist, analysis, API key,
-  export, and system events.
-- The advanced search endpoint can read existing notifications.
-- The UI has a local `NotificationProvider` and toast component for immediate
-  browser feedback, already used for profile updates, logout, account deletion,
-  and related success/error states.
+- The `NotificationType` enum covers watchlist, analysis, API key, export, and
+  system events.
+- `NotificationProvider` exposes `notify(...)` and
+  `notifyAfterNavigation(...)`.
+- The server endpoint validates the session, normalizes fields, truncates text
+  values, and creates the notification row for the current user.
+- Toast display remains best effort: UI feedback is not blocked by a failed
+  persistence request.
 
-Still missing before validation:
-
-- Add `/api/notifications` CRUD endpoints.
-- Add list, mark as read/unread, update, and delete behavior.
-- Create persistent notifications automatically from key actions such as
-  watchlist changes, analysis/report events, API key creation/revocation, and
-  imports/exports.
-- Add a notification center in the dashboard.
-- Validate the flow with real persisted notifications, not only local toasts.
+Detailed behavior, endpoint contract, classification rules, and manual
+validation:
+[Complete Notification System](docs/modules/en/database_notifications.md).
 
 ### Minor - 3 Languages
 
@@ -488,7 +455,7 @@ The application supports English, French, and Spanish through `next-intl`.
 Proofs:
 
 - Translation files exist for `en`, `fr`, and `es`.
-- The three translation files expose the same 399 message keys.
+- The three translation files expose the same 442 message keys.
 - The active locale is resolved from the `cleartrend-locale` cookie or the
   browser `Accept-Language` header.
 - The root layout sets the HTML `lang` attribute from the active locale.
@@ -505,7 +472,7 @@ Validation:
   `es`.
 
 Architecture, coverage, validation, and limitations:
-[3 Languages](docs/modules/three_languages.md).
+[3 Languages](docs/modules/en/three_languages.md).
 
 ### Minor - File Upload Management
 
@@ -515,7 +482,7 @@ ClearTrend supports two controlled file workflows: private avatar images and
 versioned JSON watchlist import/export.
 
 Detailed module documentation:
-[File Upload Management](docs/modules/file_upload_management.md).
+[File Upload Management](docs/modules/en/file_upload_management.md).
 
 Proof:
 
@@ -532,6 +499,24 @@ Proof:
 - The UI previews imported symbols and displays upload progress.
 - `make test-file-upload` runs the image pipeline, authenticated avatar API, and
   watchlist JSON integration tests.
+
+
+# Future Work
+
+## Real-time WebSocket/SSE
+
+Real-time WebSocket/SSE is not claimed as a validated module. The dashboard
+currently refreshes market data by polling the analysis cache, and UI
+notifications are displayed locally in the current browser session.
+
+A future implementation could add:
+
+- `/api/events` using `text/event-stream`, or a WebSocket endpoint;
+- a client `EventSource` or WebSocket hook with reconnect handling;
+- server-side events such as `notification.created`, `analysis.updated`, and
+  `watchlist.updated`;
+- a cross-tab or cross-client demo proving that one backend event updates
+  another connected client without manual refresh.
 
 
 # Individual Contributions

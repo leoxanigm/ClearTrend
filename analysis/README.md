@@ -93,8 +93,8 @@ curl "http://localhost:8000/ml/analyse/NVDA?horizon=1W"
 Required environment for social sentiment:
 
 ```dotenv
-Gemma_API_KEY=...
-Gemma_MODEL=Gemma-2.5-flash-lite
+QWEN_API_KEY=...
+QWEN_MODEL=gemma3:1b
 ```
 
 Inspect training freshness:

@@ -58,7 +58,7 @@ La configuration `web/src/i18n/request.ts` :
 ## Intégration Next.js
 
 Implémentation :
-[web/src/app/layout.tsx](../../web/src/app/layout.tsx)
+[web/src/app/layout.tsx](../../../web/src/app/layout.tsx)
 
 Le layout racine récupère la locale et les messages côté serveur avec :
 
@@ -150,7 +150,7 @@ web/langages/es.json
 Chaque dictionnaire contient actuellement :
 
 - 17 espaces de noms principaux ;
-- 399 messages ;
+- 442 messages ;
 - exactement les mêmes clés.
 
 Les espaces de noms séparent les domaines de l'interface, notamment :
@@ -275,9 +275,9 @@ PY
 Résultat attendu :
 
 ```text
-en 399 messages
-fr 399 messages
-es 399 messages
+en 442 messages
+fr 442 messages
+es 442 messages
 ```
 
 La vérification TypeScript et ESLint complète ce contrôle :

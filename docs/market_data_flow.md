@@ -21,8 +21,8 @@ dev it is bind-mounted through `./analysis:/app`.
 - `analysis/data/history`
   - Daily candles.
   - S&P 500 assets use `1y` history.
-  - `^GSPC`, `^IXIC`, `BTC-USD`, `ETH-USD`, `GOOGL`, and `NVDA` use `5y`
-    history for longer AI/trend studies.
+  - `^GSPC`, `^IXIC`, `BTC-USD`, `ETH-USD`, `GC=F`, `GOOGL`, and `NVDA` use
+    `5y` history for longer AI/trend studies.
 
 - `analysis/data/intraday`
   - Short intraday candles for `1D`.
