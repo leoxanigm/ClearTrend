@@ -213,17 +213,6 @@ def save_prediction_to_database(payload: dict) -> None:
                             f" Estimated return: {estimated_return * 100:.2f}%."
                         )
 
-                    # Keep one current ML analysis row per system user, asset, and horizon.
-                    cur.execute(
-                        """
-                        DELETE FROM analyses
-                        WHERE "userId" = %s
-                          AND "assetId" = %s
-                          AND horizon = %s
-                        """,
-                        (user_id, asset_id, horizon),
-                    )
-
                     analysis_id = str(uuid4())
 
                     cur.execute(
