@@ -68,7 +68,8 @@ services:
 
   backup:
     build:
-      context: ./backup
+      context: .
+      dockerfile: backup/Dockerfile
     env_file:
       - .env
     environment:
