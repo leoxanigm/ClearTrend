@@ -23,6 +23,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    restart: unless-stopped
     networks:
       - transcendence
 
@@ -45,6 +46,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    restart: unless-stopped
     networks:
       - transcendence
 
@@ -63,6 +65,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
     networks:
       - transcendence
 
@@ -98,6 +101,7 @@ services:
     depends_on:
       web:
         condition: service_healthy
+    restart: unless-stopped
     networks:
       - transcendence
 
