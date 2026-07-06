@@ -13,7 +13,7 @@ from typing import Any
 import requests
 
 from ..market_data.config import sanitize_ticker
-from .utils import safe_clamp
+from .utils import safe_clamp, safe_count
 
 REDDIT_SEARCH_URL = "https://old.reddit.com/search.rss"
 REDDIT_USER_AGENT = "ClearTrend academic project/1.0"
@@ -390,9 +390,9 @@ def _analyze_with_qwen(
     return {
         "score": round(safe_clamp(result.get("score")), 4),
         "agreement": round(safe_clamp(result.get("agreement")), 4),
-        "bullishCount": max(0, int(result.get("bullishCount", 0))),
-        "neutralCount": max(0, int(result.get("neutralCount", 0))),
-        "bearishCount": max(0, int(result.get("bearishCount", 0))),
+        "bullishCount": safe_count(result.get("bullishCount")),
+        "neutralCount": safe_count(result.get("neutralCount")),
+        "bearishCount": safe_count(result.get("bearishCount")),
         "model": model,
     }
 

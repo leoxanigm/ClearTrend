@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 import tempfile
 import unittest
@@ -12,7 +13,7 @@ import pandas as pd
 
 from src.ml.attention import score_attention_record
 from src.ml.regression import analyze_history, analyze_history_frame
-from src.ml.sentiment import _qwen_schema, parse_reddit_feed
+from src.ml.sentiment import _analyze_with_qwen, _qwen_schema, parse_reddit_feed
 from src.ml.store import (
     MODEL_VERSION,
     load_prediction,
@@ -106,6 +107,31 @@ class RedditFeedTests(unittest.TestCase):
         self.assertFalse(
             any(key.startswith("summary") for key in schema["properties"])
         )
+
+    @patch("src.ml.sentiment.requests.post")
+    @patch.dict("os.environ", {"QWEN_API_KEY": "configured"})
+    def test_survives_model_returning_lists_instead_of_counts(
+        self, post_mock
+    ) -> None:
+        chunk = {
+            "message": {
+                "content": (
+                    '{"score": 0.6, "agreement": 0.5, "bullishCount": 2, '
+                    '"neutralCount": ["postA", "postB"], "bearishCount": 1}'
+                )
+            },
+            "done": True,
+        }
+        post_mock.return_value.iter_lines.return_value = [
+            json.dumps(chunk).encode()
+        ]
+        posts = [{"title": "t", "excerpt": "e"}]
+
+        result = _analyze_with_qwen("NVDA", posts)
+
+        self.assertEqual(result["neutralCount"], 2)
+        self.assertEqual(result["bullishCount"], 2)
+        self.assertEqual(result["bearishCount"], 1)
 
     def test_keeps_recent_posts_and_ignores_subreddit_entries(self) -> None:
         payload = b"""<?xml version="1.0" encoding="UTF-8"?>
