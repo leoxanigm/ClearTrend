@@ -13,13 +13,10 @@ from .config import (
 )
 
 
-def save_frame(
-    ticker: str,
-    df: pd.DataFrame,
-    *,
-    directory: Path,
-    marker: str | None = None,
-) -> None:
+def save_frame(ticker: str,
+                df: pd.DataFrame,
+                *, directory: Path,
+                marker: str | None = None) -> None:
     """Replace the current CSV snapshot for one ticker and interval."""
     safe_name = sanitize_ticker(ticker)
     stamp = datetime.now().strftime(TIMESTAMP_FMT)
@@ -36,10 +33,8 @@ def save_frame(
             old.unlink(missing_ok=True)
 
 
-def latest_csv_timestamp(
-    directory: Path,
-    pattern: str = "*.csv",
-) -> datetime | None:
+def latest_csv_timestamp(directory: Path,
+                        pattern: str = "*.csv") -> datetime | None:
     """Read the newest timestamp encoded in matching cache filenames."""
     newest: datetime | None = None
 

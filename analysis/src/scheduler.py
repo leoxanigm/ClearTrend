@@ -37,10 +37,8 @@ def _floor_datetime(value: datetime, step: timedelta) -> datetime:
     return epoch + timedelta(seconds=(elapsed // step_seconds) * step_seconds)
 
 
-def seconds_until_next_intraday_refresh(
-    now: datetime | None = None,
-    refresh_duration: timedelta | None = None,
-) -> float:
+def seconds_until_next_intraday_refresh(now: datetime | None = None,
+                                        refresh_duration: timedelta | None = None) -> float:
     """Schedule work shortly after providers should have completed a new candle."""
     now_utc = now.astimezone(timezone.utc) if now else datetime.now(timezone.utc)
     duration = refresh_duration or INTRADAY_CANDLE_DURATION

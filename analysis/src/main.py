@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        refresh_task.cancel()
+        refresh_task.cancel()   
         warmup_task.cancel()
         try:
             await asyncio.gather(refresh_task, warmup_task, return_exceptions=True)

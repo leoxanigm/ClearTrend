@@ -45,10 +45,8 @@ from .storage import (
 INTRADAY_TRANSITION_REFERENCE_MAX_AGE = timedelta(minutes=30)
 
 
-def build_daily_history(
-    sp500_period: str = DEFAULT_DAILY_HISTORY_PERIOD,
-    long_period: str = LONG_HISTORY_PERIOD,
-) -> None:
+def build_daily_history(sp500_period: str = DEFAULT_DAILY_HISTORY_PERIOD,
+                        long_period: str = LONG_HISTORY_PERIOD) -> None:
     """Refresh daily caches, keeping longer histories for selected assets."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 

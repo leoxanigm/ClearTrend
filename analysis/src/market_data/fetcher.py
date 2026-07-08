@@ -66,10 +66,7 @@ def extract_ticker(df_multi: pd.DataFrame, ticker: str) -> pd.DataFrame | None:
         if isinstance(df_multi.columns, pd.MultiIndex):
             if ticker in df_multi.columns.get_level_values(0):
                 sub = df_multi.xs(ticker, axis=1, level=0).copy()
-            elif (
-                df_multi.columns.nlevels > 1
-                and ticker in df_multi.columns.get_level_values(1)
-            ):
+            elif df_multi.columns.nlevels > 1 and ticker in df_multi.columns.get_level_values(1):
                 sub = df_multi.xs(ticker, axis=1, level=1).copy()
             else:
                 return None
@@ -87,21 +84,17 @@ def extract_ticker(df_multi: pd.DataFrame, ticker: str) -> pd.DataFrame | None:
         return None
 
 
-def process_tickers(
-    tickers: list[str],
-    *,
-    batch_size: int,
-    interval: str,
-    pause_seconds: float,
-    period: str,
-    target_dir: Path,
-    target_marker: str | None = None,
-) -> int:
+def process_tickers(tickers: list[str],
+                    *, batch_size: int,
+                    interval: str,
+                    pause_seconds: float,
+                    period: str,
+                    target_dir: Path,
+                    target_marker: str | None = None) -> int:
     """Download, split, and persist a complete ticker universe in bounded batches."""
     updated = 0
     batches = [
-        tickers[i:i + batch_size]
-        for i in range(0, len(tickers), batch_size)
+        tickers[i:i + batch_size] for i in range(0, len(tickers), batch_size)
     ]
     total = len(batches)
 
@@ -133,6 +126,6 @@ def process_tickers(
 
         updated += saved
         logger.info("Batch %d/%d | %d/%d tickers saved", index, total, saved, len(batch))
-        time.sleep(pause_seconds)
+        time.sleep(pause_seconds)  # Preventing rate limit on download
 
     return updated
