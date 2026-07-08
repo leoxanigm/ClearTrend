@@ -82,7 +82,7 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 
 - Web: Next.js, React, TypeScript, Tailwind CSS.
 - Database ORM: Prisma.
-- Analysis service: Python, FastAPI.
+- Analysis service: Python, FastAPI, LLM API requests.
 - Database: PostgreSQL 17 Alpine.
 - HTTPS proxy: nginx.
 - Containers: Docker Compose.
@@ -138,7 +138,7 @@ Proofs:
 
 The `web` service is the application backend: authentication, user profile, watchlist, admin settings, public API routes, and database writes through Prisma.
 
-The `analysis` service is a separate FastAPI backend: market data cache warmup, scheduled refresh, ticker list, snapshots, performances, candles, and health endpoint.
+The `analysis` service is a separate FastAPI backend: market data cache warmup, scheduled refresh, ticker list, snapshots, performances, candles, and health endpoint.  It also performs an analysis through LLM model by scrapping specialized threads and analysing the emitted sentiments on the stocks.
 
 Communication between services uses REST over the Docker network with `ANALYSIS_URL=http://analysis:8000`. The web backend validates user input, calls the analysis backend server-side, normalizes the response, and exposes protected API routes to the frontend.
 
@@ -159,7 +159,7 @@ Proofs:
 - CSV and JSON export for the selected asset and range, including OHLCV candles and candle variation.
 - Loading, unavailable-data, and empty-filter states.
 
-The Trend and Sentiment tiles are supplied by the separate ML module. They enrich
+The Trend and Sentiment tiles are supplied by the separate ML & LLM module. They enrich
 the page but are not used as proof for this analytics module.
 
 Detailed architecture, operation, limitations, and tests:

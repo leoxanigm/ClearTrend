@@ -28,7 +28,7 @@ on charts, filters, refresh, and exports.
 
 - [`dashboard/page.tsx`](../../../web/src/app/dashboard/page.tsx#L14): initial server loading of the page;
 - [`candles/route.ts`](../../../web/src/app/api/assets/candles/route.ts#L14): authenticated Next.js route;
-- [`main.py`](../../../analysis/src/main.py#L159): FastAPI endpoint that provides candles.
+- [`main.py`](../../../analysis/src/main.py#L159): FastAPI endpoints that provides candles and analysis.
 
 The dashboard crosses the following three layers:
 
