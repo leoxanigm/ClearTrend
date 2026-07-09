@@ -19,6 +19,8 @@ Prerequisites:
 - Docker with Docker Compose.
 - Make.
 - OpenSSL for local certificate generation.
+- `.env` based on `.env.example` with secrets and keys replaced with their
+  appropriate values.
 
 Start the development environment:
 
@@ -395,6 +397,9 @@ Validation:
 - `npx prisma validate` passes. It checks that `schema.prisma` is syntactically valid and that models, relations, enums, and datasource settings are coherent.
 - `npm run prisma:generate` generates the Prisma client successfully. It creates the TypeScript client used by the backend to query PostgreSQL through Prisma.
 
+More on ORM module: 
+[ORM minor module](docs/modules/en/orm.md).
+
 ### Minor - Advanced Search
 
 Status: valid.
@@ -650,17 +655,28 @@ Prisma query objects instead of raw string-built SQL.
 
 # Resources
 
-## Backend Microservices
+## Modules
+
+### Backend Microservices
 
 * https://docs.docker.com/
+* https://docs.docker.com/compose/
 * https://github.com/maxproske/nextjs-docker-production-kit
 
-## Secure Public API
+### Secure Public API
 
 * https://nextjs.org/blog/building-apis-with-nextjs
 
-## ORM
+### ORM
 
 * https://www.prisma.io/docs/orm
+* https://www.postgresql.org/docs/
 * https://github.com/samchon/prisma-markdown
 * https://mermaid.ai/live/edit
+
+## AI Usage
+
+AI tools were used to help draft documentation, review explanations,
+generate test ideas, and clarify implementation approaches. All generated
+content was reviewed and adapted by the team before being added to the
+project.
