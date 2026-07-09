@@ -69,8 +69,6 @@ make reset-db
 
 This deletes only the local PostgreSQL Docker volume and recreates it from `.env`.
 
-# Resources
-
 
 # Team Information
 
@@ -601,3 +599,20 @@ A future implementation could add:
 * Prisma ORM for tables
 * Advanced search
 * public API
+
+# Resources
+
+## Backend Microservices
+
+* https://docs.docker.com/
+* https://github.com/maxproske/nextjs-docker-production-kit
+
+## Secure Public API
+
+* https://nextjs.org/blog/building-apis-with-nextjs
+
+## ORM
+
+* https://www.prisma.io/docs/orm
+* https://github.com/samchon/prisma-markdown
+* https://mermaid.ai/live/edit
