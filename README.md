@@ -89,6 +89,43 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 
 # Database Schema
 
+# Database Schema
+
+The application stores its persistent web data in PostgreSQL. The schema is
+defined with `prisma` in `web/prisma/schema.prisma`, and the generated `prisma`
+client is used by the Next.js backend routes.
+
+Main tables:
+
+| Table | Purpose |
+|---|---|
+| `users` | User accounts, OAuth identity fields, profile data, roles, bans, and favorites |
+| `assets` | Market assets searchable in the dashboard and public API |
+| `watchlists` | User-owned watchlist groups |
+| `watchlist_items` | Many-to-many relation between watchlists and assets |
+| `analyses` | Stored analysis requests, status, trend, recommendation, scores, and summaries |
+| `analysis_sources` | Source material attached to an analysis, such as prices, comments, news, API data, or scraped data |
+| `notifications` | Persistent user notifications for creation, update, deletion, and system events |
+| `api_keys` | Hashed public API keys, prefixes, revocation state, and last-use timestamps |
+| `user_events` | Auditable user activity such as login, search, asset views, exports, and watchlist actions |
+| `app_settings` | Key-value application settings used by admin/backend features |
+
+Important relations:
+
+- Deleting a user cascades to their analyses, watchlists, notifications, API keys,
+  events, and reports.
+- Deleting an asset cascades to related watchlist items and analyses.
+- `watchlist_items` enforces one asset per watchlist with a unique
+  `(watchlistId, assetId)` constraint.
+- `users` enforces unique emails and unique OAuth provider accounts.
+- `api_keys` stores only hashed keys and enforces one API key per user.
+
+The schema uses indexes on frequent access paths such as user ownership,
+asset symbols, analysis status, notification state, API key prefix, event type,
+and creation dates.
+
+For more ORM documentation and visual representation, please check:
+[ORM minor module](docs/modules/en/orm.md).
 
 # Features List
 
