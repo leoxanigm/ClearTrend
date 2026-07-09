@@ -523,6 +523,37 @@ A future implementation could add:
 
 ## amoureau
 
+- Built the first PostgreSQL-backed user account flow, including the basic
+  `User` Prisma model, Prisma client wiring, and the registration API route.
+- Migrated authentication from custom session routes to NextAuth/Auth.js and
+  kept the existing login, register, privacy, terms, and dashboard flows working
+  with the new session model.
+- Implemented OAuth 2.0 sign-in for Google, GitHub, and 42 School, including
+  provider configuration, login buttons, provider icons, environment variables,
+  and the NextAuth callback route.
+- Linked OAuth accounts to database users with provider-specific identifiers,
+  then fixed the account-linking bug that could otherwise merge different OAuth
+  accounts through the same email address.
+- Added login and registration rate limiting, plus the shared rate-limit helper
+  used to protect authentication attempts.
+- Added role-aware profile/session data and server-side admin authorization
+  helpers, including `requireAdminUser`.
+- Built the administrator area in several steps: basic admin panel, refined
+  admin page, role badges, role changes, user deletion, ban-aware access,
+  analyst page access, and the ability to manage users from `/admin`.
+- Linked the administrator finance refresh-rate setting to the analysis service
+  and dashboard refresh behavior through persisted app settings and an admin API
+  route.
+- Added account deletion support, including the authenticated delete-account API
+  route and dashboard/profile UI entry points.
+- Built the notification system: reusable toast provider, global provider
+  mounting, profile/login/logout/register notifications, navigation-delayed
+  notifications, and notification styling.
+- Added database persistence for notifications through
+  `POST /api/notifications`, then added the administrator notification viewer
+  with search, sort, user metadata, entity metadata, and translated labels.
+
+
 ## elhirond
 
 ## mathboye
