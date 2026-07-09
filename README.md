@@ -72,9 +72,50 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 
 # Team Information
 
+## Roles
+
+| Role | Student |
+| --- | --- |
+| Product Owner, Project Manager | elhirond |
+| Technical Lead | zalemu |
+| Developers | amoureau, mathboye |
+
+While the team members had a clearly assigned roles, each team member
+contributed code for multiple modules in the project.
+
+### PO, MP
+
+* Project idea and features
+* Team meeting organization and leading
+* Deadline tracking and progress verification
+
+### Technical lead
+
+* Outline of best development practices, Eg:
+  - Branch naming
+  - Commit naming
+* Review of pull request
+* Code reorganization
+
+### Developers
+
+* Implementing features based on selected modules
+* Fixing bugs
+* Documentation
+
 
 # Project Management
 
+The team had its first meeting at school to decide on the project idea
+and core features. In the first meeting we decided on:
+  * Product idea and name
+  * Meeting frequency and schedule (One a week on Tuesdays)
+  * Meetings at school for important decisions
+  * Meetings on Discord for progress review
+
+We extensively used GitHub for code and issue management.
+
+We used Discord for communication.
 
 # Technical Stack
 
@@ -84,8 +125,6 @@ This deletes only the local PostgreSQL Docker volume and recreates it from `.env
 - Database: PostgreSQL 17 Alpine.
 - HTTPS proxy: nginx.
 - Containers: Docker Compose.
-
-# Database Schema
 
 # Database Schema
 
@@ -577,8 +616,7 @@ A future implementation could add:
   admin page, role badges, role changes, user deletion, ban-aware access,
   analyst page access, and the ability to manage users from `/admin`.
 - Linked the administrator finance refresh-rate setting to the analysis service
-  and dashboard refresh behavior through persisted app settings and an admin API
-  route.
+  and dashboard refresh behavior through persisted app settings and an admin API route.
 - Added account deletion support, including the authenticated delete-account API
   route and dashboard/profile UI entry points.
 - Built the notification system: reusable toast provider, global provider
@@ -595,10 +633,20 @@ A future implementation could add:
 
 ## zalemu
 
-(rough bullet points to remember. edit and explain later)
-* Prisma ORM for tables
-* Advanced search
-* public API
+zalemu served as technical lead and developer. Additionally, he mainly worked on the backend-facing features around public access,
+search, API authentication, and database-backed request handling.
+
+He implemented the Secure Public API module, API key creation and revocation,
+hashed API key authentication, and the advanced search endpoint for assets and
+analyses. He also connected the search UI to the backend route, added Prisma
+filtering, sorting, pagination, and limits, and documented the Secure Public API
+and Advanced Search modules.
+
+The main challenges were securing public access without relying on a normal web
+session, preventing unsafe or unbounded database queries, and making API keys
+usable without exposing secrets after creation. These were handled with hashed
+keys, one-time secret display, request validation, bounded pagination, and
+Prisma query objects instead of raw string-built SQL.
 
 # Resources
 
