@@ -2,7 +2,7 @@
 
 # Description
 
-Transcendence is a web application base for a financial analysis dashboard.
+ClearTrend is a web application base for a financial analysis dashboard.
 
 Current starter scope:
 
